@@ -25,9 +25,10 @@ export default function RootJoinPage() {
     <div className="min-h-dvh flex flex-col p-6">
       <div className="flex-1" />
       <div className="text-center mb-2">
-        <h1 className="text-3xl md:text-5xl font-semibold tracking-tight">
-          <span className="text-white">Session</span>\n          <span className="text-[var(--brand)]">Foundry</span>
-        </h1>
+<h1 className="text-3xl md:text-5xl font-semibold tracking-tight whitespace-nowrap">
+  <span className="text-white">Session</span>
+  <span className="text-[var(--brand)]">Foundry</span>
+</h1>
       </div>
       <div className="flex-1" />
 
