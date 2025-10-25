@@ -31,7 +31,7 @@ export default function LoginPage() {
         setMode("signin");
       }
     } catch {
-      // ignore if URLSearchParams blows up for some reason
+      // ignore
     }
   }, []);
 
@@ -68,7 +68,7 @@ export default function LoginPage() {
         });
       }
     } catch {
-      // ignore sync failures 2
+      // ignore sync failures
     }
     location.href = "/dashboard";
   }
@@ -143,30 +143,6 @@ export default function LoginPage() {
       <Card>
         <CardHeader title={title} subtitle={subtitle} />
         <CardBody>
-          {/* toggle buttons */}
-          <div className="flex gap-2 mb-4">
-            <button
-              className={`px-3 py-1 rounded-md border ${
-                mode === "signin"
-                  ? "bg-white/10 border-white/20"
-                  : "border-white/10 hover:bg-white/5"
-              }`}
-              onClick={() => setMode("signin")}
-            >
-              Sign in
-            </button>
-            <button
-              className={`px-3 py-1 rounded-md border ${
-                mode === "signup"
-                  ? "bg-white/10 border-white/20"
-                  : "border-white/10 hover:bg-white/5"
-              }`}
-              onClick={() => setMode("signup")}
-            >
-              Create account
-            </button>
-          </div>
-
           {/* form */}
           <div className="space-y-3">
             <input

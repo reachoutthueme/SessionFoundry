@@ -7,6 +7,7 @@ import { IconDashboard, IconSessions, IconTemplates, IconSettings, IconHelp, Ico
 import ProTag from "@/components/ui/ProTag";
 import Logo from "@/components/ui/Logo";
 import { useEffect, useState } from "react";
+import LogoutButton from "@/components/ui/LogoutButton"; 
 
 function Section({ label, children, collapsed }: PropsWithChildren<{ label: string; collapsed?: boolean }>) {
   return (
@@ -86,18 +87,19 @@ export default function Shell({ children }: PropsWithChildren) {
                 placeholder="Search"
                 className="h-8 w-56 rounded-md bg-[var(--panel)] border border-white/10 px-3 text-sm outline-none focus:ring-[var(--ring)]"
               />
-            {me ? (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-[var(--muted)]">{me.plan.toUpperCase()}</span>
-                <Link href="/pricing" className="text-sm px-2 py-1 rounded-md border border-white/10 hover:bg-white/5">
-                  {me.plan === 'free' ? 'Become Pro' : 'Manage plan'}
-                </Link>
-                <button
-                  className="text-sm px-2 py-1 rounded-md border border-white/10 hover:bg-white/5"
-                  onClick={async ()=>{ await fetch('/api/auth/logout', { method:'POST' }); location.href='/'; }}
-                >Logout</button>
-              </div>
-            ) : (
+{me ? (
+  <div className="flex items-center gap-2">
+    <span className="text-xs text-[var(--muted)]">{me.plan.toUpperCase()}</span>
+    <Link
+      href="/pricing"
+      className="text-sm px-2 py-1 rounded-md border border-white/10 hover:bg-white/5"
+    >
+      {me.plan === "free" ? "Become Pro" : "Manage plan"}
+    </Link>
+    {/* NEW COMPONENT */}
+    <LogoutButton />
+  </div>
+) : (
                 <div className="flex items-center gap-2">
                   <Link href="/login" className="text-sm px-2 py-1 rounded-md border border-white/10 hover:bg-white/5">Sign in</Link>
                   <Link href="/login?mode=signup" className="text-sm px-2 py-1 rounded-md border border-white/10 hover:bg-white/5">Create account</Link>
