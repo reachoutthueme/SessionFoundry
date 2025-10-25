@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../../../lib/supabaseAdmin";
 import { getUserFromRequest } from "@/app/api/_util/auth";
 
@@ -64,10 +64,11 @@ type SubmissionSummary = {
 };
 
 export async function GET(
-  req: Request,
-  ctx: { params: { id: string } }
+  req: NextRequest,
+  ctx: { params: Promise<{ id: string }> }
 ) {
-  const { id: session_id } = ctx.params;
+  // params is a Promise in this Next.js version, so we await it
+  const { id: session_id } = await ctx.params;
 
   // auth / plan check
   const user = await getUserFromRequest(req);
@@ -186,7 +187,10 @@ export async function GET(
     const scoreList = votesBySubmission.get(sid) || [];
 
     const n = scoreList.length;
-    const total = scoreList.reduce((acc: number, curr: VoteEntry) => acc + Number(curr.value || 0), 0);
+    const total = scoreList.reduce(
+      (acc: number, curr: VoteEntry) => acc + Number(curr.value || 0),
+      0
+    );
     const avg = n ? total / n : 0;
 
     const participant_name =
@@ -297,7 +301,7 @@ export async function GET(
   return new NextResponse(md, {
     status: 200,
     headers: {
-      "Content-Type": 'text/markdown; charset=utf-8',
+      "Content-Type": "text/markdown; charset=utf-8",
       "Content-Disposition": `attachment; filename="deck_${session_id}.md"`,
     },
   });
