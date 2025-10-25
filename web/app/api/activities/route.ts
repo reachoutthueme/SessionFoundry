@@ -1,0 +1,44 @@
+import { NextResponse } from "next/server";
+import { supabaseAdmin } from "../../lib/supabaseAdmin";
+
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const sessionId = url.searchParams.get("session_id");
+  if (!sessionId) return NextResponse.json({ activities: [] });
+
+  const { data, error } = await supabaseAdmin
+    .from("activities")
+    .select("id,session_id,type,title,instructions,description,config,order_index,status,starts_at,ends_at,created_at")
+    .eq("session_id", sessionId)
+    .order("order_index", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ activities: data ?? [] });
+}
+
+export async function POST(req: Request) {
+  const body = await req.json().catch(() => ({}));
+  const session_id = (body?.session_id ?? "").toString();
+  const type = (body?.type ?? "").toString();
+  const title = (body?.title ?? "").toString().trim();
+  const instructions = (body?.instructions ?? "").toString();
+  const description = (body?.description ?? "").toString();
+  const config = body?.config ?? {};
+  const order_index = Number.isFinite(body?.order_index) ? Number(body.order_index) : 0;
+
+  if (!session_id || !title || (type !== "brainstorm" && type !== "stocktake" && type !== "assignment")) {
+    return NextResponse.json({ error: "session_id, title, and valid type required" }, { status: 400 });
+  }
+
+  const cfg = body?.config ?? {};
+  const dataToInsert: any = { session_id, type, title, instructions, description, config: cfg, order_index };
+  const { data, error } = await supabaseAdmin
+    .from("activities")
+    .insert(dataToInsert)
+    .select("id,session_id,type,title,instructions,description,config,order_index,status,starts_at,ends_at,created_at")
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ activity: data }, { status: 201 });
+}
