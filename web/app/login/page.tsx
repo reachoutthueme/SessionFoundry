@@ -68,7 +68,7 @@ export default function LoginPage() {
         });
       }
     } catch {
-      // ignore sync failures
+      // ignore sync failures 2
     }
     location.href = "/dashboard";
   }
