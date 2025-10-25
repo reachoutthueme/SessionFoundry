@@ -6,12 +6,47 @@ export async function GET(_: Request, ctx: { params: Promise<{ id: string }> }) 
 
   const { data: activity, error: ae } = await supabaseAdmin
     .from('activities')
-    .select('session_id')
+    .select('session_id,type')
     .eq('id', activity_id)
     .maybeSingle();
   if (ae) return NextResponse.json({ error: ae.message }, { status: 500 });
   if (!activity) return NextResponse.json({ submissions: [] });
 
+  // Stocktake results: aggregate counts per initiative
+  if ((activity as any).type === 'stocktake') {
+    const [initsRes, respRes] = await Promise.all([
+      supabaseAdmin.from('stocktake_initiatives').select('id,title').eq('activity_id', activity_id).order('title', { ascending: true }),
+      supabaseAdmin.from('stocktake_responses').select('initiative_id,choice').eq('activity_id', activity_id),
+    ]);
+    if (initsRes.error) return NextResponse.json({ error: initsRes.error.message }, { status: 500 });
+    if (respRes.error) return NextResponse.json({ error: respRes.error.message }, { status: 500 });
+    const initiatives = (initsRes.data ?? []) as { id: string; title: string }[];
+    const responses = (respRes.data ?? []) as { initiative_id: string; choice: 'stop'|'less'|'same'|'more'|'begin' }[];
+    const order: Array<'stop'|'less'|'same'|'more'|'begin'> = ['stop','less','same','more','begin'];
+    const scoreMap: Record<string, number> = { stop: -2, less: -1, same: 0, more: 1, begin: 2 };
+    const byInit = new Map<string, { counts: Record<string, number>; n: number; sum: number }>();
+    for (const it of initiatives) {
+      byInit.set(it.id, { counts: { stop: 0, less: 0, same: 0, more: 0, begin: 0 }, n: 0, sum: 0 });
+    }
+    for (const r of responses) {
+      const rec = byInit.get(r.initiative_id) || { counts: { stop: 0, less: 0, same: 0, more: 0, begin: 0 }, n: 0, sum: 0 };
+      rec.counts[r.choice] = (rec.counts[r.choice] || 0) + 1;
+      rec.n += 1;
+      rec.sum += scoreMap[r.choice] ?? 0;
+      byInit.set(r.initiative_id, rec);
+    }
+    const items = initiatives.map(it => {
+      const rec = byInit.get(it.id)!;
+      const avg = rec.n ? rec.sum / rec.n : 0;
+      return { id: it.id, title: it.title, counts: rec.counts, n: rec.n, avg };
+    });
+    const overallN = items.reduce((a,b)=> a + b.n, 0);
+    const overallSum = items.reduce((a,b)=> a + (b.avg * b.n), 0);
+    const overallAvg = overallN ? overallSum / overallN : 0;
+    return NextResponse.json({ stocktake: { initiatives: items, overall: { n: overallN, avg: overallAvg }, order } });
+  }
+
+  // Default: brainstorm/assignment submissions with votes
   const [subsRes, votesRes, partsRes] = await Promise.all([
     supabaseAdmin
       .from('submissions')
@@ -24,7 +59,7 @@ export async function GET(_: Request, ctx: { params: Promise<{ id: string }> }) 
     supabaseAdmin
       .from('participants')
       .select('id,display_name')
-      .eq('session_id', activity.session_id)
+      .eq('session_id', (activity as any).session_id)
   ]);
 
   if (subsRes.error) return NextResponse.json({ error: subsRes.error.message }, { status: 500 });

@@ -22,7 +22,7 @@ type Activity = {
   ends_at?: string | null;
 };
 
-export default function ActivitiesManager({ sessionId }: { sessionId: string }) {
+export default function ActivitiesManager({ sessionId, sessionStatus }: { sessionId: string; sessionStatus?: string }) {
   const toast = useToast();
   const [items, setItems] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,6 +40,7 @@ export default function ActivitiesManager({ sessionId }: { sessionId: string }) 
   const [ePointsBudget, setEPointsBudget] = useState<number>(100);
   const [menuId, setMenuId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const [menuUp, setMenuUp] = useState(false);
 
   useEffect(() => {
     if (!menuId) return;
@@ -47,6 +48,15 @@ export default function ActivitiesManager({ sessionId }: { sessionId: string }) 
       const el = menuRef.current;
       const target = e.target as Node | null;
       if (el && target && !el.contains(target)) setMenuId(null);
+    }
+    // decide dropdown direction
+    const el = menuRef.current;
+    if (typeof window !== 'undefined' && el) {
+      const rect = el.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      setMenuUp(spaceBelow < 180);
+    } else {
+      setMenuUp(false);
     }
     document.addEventListener('mousedown', onDoc);
     document.addEventListener('touchstart', onDoc);
@@ -174,9 +184,43 @@ export default function ActivitiesManager({ sessionId }: { sessionId: string }) 
     await load();
   }
 
+  async function moveActivity(id: string, delta: number) {
+    const arr = [...items].sort((a,b)=> (a.order_index??0) - (b.order_index??0));
+    const idx = arr.findIndex(a=>a.id===id);
+    if (idx < 0) return;
+    const target = idx + delta;
+    if (target < 0 || target >= arr.length) return;
+    const a = arr[idx];
+    const b = arr[target];
+    try {
+      const [r1, r2] = await Promise.all([
+        fetch(`/api/activities/${a.id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ order_index: target }) }),
+        fetch(`/api/activities/${b.id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ order_index: idx }) }),
+      ]);
+      if (!r1.ok || !r2.ok) throw new Error('reorder failed');
+      await load();
+      toast('Order updated','success');
+    } catch (e) {
+      toast('Failed to reorder','error');
+    }
+  }
+
+  const statusLabel = (sessionStatus === 'Active' || sessionStatus === 'Completed') ? sessionStatus : 'Inactive';
+  const statusColor = sessionStatus === 'Active' ? 'bg-red-500' : (sessionStatus === 'Completed' ? 'bg-green-500' : 'bg-gray-400');
+
   return (
-    <Card>
-      <CardHeader title="Activities" subtitle="Create and control workshop flow" />
+    <>
+      <Card>
+      <CardHeader
+        title="Activities"
+        subtitle="Create and control workshop flow"
+        rightSlot={
+          <div className="text-xs px-2 py-1 rounded-full border border-white/15 bg-white/5 text-[var(--muted)] inline-flex items-center gap-2">
+            <span className={`inline-block w-2 h-2 rounded-full ${statusColor} animate-pulse`}></span>
+            <span>Status: {statusLabel}</span>
+          </div>
+        }
+      />
       <CardBody>
         <div className="flex justify-between items-center mb-3">
           <div className="text-sm text-[var(--muted)]">{items.length} activities</div>
@@ -184,7 +228,7 @@ export default function ActivitiesManager({ sessionId }: { sessionId: string }) 
         </div>
 
         {/* Progress + Now panel */}
-        <div className="mb-4 p-3 rounded-md border border-white/10 bg-white/5">
+        <div className="mb-6 p-4 rounded-lg border border-white/15 bg-white/7 shadow-[0_8px_30px_rgba(0,0,0,.12)]">
           <div className="flex items-center justify-between mb-2">
             <div className="text-sm">Progress</div>
             <div className="text-xs text-[var(--muted)]">{summary.closed}/{summary.total} closed ({summary.pct}%)</div>
@@ -223,21 +267,24 @@ export default function ActivitiesManager({ sessionId }: { sessionId: string }) 
               )}
             </div>
           )}
-          {/* Step chips */}
           {sorted.length>0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {sorted.map((a, i)=>{
-                const tone = a.status==='Closed' ? 'bg-green-500/15 text-[var(--text)] border-green-500/30' : a.status==='Voting' ? 'bg-blue-500/15 text-[var(--text)] border-blue-400/30' : a.status==='Active' ? 'bg-[var(--brand)]/20 text-[var(--text)] border-white/20' : 'bg-white/5 text-[var(--muted)] border-white/10';
-                return (
-                  <div key={a.id} className={`px-2 py-1 text-xs rounded border ${tone}`}>
-                    <span className="opacity-70 mr-1">{i+1}.</span>{a.title}
-                  </div>
-                );
-              })}
+            <div className="mt-4">
+              <div className="text-xs text-[var(--muted)] mb-2">Activities</div>
+              <div className="flex flex-wrap gap-2">
+                {sorted.map((a, i)=>{
+                  const tone = a.status==='Closed' ? 'bg-green-500/15 text-[var(--text)] border-green-500/30' : a.status==='Voting' ? 'bg-blue-500/15 text-[var(--text)] border-blue-400/30' : a.status==='Active' ? 'bg-[var(--brand)]/20 text-[var(--text)] border-white/20' : 'bg-white/5 text-[var(--muted)] border-white/10';
+                  return (
+                    <div key={a.id} className={`px-2 py-1 text-xs rounded border ${tone}`}>
+                      <span className="opacity-70 mr-1">{i+1}.</span>{a.title}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
-
+        {/* Activities container */}
+        <div className="rounded-lg border border-white/10 bg-white/5 p-3">
         {loading ? (
           <div className="space-y-2">
             <div className="h-12 rounded bg-white/10 animate-pulse" />
@@ -261,7 +308,7 @@ export default function ActivitiesManager({ sessionId }: { sessionId: string }) 
               <div key={a.id} className={`p-3 rounded-md ${tone} border`}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium">{a.title} <span className="ml-2 text-xs text-[var(--muted)]">[{a.type === 'brainstorm' ? 'standard' : a.type}]</span></div>
+                    <div className="font-medium flex items-center gap-2">{a.title} <span className="ml-1 text-xs text-[var(--muted)]">[{a.type === 'brainstorm' ? 'standard' : a.type}]</span>{a.config?.skipped && <span className="text-[10px] px-2 py-0.5 rounded-full border border-white/15 bg-white/5 text-[var(--muted)]">Skipped</span>}</div>
                     <div className="text-xs text-[var(--muted)]">Status: {status} {(a.status==='Active'||a.status==='Voting') && (
                       a.ends_at ? (
                         <span className="ml-2 inline-flex items-center gap-2">
@@ -278,21 +325,44 @@ export default function ActivitiesManager({ sessionId }: { sessionId: string }) 
                         <span className="ml-2 inline-flex items-center gap-1"><span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--brand)] animate-pulse"/>Live</span>
                       )
                     )}</div>
-                    {a.type==='brainstorm' && (
-                      <div className="mt-1 text-xs">
-                        <span className="text-[var(--muted)] mr-2">Groups:</span>
+                    {(a.type==='brainstorm' || a.type==='assignment') && (
+                      <div className="mt-2 text-xs">
                         {groupList.length === 0 ? (
                           <span className="text-[var(--muted)]">No groups</span>
                         ) : (
-                          <span className="inline-flex flex-wrap gap-1">
-                            {groupList.map(g => {
-                              const c = byGroup[g.id] || 0;
-                              const done = max>0 && c >= max;
-                              const label = `${g.name} ${c}${max>0?`/${max}`:''}`;
-                              const cls = done ? 'border-green-400/30 text-[var(--text)] bg-green-500/15' : 'border-white/10 text-[var(--muted)] bg-white/5';
-                              return <span key={g.id} className={`px-1.5 py-0.5 rounded border ${cls}`}>{label}</span>;
-                            })}
-                          </span>
+                          <>
+                            {max>0 && (
+                              <div className="mb-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[var(--muted)]">Overall progress</span>
+                                  <span className="text-[var(--muted)]">{cc.total}/{max*groupList.length}</span>
+                                </div>
+                                <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                                  <div className="h-full bg-[var(--brand)]" style={{ width: `${Math.min(100, Math.round((cc.total/(max*groupList.length))*100))}%` }} />
+                                </div>
+                              </div>
+                            )}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+                              {groupList.map(g => {
+                                const c = byGroup[g.id] || 0;
+                                const pct = max>0 ? Math.max(0, Math.min(100, Math.round((c/max)*100))) : 0;
+                                const barColor = pct>=100 ? 'bg-green-500' : 'bg-[var(--brand)]';
+                                return (
+                                  <div key={g.id} className="px-2 py-1 rounded border border-white/10 bg-white/5">
+                                    <div className="flex items-center justify-between">
+                                      <span className="truncate mr-2">{g.name}</span>
+                                      <span className="opacity-75">{c}{max>0?`/${max}`:''}</span>
+                                    </div>
+                                    {max>0 && (
+                                      <div className="mt-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                                        <div className={`${barColor} h-full`} style={{ width: `${pct}%` }} />
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </>
                         )}
                       </div>
                     )}
@@ -306,12 +376,13 @@ export default function ActivitiesManager({ sessionId }: { sessionId: string }) 
                         Actions <span className="ml-1">▾</span>
                       </Button>
                       {menuId === a.id && (
-                        <div className="absolute right-0 mt-1 w-40 rounded-md border border-white/10 bg-[var(--panel)] shadow-lg z-10">
+                        <div className={`${menuUp ? 'absolute right-0 bottom-full mb-1' : 'absolute right-0 mt-1'} w-40 rounded-md border border-white/10 bg-[var(--panel)] shadow-lg z-10`}>
                           <button className="w-full text-left px-3 py-2 text-sm hover:bg-white/5" onClick={async ()=>{ setMenuId(null); await setStatus(a.id, 'Active'); }}>Activate</button>
                           {a.type === 'brainstorm' && (
                             <button className="w-full text-left px-3 py-2 text-sm hover:bg-white/5" onClick={async ()=>{ setMenuId(null); await setStatus(a.id, 'Voting'); }}>Start voting</button>
                           )}
                           <button className="w-full text-left px-3 py-2 text-sm hover:bg-white/5" onClick={async ()=>{ setMenuId(null); await setStatus(a.id, 'Closed'); }}>Close</button>
+                          <button className="w-full text-left px-3 py-2 text-sm hover:bg-white/5" onClick={async ()=>{ setMenuId(null); try { await fetch(`/api/activities/${a.id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status:'Closed', config: { ...(a.config||{}), skipped: true } }) }); toast('Activity skipped','success'); await load(); } catch { toast('Failed to skip','error'); } }}>Skip</button>
                         </div>
                       )}
                     </div>
@@ -335,6 +406,10 @@ export default function ActivitiesManager({ sessionId }: { sessionId: string }) 
                     >
                       <IconSettings size={14} />
                     </Button>
+                    <div className="flex items-center gap-1">
+                      <button className="px-1.5 py-0.5 text-xs rounded border border-white/10 bg-white/5 hover:bg-white/10" title="Move up" onClick={async ()=>{ await moveActivity(a.id, -1); }}>↑</button>
+                      <button className="px-1.5 py-0.5 text-xs rounded border border-white/10 bg-white/5 hover:bg-white/10" title="Move down" onClick={async ()=>{ await moveActivity(a.id, 1); }}>↓</button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -342,6 +417,7 @@ export default function ActivitiesManager({ sessionId }: { sessionId: string }) 
             })}
           </div>
         )}
+        </div>
 
         <Modal
           open={open}
@@ -358,10 +434,21 @@ export default function ActivitiesManager({ sessionId }: { sessionId: string }) 
             <div className="flex gap-3">
               <label className="text-sm w-28 pt-2">Type</label>
               <select value={type} onChange={e=>setType(e.target.value as any)} className="flex-1 h-10 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none">
-                <option value="brainstorm">Standard (brainstorm)</option>
+                <option value="brainstorm">Standard activity</option>
                 <option value="stocktake">Process stocktake</option>
                 <option value="assignment">Prompt assignment</option>
               </select>
+            </div>
+            <div className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs text-[var(--muted)]">
+              {type === 'brainstorm' && (
+                <div>Standard activity: capture one or more submissions per participant or group. Useful for many tasks (e.g., draft an outline, propose actions). You can enable voting to prioritize ideas.</div>
+              )}
+              {type === 'stocktake' && (
+                <div>Review predefined initiatives with Stop/Less/Same/More/Begin ratings. Manage the list via the Initiatives action on the activity.</div>
+              )}
+              {type === 'assignment' && (
+                <div>Distribute a list of prompts across groups so each group works on one. You can enable voting later to compare outputs.</div>
+              )}
             </div>
             <div className="flex gap-3">
               <label className="text-sm w-28 pt-2">Title</label>
@@ -386,7 +473,7 @@ export default function ActivitiesManager({ sessionId }: { sessionId: string }) 
                 <div className="flex gap-3">
                   <label className="text-sm w-28 pt-2">Max submissions</label>
                   <input type="number" min={1} max={50} value={maxSubs} onChange={e=>setMaxSubs(Number(e.target.value))} className="w-28 h-10 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none" />
-                </div>{eVotingEnabled && (
+                </div>{votingEnabled && (
                 <div className="flex gap-3">
                   <label className="text-sm w-28 pt-2">Points budget</label>
                   <input type="number" min={1} value={pointsBudget} onChange={e=>setPointsBudget(Number(e.target.value))} className="w-28 h-10 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none" />
@@ -397,8 +484,8 @@ export default function ActivitiesManager({ sessionId }: { sessionId: string }) 
             {type === "assignment" && (
               <div className="space-y-3">
                 <div className="flex gap-3">
-                  <label className="text-sm w-28 pt-2">Items</label>
-                  <textarea value={itemsList} onChange={e=>setItemsList(e.target.value)} placeholder="One item per line" className="flex-1 min-h-24 rounded-md bg-[var(--panel)] border border-white/10 px-3 py-2 outline-none" />
+                  <label className="text-sm w-28 pt-2">Prompts</label>
+                  <textarea value={itemsList} onChange={e=>setItemsList(e.target.value)} placeholder="One prompt per line" className="flex-1 min-h-24 rounded-md bg-[var(--panel)] border border-white/10 px-3 py-2 outline-none" />
                 </div>
               </div>
             )}
@@ -487,5 +574,12 @@ export default function ActivitiesManager({ sessionId }: { sessionId: string }) 
         {manageId && <StocktakeInitiativesManager activityId={manageId} />}
       </Modal>
     </Card>
+    </>
   );
 }
+
+
+
+
+
+

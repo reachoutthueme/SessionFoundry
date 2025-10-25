@@ -57,19 +57,29 @@ button:active{ transform: translateY(1px) scale(.98); }
 
 /* Light theme */
 [data-theme="light"]{
-  --bg: radial-gradient(1200px 800px at 20% -10%, #eef0ff 0%, #ffffff 60%), #ffffff;
-  --panel: #ffffff;
-  --panel-2: #f5f7ff;
+  /* Slightly desaturated, softer light mode */
+  --bg: radial-gradient(1200px 800px at 20% -10%, #e9ecf8 0%, #f6f7fb 60%), #f6f7fb;
+  --panel: #f9fafc;
+  --panel-2: #f1f4fa;
   --text: #111322;
-  --muted: #55607a;
-  --border: rgba(17,19,34,.12);
+  --muted: #505a74;
+  --border: rgba(17,19,34,.14);
   --brand: #7a3cff;
-  --ring: 0 0 0 3px rgba(122,60,255,.25);
+  --ring: 0 0 0 3px rgba(122,60,255,.22);
   --btn-on-brand: #ffffff;
   --btn-fg: #111322;
-  --btn-hover-bg: rgba(17,19,34,.06);
+  --btn-hover-bg: rgba(17,19,34,.07);
   --logo-fg: var(--brand);
 }
+
+/* Dashboard hero light-mode tuning */
+[data-theme="light"] .dashboard-hero{
+  /* Softer, flatter header background in light mode */
+  background: linear-gradient(90deg, rgba(122,60,255,0.06), rgba(90,168,255,0.06)), var(--panel);
+  border-color: rgba(17,19,34,.12);
+}
+[data-theme="light"] .dashboard-hero .hero-bubble{ display: none; }
+[data-theme="light"] .dashboard-hero .hero-accent{ opacity: .5; }
 
 /* Light theme utility overrides for better contrast */
 [data-theme="light"] .border-white\/10 { border-color: rgba(17,19,34,.12) !important; }

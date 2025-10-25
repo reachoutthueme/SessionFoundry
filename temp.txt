@@ -1,0 +1,81 @@
+  async function create() {
+    if (!title.trim()) return;
+    const config = type === "brainstorm"
+      ? { voting_enabled: !!votingEnabled, max_submissions: maxSubs, time_limit_sec: timeLimit, points_budget: pointsBudget }
+      : type === "assignment"
+        ? { voting_enabled: !!votingEnabled, max_submissions: maxSubs, time_limit_sec: timeLimit, points_budget: pointsBudget, prompts: itemsList.split('\n').map(s=>s.trim()).filter(Boolean) }
+        : { time_limit_sec: timeLimit };
+    const r = await fetch("/api/activities", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: sessionId, type, title: title.trim(), instructions, description, config }),
+    });
+    const j = await r.json();
+    if (!r.ok) return toast(j.error || "Failed to create", "error");
+    toast("Activity created", "success");
+    setOpen(false);
+    setTitle("");
+    setInstructions("");
+    setDescription("");
+    setItemsList("");
+    await load();
+  }
+
+  async function setStatus(id: string, status: Activity["status"]) {
+    const patch: any = { status };
+    // Stamp timer only when first activating and not already set
+    const act = items.find(a => a.id === id);
+    const tl = Number(act?.config?.time_limit_sec || 0);
+    if (status === "Active" && tl > 0 && !act?.starts_at && !act?.ends_at) {
+      const now = new Date().toISOString();
+      const ends = new Date(Date.now() + tl * 1000).toISOString();
+      patch.starts_at = now;
+      patch.ends_at = ends;
+    }
+    const r = await fetch(`/api/activities/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    const j = await r.json();
+    if (!r.ok) return toast(j.error || "Failed to update", "error");
+    toast("Status updated", "success");
+    await load();
+  }
+
+  async function extendTimer(id: string, minutes: number) {
+    const act = items.find(a => a.id === id);
+    if (!act) return;
+    if (act.status !== 'Active') return; // Only allow while Active
+    const prev = act.ends_at ? new Date(act.ends_at).getTime() : Date.now();
+    const base = Number.isFinite(prev) ? Math.max(prev, Date.now()) : Date.now();
+    const next = new Date(base + minutes * 60_000).toISOString();
+    const r = await fetch(`/api/activities/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ends_at: next }),
+    });
+    const j = await r.json();
+    if (!r.ok) return toast(j.error || "Failed to extend timer", "error");
+    toast(`+${minutes} min added`, "success");
+    await load();
+  }
+
+  const statusLabel = (sessionStatus === 'Active' || sessionStatus === 'Completed') ? sessionStatus : 'Inactive';
+  const statusColor = sessionStatus === 'Active' ? 'bg-red-500' : (sessionStatus === 'Completed' ? 'bg-green-500' : 'bg-gray-400');
+
+  return (
+    <Card>
+      <CardHeader
+        title="Activities"
+        subtitle="Create and control workshop flow"
+        rightSlot={
+          <div className="text-xs px-2 py-1 rounded-full border border-white/15 bg-white/5 text-[var(--muted)] inline-flex items-center gap-2">
+            <span className={`inline-block w-2 h-2 rounded-full ${statusColor} animate-pulse`}></span>
+            <span>Status: {statusLabel}</span>
+          </div>
+        }
+      />
+      <CardBody>
+        <div className="flex justify-between items-center mb-3">
+          <div className="text-sm text-[var(--muted)]">{items.length} activities</div>

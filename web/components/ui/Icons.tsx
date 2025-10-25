@@ -106,5 +106,9 @@ export default {
 
 export const IconChevronLeft = (p: IconProps) => svg(p, (<><path d="M15 18l-6-6 6-6"/></>));
 export const IconChevronRight = (p: IconProps) => svg(p, (<><path d="M9 6l6 6-6 6"/></>));
+export const IconCopy = (p: IconProps) => svg(p, (<>
+  <rect x="9" y="9" width="13" height="13" rx="2" />
+  <rect x="2" y="2" width="13" height="13" rx="2" />
+</>));
 export const IconCheck = (p: IconProps) => svg(p, (<><path d="M20 6L9 17l-5-5"/></>));
 export const IconX = (p: IconProps) => svg(p, (<><path d="M18 6L6 18"/><path d="M6 6l12 12"/></>));

@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Button from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
+import { IconCopy } from "@/components/ui/Icons";
 import ProTag from "@/components/ui/ProTag";
 import { Tabs } from "@/components/ui/Tabs";
 import ResultsPanel from "@/components/session/ResultsPanel.vibrant";
@@ -21,6 +23,7 @@ export default function Page() {
   const [nameInput, setNameInput] = useState("");
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = useRef<HTMLDivElement | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     if (!exportOpen) return;
@@ -48,10 +51,10 @@ export default function Page() {
   }, [id]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">
+          <h1 className="text-lg font-semibold tracking-tight">
             {editing ? (
               <span className="inline-flex items-center gap-2">
                 <input
@@ -69,19 +72,26 @@ export default function Page() {
                 <Button variant="outline" onClick={()=>{ setEditing(false); setNameInput(s?.name||""); }}>Cancel</Button>
               </span>
             ) : (
-              <span>Session: {s?.name ?? "Loading"}</span>
+              <span><span className="text-[var(--brand)]">Session:</span> {s?.name ?? "Loading"}</span>
             )}
           </h1>
-          <p className="text-sm text-[var(--muted)]">
-            ID {id?.slice(0, 8)} - Join code {s?.join_code ?? ""}
-          </p>
+          <div className="text-xs text-[var(--muted)] flex items-center gap-1">
+            <span>ID {id?.slice(0, 8)}</span>
+            {s?.join_code && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-[1px] rounded-full border border-white/10 bg-white/5 text-[var(--text)]">
+                <span className="opacity-80">Join</span>
+                <span className="font-mono text-[11px] leading-none">{s.join_code}</span>
+                <button
+                  className="p-0.5 rounded hover:bg-white/5"
+                  title="Copy join code"
+                  aria-label="Copy join code"
+                  onClick={async ()=>{ try{ await navigator.clipboard.writeText(s.join_code); toast('Join code copied','success'); }catch{}}}
+                ><IconCopy size={12} /></button>
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex gap-2 items-center relative">
-          {s && (
-            <div className="text-xs px-2 py-1 rounded-full border border-white/15 bg-white/5 text-[var(--muted)]">
-              Status: {s.status === 'Draft' ? 'Inactive' : s.status}
-            </div>
-          )}
           {!editing && s && (
             <Button variant="outline" onClick={()=>{ setEditing(true); setNameInput(s.name); }}>Rename</Button>
           )}
@@ -108,7 +118,9 @@ export default function Page() {
             >Complete</Button>
           )}
           <div className="relative" ref={exportRef}>
-            <Button variant="outline" onClick={() => setExportOpen(o=>!o)}>Export <ProTag /></Button>
+            <Button variant="outline" onClick={() => setExportOpen(o=>!o)}>
+              <span className="inline-flex items-center gap-1">Export <span className="opacity-80">▾</span></span> <ProTag />
+            </Button>
             {exportOpen && (
               <div className="absolute right-0 mt-2 w-48 rounded-md border border-white/10 bg-[var(--panel)] shadow-lg z-10">
                 <button className="w-full text-left px-3 py-2 text-sm hover:bg-white/5 flex items-center justify-between" onClick={()=>{ setExportOpen(false); window.open(`/api/session/${id}/export/results`, '_blank'); }}><span>Results CSV</span><ProTag /></button>
@@ -123,7 +135,7 @@ export default function Page() {
 
       <Tabs
         tabs={[
-          { label: "Activities", content: <ActivitiesManager sessionId={id} /> },
+          { label: "Activities", content: <ActivitiesManager sessionId={id} sessionStatus={s?.status} /> },
           { label: "Participants", content: <GroupsManager sessionId={id} /> },
           { label: "Results", content: <ResultsPanel sessionId={id} /> },
           { label: "Notes", content: <FacilitatorNotes sessionId={id} /> },

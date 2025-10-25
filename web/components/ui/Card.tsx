@@ -6,10 +6,13 @@ export function Card({ children, className="" }: React.PropsWithChildren<{ class
 export function CardBody({ children, className="" }: React.PropsWithChildren<{ className?: string }>) {
   return <div className={`p-4 ${className}`}>{children}</div>;
 }
-export function CardHeader({ title, subtitle }: { title: React.ReactNode; subtitle?: React.ReactNode }) {
+export function CardHeader({ title, subtitle, rightSlot }: { title: React.ReactNode; subtitle?: React.ReactNode; rightSlot?: React.ReactNode }) {
   return (
     <div className="p-4 border-b border-white/10">
-      <div className="font-semibold flex items-center gap-2">{title}</div>
+      <div className="flex items-center justify-between">
+        <div className="font-semibold flex items-center gap-2">{title}</div>
+        {rightSlot && <div className="ml-4">{rightSlot}</div>}
+      </div>
       {subtitle && <div className="text-sm text-[var(--muted)] mt-1">{subtitle}</div>}
     </div>
   );

@@ -1,5 +1,5 @@
 export type TemplateActivity = {
-  type: 'brainstorm'|'stocktake';
+  type: 'brainstorm'|'stocktake'|'assignment';
   title: string;
   instructions?: string;
   description?: string;
@@ -77,5 +77,98 @@ export const templates: Template[] = [
       { type: 'brainstorm', title: 'First Two Weeks Plan', instructions: 'Outline concrete actions for the first two weeks.', description: 'Bias to action with immediate next steps.', config: { voting_enabled: false, max_submissions: 3, time_limit_sec: 300 } },
     ],
   },
+  {
+    id: 'problem_solving_jam_v1',
+    name: 'Problem-Solving Jam',
+    blurb: 'Surface top problems, swarm solutions, and align on next moves.',
+    activities: [
+      {
+        type: 'brainstorm',
+        title: 'What’s blocking us right now?',
+        instructions: 'Add concrete problems or friction points. Keep items short — one idea per line.',
+        description: 'Create a shared list of pain points to address.',
+        config: { voting_enabled: true, max_submissions: 5, time_limit_sec: 420, points_budget: 60 },
+      },
+      {
+        type: 'brainstorm',
+        title: 'Solution ideas',
+        instructions: 'Propose scrappy, practical solutions. Prefer specific, testable actions.',
+        description: 'Generate options before deciding what to try.',
+        config: { voting_enabled: true, max_submissions: 5, time_limit_sec: 420, points_budget: 60 },
+      },
+      {
+        type: 'stocktake',
+        title: 'Prioritize practices',
+        instructions: 'For each practice, decide what to do next cycle (Stop/Less/Same/More/Begin).',
+        description: 'Align on which practices to evolve immediately.',
+        config: { time_limit_sec: 360 },
+        initiatives: ['Unplanned work intake', 'Ad-hoc releases', 'Pairing blocks', 'Weekly demos', 'Post-incident reviews'],
+      },
+    ],
+  },
+  {
+    id: 'brainwriting_rounds_v1',
+    name: 'Brainwriting Rounds',
+    blurb: 'Assign prompts to groups for fast parallel idea generation, then converge.',
+    activities: [
+      {
+        type: 'assignment',
+        title: 'Brainwriting prompts',
+        instructions: 'Each group gets one prompt. Add short, independent ideas. Rotate prompts across groups if desired.',
+        description: 'Parallelize ideation by assigning prompts to groups.',
+        config: {
+          voting_enabled: true,
+          max_submissions: 5,
+          time_limit_sec: 480,
+          points_budget: 80,
+          prompts: [
+            'Reduce handoffs in workflow',
+            'Improve onboarding in first 30 days',
+            'Lower cycle time for small changes',
+            'Share knowledge across teams',
+            'Make work more visible',
+          ],
+        },
+      },
+      {
+        type: 'brainstorm',
+        title: 'Top ideas to try',
+        instructions: 'Nominate the strongest ideas your group would pilot next month.',
+        description: 'Converge on a short list of experiments.',
+        config: { voting_enabled: true, max_submissions: 3, time_limit_sec: 300, points_budget: 40 },
+      },
+    ],
+  },
+  {
+    id: 'onboarding_workshop_v1',
+    name: 'Onboarding Workshop',
+    blurb: 'Craft crisp messaging and identify early risks for new joiners.',
+    activities: [
+      {
+        type: 'assignment',
+        title: 'Audience pitches',
+        instructions: 'Each group drafts one pitch. Keep it clear and concrete.',
+        description: 'Create short messages tailored to different audiences.',
+        config: {
+          voting_enabled: false,
+          max_submissions: 3,
+          time_limit_sec: 420,
+          points_budget: 30,
+          prompts: [
+            'One-line value prop for executives',
+            'Two-minute intro for new teammates',
+            'Customer-facing elevator pitch (30 seconds)',
+            'Recruiting blurb for candidates',
+          ],
+        },
+      },
+      {
+        type: 'brainstorm',
+        title: 'First-30-days risks',
+        instructions: 'List the biggest risks or pitfalls for new joiners. One per line.',
+        description: 'Proactively surface and mitigate onboarding risks.',
+        config: { voting_enabled: true, max_submissions: 5, time_limit_sec: 300, points_budget: 50 },
+      },
+    ],
+  },
 ];
-

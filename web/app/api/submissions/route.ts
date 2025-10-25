@@ -7,6 +7,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const activityId = url.searchParams.get("activity_id");
   const sessionId = url.searchParams.get("session_id");
+  const groupOnly = url.searchParams.get("group_only") === '1';
 
   let resolvedActivity: string | null = activityId;
   if (!resolvedActivity && sessionId) {
@@ -24,14 +25,60 @@ export async function GET(req: Request) {
 
   if (!resolvedActivity) return NextResponse.json({ submissions: [] });
 
-  const { data, error } = await supabaseAdmin
-    .from("submissions")
-    .select("id,text,created_at")
-    .eq("activity_id", resolvedActivity)
-    .order("created_at", { ascending: true });
+  // Try to select with group_id and participant_id if present; fall back otherwise
+  let rows: any[] = [];
+  {
+    const r1 = await supabaseAdmin
+      .from('submissions')
+      .select('id,text,created_at,participant_id,group_id')
+      .eq('activity_id', resolvedActivity)
+      .order('created_at', { ascending: true });
+    if (r1.error) {
+      const r2 = await supabaseAdmin
+        .from('submissions')
+        .select('id,text,created_at,participant_id')
+        .eq('activity_id', resolvedActivity)
+        .order('created_at', { ascending: true });
+      if (r2.error) return NextResponse.json({ error: r2.error.message }, { status: 500 });
+      rows = r2.data as any[];
+    } else {
+      rows = r1.data as any[];
+    }
+  }
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ submissions: data ?? [] });
+  if (groupOnly) {
+    // Determine session id
+    let sid = sessionId || '';
+    if (!sid) {
+      const { data: act0 } = await supabaseAdmin.from('activities').select('session_id').eq('id', resolvedActivity).maybeSingle();
+      sid = (act0 as any)?.session_id || '';
+    }
+    // Find this participant's group via cookie
+    const cookieStore = await cookies();
+    const pid = sid ? cookieStore.get(`sf_pid_${sid}`)?.value : undefined;
+    let currentGroup: string | null = null;
+    if (pid) {
+      const { data: p } = await supabaseAdmin.from('participants').select('group_id').eq('id', pid).maybeSingle();
+      currentGroup = (p as any)?.group_id || null;
+    }
+    if (currentGroup) {
+      const hasGroupId = rows.length > 0 && Object.prototype.hasOwnProperty.call(rows[0], 'group_id');
+      if (hasGroupId) {
+        rows = rows.filter(r => (r as any).group_id === currentGroup);
+      } else {
+        // Filter by participant_id belonging to this group
+        const { data: ps } = await supabaseAdmin.from('participants').select('id').eq('session_id', sid).eq('group_id', currentGroup);
+        const allowed = new Set((ps||[]).map(x => String((x as any).id)));
+        rows = rows.filter(r => allowed.has(String((r as any).participant_id || '')));
+      }
+    } else {
+      // If we cannot resolve group, show only this participant's own items (best effort)
+      const pid = sid ? (await cookies()).get(`sf_pid_${sid}`)?.value : undefined;
+      if (pid) rows = rows.filter(r => String((r as any).participant_id||'') === pid);
+    }
+  }
+
+  return NextResponse.json({ submissions: rows });
 }
 
 // POST accepts activity_id, or session_id (resolves latest Active/Voting brainstorm activity)

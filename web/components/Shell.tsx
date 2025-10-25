@@ -11,9 +11,7 @@ import { useEffect, useState } from "react";
 function Section({ label, children, collapsed }: PropsWithChildren<{ label: string; collapsed?: boolean }>) {
   return (
     <div className="mb-4">
-      {!collapsed && (
-        <div className="px-2 mb-2 text-[11px] uppercase tracking-wider text-[var(--muted)]">{label}</div>
-      )}
+      <div className={`px-2 mb-2 text-[11px] uppercase tracking-wider text-[var(--muted)] ${collapsed ? 'invisible' : ''}`}>{label}</div>
       <div className="space-y-1">{children}</div>
     </div>
   );
@@ -32,7 +30,7 @@ export default function Shell({ children }: PropsWithChildren) {
   const pathname = usePathname() || "/";
   const router = useRouter();
   const isParticipant = pathname.startsWith("/join") || pathname.startsWith("/participant");
-  const isPublicHome = pathname === "/";
+  const isPublicHome = pathname === "/" || pathname === "/home" || pathname.startsWith("/login");
   const [me, setMe] = useState<{ id: string; email?: string|null; plan: "free"|"pro" }|null>(null);
   const [meLoading, setMeLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
@@ -74,39 +72,38 @@ export default function Shell({ children }: PropsWithChildren) {
   }
 
   return (
-    <div className="min-h-dvh grid grid-rows-[56px_1fr]" style={{ gridTemplateColumns: collapsed ? '64px 1fr' : '240px 1fr' }}>
+    <div className="min-h-dvh grid grid-rows-[56px_1fr] overflow-x-hidden" style={{ gridTemplateColumns: collapsed ? '64px 1fr' : '240px 1fr' }}>
       <header className="col-span-2 row-[1] border-b border-white/10 bg-[var(--panel-2)]">
-        <div className="h-14 px-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Logo size={20} className="-top-0.5" />
-            <Link href="/" className="font-semibold tracking-tight">SessionFoundry</Link>
-            <span className="text-xs text-[var(--muted)] ml-3">Beta</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              placeholder="Search"
-              className="h-8 w-56 rounded-md bg-[var(--panel)] border border-white/10 px-3 text-sm outline-none focus:ring-[var(--ring)]"
-            />
+        <div className="h-14">
+          <div className="mx-auto max-w-screen-2xl w-full h-full px-4 md:px-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Logo size={20} className="-top-0.5" />
+              <Link href="/" className="font-semibold tracking-tight">SessionFoundry</Link>
+              <span className="text-xs text-[var(--muted)] ml-3">Beta</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                placeholder="Search"
+                className="h-8 w-56 rounded-md bg-[var(--panel)] border border-white/10 px-3 text-sm outline-none focus:ring-[var(--ring)]"
+              />
             {me ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-[var(--muted)]">{me.plan.toUpperCase()}</span>
-                {me.plan === 'free' && (
-                  <button
-                    className="text-sm px-2 py-1 rounded-md border border-white/10 hover:bg-white/5"
-                    onClick={async ()=>{ const r = await fetch('/api/auth/upgrade', { method:'POST' }); if(r.ok){ location.reload(); } }}
-                  >Upgrade to Pro</button>
-                )}
+                <Link href="/pricing" className="text-sm px-2 py-1 rounded-md border border-white/10 hover:bg-white/5">
+                  {me.plan === 'free' ? 'Become Pro' : 'Manage plan'}
+                </Link>
                 <button
                   className="text-sm px-2 py-1 rounded-md border border-white/10 hover:bg-white/5"
                   onClick={async ()=>{ await fetch('/api/auth/logout', { method:'POST' }); location.href='/'; }}
                 >Logout</button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <Link href="/login" className="text-sm px-2 py-1 rounded-md border border-white/10 hover:bg-white/5">Sign in</Link>
-                <Link href="/login?mode=signup" className="text-sm px-2 py-1 rounded-md border border-white/10 hover:bg-white/5">Create account</Link>
-              </div>
-            )}
+                <div className="flex items-center gap-2">
+                  <Link href="/login" className="text-sm px-2 py-1 rounded-md border border-white/10 hover:bg-white/5">Sign in</Link>
+                  <Link href="/login?mode=signup" className="text-sm px-2 py-1 rounded-md border border-white/10 hover:bg-white/5">Create account</Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -115,7 +112,18 @@ export default function Shell({ children }: PropsWithChildren) {
         <div className="h-full flex flex-col">
           <nav className={`p-3 text-sm ${collapsed ? 'space-y-2' : ''}`}>
             <Section label="General" collapsed={collapsed}>
-              <NavLink collapsed={collapsed} href="/dashboard" label="Dashboard" icon={<IconDashboard />} />
+              <div className="relative">
+                <NavLink collapsed={collapsed} href="/dashboard" label="Dashboard" icon={<IconDashboard />} />
+                <button
+                  className="absolute top-1/2 -translate-y-1/2 w-8 h-8 grid place-items-center rounded-md border border-white/10 bg-[var(--panel-2)] hover:bg-white/5 z-10"
+                  style={{ right: -28 }}
+                  onClick={() => setCollapsed(c => !c)}
+                  aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                  title={collapsed ? 'Expand' : 'Collapse'}
+                >
+                  {collapsed ? <IconChevronRight /> : <IconChevronLeft />}
+                </button>
+              </div>
               <NavLink collapsed={collapsed} href="/sessions" label="Sessions" icon={<IconSessions />} />
               <NavLink collapsed={collapsed} href="/templates" label={<><span>Templates</span> {!collapsed && <ProTag />}</>} icon={<IconTemplates />} />
             </Section>
@@ -123,23 +131,18 @@ export default function Shell({ children }: PropsWithChildren) {
               <NavLink collapsed={collapsed} href="/settings" label="Settings" icon={<IconSettings />} />
               <NavLink collapsed={collapsed} href="/help" label="Help" icon={<IconHelp />} />
             </Section>
+            <div className={`pt-2 flex flex-col items-center`}>
+              <div className="text-xs text-[var(--muted)] mb-1">Colormode:</div>
+              <div>
+                <ThemeToggle />
+              </div>
+            </div>
           </nav>
-          <div className="mt-auto p-3 flex flex-col items-center gap-2">
-            <button
-              className="w-10 h-8 grid place-items-center rounded-md border border-white/10 hover:bg-white/5"
-              onClick={() => setCollapsed(c => !c)}
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              title={collapsed ? 'Expand' : 'Collapse'}
-            >
-              {collapsed ? <IconChevronRight /> : <IconChevronLeft />}
-            </button>
-            <ThemeToggle />
-          </div>
         </div>
       </aside>
 
       <main className="row-[2] bg-[var(--bg)]">
-        <div className="p-6">{children}</div>
+        <div className="mx-auto max-w-screen-2xl w-full px-4 md:px-6 py-6">{children}</div>
       </main>
     </div>
   );

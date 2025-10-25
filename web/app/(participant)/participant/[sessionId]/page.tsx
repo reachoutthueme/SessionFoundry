@@ -11,11 +11,13 @@ import { IconBrain, IconList, IconTimer, IconVote, IconLock } from "@/components
 import OverallLeaderboard from "@/components/session/OverallLeaderboard";
 
 type Activity = { id: string; type: "brainstorm"|"stocktake"|"assignment"; status: string; title?: string; instructions?: string; description?: string; ends_at?: string|null; config?: any };
+type Part = { id: string; display_name?: string|null; group_id?: string|null };
 
 export default function ParticipantPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const [participant, setParticipant] = useState<any>(null);
   const [groups, setGroups] = useState<any[]>([]);
+  const [participants, setParticipants] = useState<Part[]>([]);
   const [active, setActive] = useState<Activity | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [completed, setCompleted] = useState<Record<string, boolean>>({});
@@ -27,14 +29,16 @@ export default function ParticipantPage() {
       return r.text().then(t => { try { return t ? JSON.parse(t) : {}; } catch { return {}; } });
     }
     try {
-      const [pR, gR, aR] = await Promise.all([
+      const [pR, gR, aR, pplR] = await Promise.all([
         fetch(`/api/participant?session_id=${sessionId}`),
         fetch(`/api/groups?session_id=${sessionId}`),
         fetch(`/api/activities?session_id=${sessionId}`, { cache: "no-store" }),
+        fetch(`/api/participants?session_id=${sessionId}`, { cache: "no-store" }),
       ]);
-      const [pj, gj, aj] = await Promise.all([ safeJson(pR), safeJson(gR), safeJson(aR) ]);
+      const [pj, gj, aj, pplj] = await Promise.all([ safeJson(pR), safeJson(gR), safeJson(aR), safeJson(pplR) ]);
       setParticipant(pj?.participant ?? null);
       setGroups(gj?.groups ?? []);
+      setParticipants((pplj?.participants ?? []).map((x:any)=>({ id: String(x.id), display_name: x.display_name || null, group_id: x.group_id || null })));
       const list: Activity[] = (aj?.activities ?? []) as Activity[];
       setActivities(list);
       const act = list.find((a: Activity)=> a.status === "Active" || a.status === "Voting") || null;
@@ -85,7 +89,7 @@ export default function ParticipantPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="max-w-5xl mx-auto p-6 space-y-6">
       {/* Header / Hero */}
       {!selected && (
         <div className="relative overflow-hidden rounded-[var(--radius)] border border-white/10 bg-gradient-to-r from-[var(--panel-2)]/90 to-[var(--panel)]/90">
@@ -103,90 +107,101 @@ export default function ParticipantPage() {
           </div>
         </div>
       )}
-      {!selected && (
+
+      {/* Main content with sidebar */}
+      <div className="grid md:grid-cols-[1fr_240px] gap-4">
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold">Activities</h2>
-            <button className="text-sm px-3 py-1 rounded border border-white/10 hover:bg-white/5" onClick={()=>setShowOverall(s=>!s)}>
-              {showOverall ? 'Hide overall leaderboard' : 'Overall leaderboard'}
-            </button>
-          </div>
-          {showOverall && (
-            <div className="mb-4">
-              <OverallLeaderboard sessionId={sessionId as string} />
-            </div>
-          )}
-          {activities.length === 0 ? (
-          <div className="text-sm text-[var(--muted)]">No activities yet.</div>
-        ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {activities.map(a => (
-                <div
-                  key={a.id}
-                  onClick={() => setSelected(a)}
-                  className={`p-3 rounded-md bg-white/5 border transition cursor-pointer h-40 flex flex-col hover:shadow-[0_8px_30px_rgba(0,0,0,.15)] hover:ring-1 hover:ring-[var(--brand)]/40 hover:translate-y-[-2px] ${ selected?.id === a.id ? "border-[var(--brand)]" : "border-white/10 hover:border-white/20" }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="font-medium flex items-center gap-2">
-                      {a.type==='brainstorm' ? <IconBrain size={20} className="text-[var(--brand)] shrink-0" /> : <IconList size={20} className="text-[var(--brand)] shrink-0" />}
-                      <span>{a.title || (a.type==='brainstorm' ? 'Standard' : a.type)}</span>
-                    </div>
-                    <div className={`text-xs px-2 py-1 rounded-full border flex items-center gap-1 ${a.status==='Active'||a.status==='Voting' ? 'border-green-400/30 text-green-200 bg-green-500/10' : 'border-white/20 text-[var(--muted)]'}`}>
-                      {a.status==='Closed' ? (<IconLock size={14} />) : a.status==='Voting' ? (<IconVote size={14} />) : a.status==='Active' ? (<IconTimer size={14} />) : null}
-                      <span>{a.status}</span>
-                    </div>
-                  </div>
-                  <div className="mt-1 text-xs text-[var(--muted)]/80 flex-1 overflow-auto scroll-soft">
-                    {completed[a.id] && (
-                      <div className="inline-block mr-2 px-2 py-0.5 rounded-full border border-blue-400/30 text-blue-200 bg-blue-500/10">Completed</div>
-                    )}
-                    {a.instructions && <div className="text-sm text-[var(--muted)]">{a.instructions}</div>}
-                    {a.description && <div className="mt-1">{a.description}</div>}
-                  </div>
-                  {a.ends_at && (a.status==='Active' || a.status==='Voting') && (
-                    <div className="mt-2"><Timer endsAt={a.ends_at} /></div>
-                  )}
+          {!selected && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold">Activities</h2>
+                <button className="text-sm px-3 py-1 rounded border border-white/10 hover:bg-white/5" onClick={()=>setShowOverall(s=>!s)}>
+                  {showOverall ? 'Hide leaderboard' : 'View leaderboard'}
+                </button>
+              </div>
+              {showOverall && (
+                <div className="mb-4">
+                  <OverallLeaderboard sessionId={sessionId as string} />
                 </div>
-              ))}
+              )}
+              {activities.length === 0 ? (
+                <Card><CardBody><div className="text-sm text-[var(--muted)]">No activities yet.</div></CardBody></Card>
+              ) : (
+                <div className="space-y-2">
+                  {activities.map((a) => (
+                    <div key={a.id} className="p-3 rounded-md bg-white/5 border border-white/10 cursor-pointer" onClick={()=>setSelected(a)}>
+                      <div className="flex items-start justify-between">
+                        <div className="font-medium flex items-center gap-2">
+                          {a.type==='brainstorm' ? <IconBrain size={20} className="text-[var(--brand)] shrink-0" /> : <IconList size={20} className="text-[var(--brand)] shrink-0" />}
+                          <span>{a.title || (a.type==='brainstorm' ? 'Standard' : a.type)}</span>
+                        </div>
+                        <div className={`text-xs px-2 py-1 rounded-full border flex items-center gap-1 ${a.status==='Active'||a.status==='Voting' ? 'border-green-400/30 text-green-200 bg-green-500/10' : 'border-white/20 text-[var(--muted)]'}`}>
+                          {a.status==='Closed' ? (<IconLock size={14} />) : a.status==='Voting' ? (<IconVote size={14} />) : a.status==='Active' ? (<IconTimer size={14} />) : null}
+                          <span>{a.status==='Draft' ? 'Inactive' : a.status}</span>
+                        </div>
+                      </div>
+                      <div className="mt-1 text-xs text-[var(--muted)]/80 flex-1 overflow-auto scroll-soft">
+                        {completed[a.id] && (
+                          <div className="inline-block mr-2 px-2 py-0.5 rounded-full border border-blue-400/30 text-blue-200 bg-blue-500/10">Completed</div>
+                        )}
+                        {a.instructions && <div className="text-sm text-[var(--muted)]">{a.instructions}</div>}
+                        {a.description && <div className="mt-1">{a.description}</div>}
+                      </div>
+                      {a.ends_at && (a.status==='Active' || a.status==='Voting') && (
+                        <div className="mt-2"><Timer endsAt={a.ends_at} /></div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
-        </div>
-      )}
 
-      {selected ? (
-        <div className="p-3 rounded-md bg-white/5 border border-white/10 flex items-center justify-between">
-          <div>
-            <div className="font-medium">{selected.title || (selected.type==='brainstorm' ? 'Standard' : selected.type)}</div>
-            {selected.instructions && (<div className="text-sm text-[var(--muted)] mt-0.5">{selected.instructions}</div>)}
-            {selected.ends_at && (<div className="mt-1"><Timer endsAt={selected.ends_at} /></div>)}
-          </div>
-          <Button size="sm" variant="outline" className="px-4 shrink-0" onClick={() => setSelected(null)}>Back to activities</Button>
-        </div>
-      ) : null}
-
-      {selected ? (
-        (selected.type === "brainstorm" || selected.type === 'assignment') ? (
-          selected.status === "Voting" ? (
-            <VotingPanel sessionId={sessionId as string} activityId={selected.id} />
-          ) : selected.status === "Active" ? (
+          {selected ? (
             <div className="space-y-3">
-              {selected.type === 'assignment' && participant?.group_id && (
-                <Card>
-                  <CardHeader title="Your assignment" />
-                  <CardBody>
-                    <div className="text-sm">{(selected as any)?.config?.assignments?.[participant.group_id] || 'No item assigned yet.'}</div>
-                  </CardBody>
-                </Card>
+              <div className="p-3 rounded-md bg-white/5 border border-white/10 flex items-center justify-between">
+                <div>
+                  <div className="font-medium">{selected.title || (selected.type==='brainstorm' ? 'Standard' : selected.type)}</div>
+                  {selected.instructions && (<div className="text-sm text-[var(--muted)] mt-0.5">{selected.instructions}</div>)}
+                  {selected.ends_at && (<div className="mt-1"><Timer endsAt={selected.ends_at} /></div>)}
+                </div>
+                <Button size="sm" variant="outline" className="px-4 shrink-0" onClick={() => setSelected(null)}>Back to activities</Button>
+              </div>
+
+              {selected.type === "brainstorm" ? (
+                selected.status === "Voting" ? (
+                  <VotingPanel sessionId={sessionId as string} activityId={selected.id} />
+                ) : selected.status === "Active" ? (
+                  <IntakePanel sessionId={sessionId as string} activityId={selected.id} />
+                ) : (
+                  <Card><CardBody><div className="text-sm text-[var(--muted)]">This activity is not active.</div></CardBody></Card>
+                )
+              ) : (
+                <StocktakePanel sessionId={sessionId as string} activityId={selected.id} onComplete={() => setCompleted(prev => ({ ...prev, [selected.id]: true }))} />
               )}
-              <IntakePanel sessionId={sessionId as string} activityId={selected.id} />
             </div>
-          ) : (
-            <Card><CardBody><div className="text-sm text-[var(--muted)]">This activity is not active.</div></CardBody></Card>
-          )
-        ) : (
-          <StocktakePanel sessionId={sessionId as string} activityId={selected.id} onComplete={() => setCompleted(prev => ({ ...prev, [selected.id]: true }))} />
-        )
-      ) : null}
+          ) : null}
+        </div>
+
+        {/* Sidebar */}
+        <aside className="space-y-4">
+          {!needsGroup && participant?.group_id && (
+            <div className="rounded-[var(--radius)] border border-white/10 bg-white/5 p-4">
+              <div className="text-sm font-medium">Your group</div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {participants.filter(p=>p.group_id===participant.group_id).map(p=> (
+                  <span key={p.id} className="text-xs px-2 py-0.5 rounded-full border border-white/15 bg-white/10">
+                    {p.display_name || `#${p.id.slice(0,6)}`}
+                  </span>
+                ))}
+                {participants.filter(p=>p.group_id===participant.group_id).length===0 && (
+                  <div className="text-xs text-[var(--muted)]">No members yet.</div>
+                )}
+              </div>
+            </div>
+          )}
+        </aside>
+      </div>
     </div>
   );
 }

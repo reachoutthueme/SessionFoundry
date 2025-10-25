@@ -1,57 +1,71 @@
 "use client";
+import { useState } from "react";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
-import { IconDashboard, IconVote, IconResults } from "@/components/ui/Icons";
 
-export default function HomePage() {
+export default function RootJoinPage() {
+  const [code, setCode] = useState("");
+  const [name, setName] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+
+  async function submit() {
+    setErr(null);
+    const r = await fetch("/api/join", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ join_code: code.trim().toUpperCase(), display_name: name.trim() || undefined }),
+    });
+    const j = await r.json();
+    if (!r.ok) { setErr(j.error || "Failed to join"); return; }
+    location.href = `/participant/${j.session.id}`;
+  }
+
   return (
-    <main className="min-h-dvh bg-[var(--bg)]">
-      <div className="relative min-h-dvh overflow-hidden bg-gradient-to-r from-[var(--panel-2)]/90 to-[var(--panel)]/90">
-        <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-[var(--brand)]/25 blur-3xl" />
-        <div className="absolute -bottom-24 -right-24 w-72 h-72 rounded-full bg-[#5aa8ff]/25 blur-3xl" />
+    <div className="min-h-dvh flex flex-col p-6">
+      <div className="flex-1" />
+      <div className="text-center mb-2">
+        <h1 className="text-3xl md:text-5xl font-semibold tracking-tight">
+          <span className="text-white">Session</span>\n          <span className="text-[var(--brand)]">Foundry</span>
+        </h1>
+      </div>
+      <div className="flex-1" />
 
-        <div className="relative max-w-5xl mx-auto px-6 min-h-dvh flex flex-col">
-          {/* Center hero */}
-          <div className="flex-1 grid place-items-center">
-            <div className="text-center">
-              <h1 className="text-3xl md:text-5xl font-semibold tracking-tight">
-                <span className="text-white">Session</span>
-                <span className="text-[var(--brand)]">Foundry</span>
-              </h1>
-              <p className="mt-3 text-[var(--muted)] max-w-2xl mx-auto">
-                Capture ideas from every group, prioritize them with live voting, and instantly turn the winners into owned actions with deadlines — all in the same session, all in one place.
-              </p>
-              <div className="mt-6 flex items-center justify-center gap-3">
-                <Link href="/login?mode=signup"><Button>Get started free</Button></Link>
-                <Link href="/login"><Button variant="outline">Sign in</Button></Link>
-              </div>
+      <div className="w-full max-w-md self-center">
+        <div className="rounded-[var(--radius)] border border-white/15 bg-white/10 backdrop-blur-md shadow-lg p-6 text-left">
+          <h1 className="text-lg font-semibold mb-4">Join a workshop</h1>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm mb-1">Join code</label>
+              <input
+                value={code}
+                onChange={e=>setCode(e.target.value.toUpperCase())}
+                placeholder="Enter code (e.g., F7KM)"
+                className="w-full h-10 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none focus:ring-[var(--ring)]"
+              />
             </div>
-          </div>
-
-          {/* Features at bottom */}
-          <div className="pb-10">
-            <div className="grid gap-6 md:grid-cols-3">
-              <Feature title="Facilitate with ease" text="Create activities, set timers and keep everyone focused." icon={<IconDashboard className="text-[var(--brand)]" />} />
-              <Feature title="Real-time participation" text="Participants join with a code, submit ideas and vote." icon={<IconVote className="text-[var(--brand)]" />} />
-              <Feature title="Export results" text="One-click CSV, JSON and slide-ready markdown (Pro)." icon={<IconResults className="text-[var(--brand)]" />} />
+            <div>
+              <label className="block text-sm mb-1">Your name (optional)</label>
+              <input
+                value={name}
+                onChange={e=>setName(e.target.value)}
+                placeholder="How should we show your name?"
+                className="w-full h-10 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none focus:ring-[var(--ring)]"
+              />
+            </div>
+            {err && <div className="text-sm text-red-300">{err}</div>}
+            <div className="pt-1">
+              <Button onClick={submit} className="w-full">Join</Button>
             </div>
           </div>
         </div>
+        <div className="text-center mt-3">
+          <Link href="/home"><Button variant="outline">Create workshop</Button></Link>
+        </div>
       </div>
-    </main>
-  );
-}
-
-function Feature({ title, text, icon }: { title: string; text: string; icon?: React.ReactNode }) {
-  return (
-    <div className="rounded-[var(--radius)] border border-white/10 bg-white/5 p-4">
-      <div className="flex items-center gap-2 font-medium">
-        <span className="inline-grid place-items-center w-7 h-7 rounded-md bg-white/10 border border-white/10">
-          {icon}
-        </span>
-        <span>{title}</span>
-      </div>
-      <div className="mt-1 text-sm text-[var(--muted)]">{text}</div>
+      <div className="flex-[2]" />
     </div>
   );
 }
+
+

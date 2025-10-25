@@ -27,7 +27,7 @@ export default function ThemeToggle() {
     >
       {/* Knob */}
       <span
-        className={`absolute top-0.5 ${theme==='light'?'left-0.5':'left-7'} w-6 h-6 rounded-full bg-[var(--brand)] grid place-items-center transition-all duration-200`}
+        className={`absolute top-[1px] ${theme==='light'?'left-0.5':'left-7'} w-6 h-6 rounded-full bg-[var(--brand)] grid place-items-center transition-all duration-200`}
       >
         {theme === 'light' ? (
           <IconSun size={14} className="text-white" />

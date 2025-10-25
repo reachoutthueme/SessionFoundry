@@ -13,8 +13,8 @@ export default function IntakePanel({ sessionId, activityId }: { sessionId: stri
   async function load() {
     setLoading(true);
     const url = activityId
-      ? `/api/submissions?activity_id=${activityId}`
-      : `/api/submissions?session_id=${sessionId}`;
+      ? `/api/submissions?activity_id=${activityId}&group_only=1`
+      : `/api/submissions?session_id=${sessionId}&group_only=1`;
     const res = await fetch(url, { cache: "no-store" });
     const json = await res.json();
     setItems(json.submissions ?? []);
