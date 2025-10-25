@@ -3,7 +3,6 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { supabase } from "@/app/lib/supabaseClient";
 import Button from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
@@ -11,17 +10,47 @@ import { useToast } from "@/components/ui/Toast";
 
 export default function LoginPage() {
   const toast = useToast();
-  const params = useSearchParams();
 
-  // read ?mode=... from the URL
-  const startMode =
-    params.get("mode") === "signup" ? "signup" : "signin";
+  // mode: "signin" | "signup"
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
 
-  const [mode, setMode] = useState<"signin" | "signup">(startMode);
+  // form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // On first render in the browser, look at ?mode=signup
+  useEffect(() => {
+    try {
+      const qs = new URLSearchParams(window.location.search);
+      const m = qs.get("mode");
+      if (m === "signup") {
+        setMode("signup");
+      } else {
+        setMode("signin");
+      }
+    } catch {
+      // ignore if URLSearchParams blows up for some reason
+    }
+  }, []);
+
+  // If already signed in, bounce to dashboard
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch("/api/auth/session", {
+          cache: "no-store",
+        });
+        const j = await r.json();
+        if (j?.user) {
+          location.href = "/dashboard";
+        }
+      } catch {
+        // ignore
+      }
+    })();
+  }, []);
 
   async function afterAuth() {
     try {
@@ -96,25 +125,11 @@ export default function LoginPage() {
     await signIn();
   }
 
-  // if already signed in, bounce to dashboard
-  useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch("/api/auth/session", {
-          cache: "no-store",
-        });
-        const j = await r.json();
-        if (j?.user) location.href = "/dashboard";
-      } catch {
-        // ignore
-      }
-    })();
-  }, []);
-
   const title = useMemo(
     () => (mode === "signin" ? "Sign in" : "Create account"),
     [mode]
   );
+
   const subtitle = useMemo(
     () =>
       mode === "signin"
@@ -128,6 +143,7 @@ export default function LoginPage() {
       <Card>
         <CardHeader title={title} subtitle={subtitle} />
         <CardBody>
+          {/* toggle buttons */}
           <div className="flex gap-2 mb-4">
             <button
               className={`px-3 py-1 rounded-md border ${
@@ -151,6 +167,7 @@ export default function LoginPage() {
             </button>
           </div>
 
+          {/* form */}
           <div className="space-y-3">
             <input
               className="w-full h-10 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none"
