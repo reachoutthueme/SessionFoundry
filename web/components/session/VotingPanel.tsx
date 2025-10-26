@@ -7,6 +7,13 @@ import { useToast } from "@/components/ui/Toast";
 
 type Sub = { id: string; text: string };
 
+type LeaderboardRow = {
+  id: string;
+  text: string;
+  total: number;
+  n: number;
+};
+
 export default function VotingPanel({
   sessionId,
   activityId,
@@ -15,189 +22,227 @@ export default function VotingPanel({
   activityId?: string;
 }) {
   const toast = useToast();
+
+  // submissions to vote on
   const [subs, setSubs] = useState<Sub[]>([]);
+  // slider values keyed by submission id
   const [values, setValues] = useState<Record<string, number>>({});
+
   const [loading, setLoading] = useState(true);
 
-  // how many points a participant is allowed to spend total on this activity
+  // total budget for this activity (0 means rating mode instead of allocation mode)
   const [budget, setBudget] = useState<number>(0);
 
-  // are we currently sending the vote submission request?
+  // is submitAll currently in-flight?
   const [submitting, setSubmitting] = useState(false);
 
-  // which activity are we actually voting on (resolved if not provided explicitly)
+  // resolved activity id (in case caller only gave sessionId)
   const [resolvedActivityId, setResolvedActivityId] = useState<string | null>(
     null
   );
 
-  // leaderboard is built after submission
-  const [leaderboard, setLeaderboard] = useState<
-    { id: string; text: string; total: number; n: number }[] | null
-  >(null);
-
+  // leaderboard after submission
+  const [leaderboard, setLeaderboard] = useState<LeaderboardRow[] | null>(null);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  // initial load: fetch submissions + activity config
+  // helper to derive leaderboard from /results response
+  function extractLeaderboard(raw: any): LeaderboardRow[] {
+    const rows = Array.isArray(raw?.submissions)
+      ? (raw.submissions as any[])
+      : [];
+
+    return rows
+      .map((s: any) => {
+        const votesArr = Array.isArray(s.votes) ? s.votes : [];
+        const totalPoints = votesArr.reduce(
+          (acc: number, v: any) => acc + Number(v.value || 0),
+          0
+        );
+        const nVotes =
+          typeof s.n === "number"
+            ? s.n
+            : votesArr.length;
+
+        return {
+          id: String(s.id),
+          text: String(s.text ?? ""),
+          total: totalPoints,
+          n: nVotes,
+        };
+      })
+      .sort((a, b) => b.total - a.total);
+  }
+
+  // initial load
   useEffect(() => {
     (async () => {
       setLoading(true);
+      try {
+        const subsUrl = activityId
+          ? `/api/submissions?activity_id=${activityId}`
+          : `/api/submissions?session_id=${sessionId}`;
 
-      const url = activityId
-        ? `/api/submissions?activity_id=${activityId}`
-        : `/api/submissions?session_id=${sessionId}`;
+        const [rSubs, rActs] = await Promise.all([
+          fetch(subsUrl, { cache: "no-store" }),
+          fetch(`/api/activities?session_id=${sessionId}`, {
+            cache: "no-store",
+          }),
+        ]);
 
-      const [rSubs, rActs] = await Promise.all([
-        fetch(url, { cache: "no-store" }),
-        fetch(`/api/activities?session_id=${sessionId}`, {
-          cache: "no-store",
-        }),
-      ]);
+        const jSubs = await rSubs.json().catch(() => ({}));
+        const jActs = await rActs.json().catch(() => ({}));
 
-      const jSubs = await rSubs.json();
-      const jActs = await rActs.json();
+        if (!rSubs.ok) {
+          console.error("[VotingPanel] load submissions error:", jSubs.error);
+          toast(jSubs.error || "Failed to load items for voting", "error");
+          setSubs([]);
+          setValues({});
+          setBudget(0);
+          setResolvedActivityId(activityId || null);
+          setLoading(false);
+          return;
+        }
 
-      // Map submissions into { id, text }
-      const list: Sub[] = (jSubs.submissions ?? []).map((x: any) => ({
-        id: x.id as string,
-        text: x.text as string,
-      }));
-      setSubs(list);
+        // map submissions into {id,text}
+        const list: Sub[] = Array.isArray(jSubs.submissions)
+          ? jSubs.submissions.map((x: any) => ({
+              id: String(x.id),
+              text: String(x.text ?? ""),
+            }))
+          : [];
+        setSubs(list);
 
-      // Initialize all slider values to 0
-      const v: Record<string, number> = {};
-      list.forEach((s) => {
-        v[s.id] = 0;
-      });
-      setValues(v);
+        // init all sliders to 0
+        const zeroVals: Record<string, number> = {};
+        list.forEach((s) => {
+          zeroVals[s.id] = 0;
+        });
+        setValues(zeroVals);
 
-      // Figure out which activity config applies (points budget etc.)
-      const act =
-        (jActs.activities ?? []).find((a: any) => a.id === activityId) ||
-        (jActs.activities ?? [])[0] ||
-        null;
+        // choose an activity, read points_budget
+        const acts: any[] = Array.isArray(jActs.activities)
+          ? jActs.activities
+          : [];
+        const chosenAct =
+          acts.find((a) => a.id === activityId) ||
+          acts[0] ||
+          null;
 
-      setBudget(Number(act?.config?.points_budget ?? 0));
-      setResolvedActivityId(activityId || act?.id || null);
-
-      setLoading(false);
+        const cfgBudget = Number(chosenAct?.config?.points_budget ?? 0);
+        setBudget(Number.isFinite(cfgBudget) ? cfgBudget : 0);
+        setResolvedActivityId(activityId || (chosenAct ? String(chosenAct.id) : null));
+      } catch (err) {
+        console.error("[VotingPanel] initial load crash:", err);
+        toast("Failed to load voting data", "error");
+        setSubs([]);
+        setValues({});
+        setBudget(0);
+        setResolvedActivityId(activityId || null);
+      } finally {
+        setLoading(false);
+      }
     })();
-  }, [sessionId, activityId]);
+  }, [sessionId, activityId, toast]);
 
-  // Sum of all allocated points
+  // total points allocated by the user
   const total = Object.values(values).reduce(
-    (a, b) => a + (Number(b) || 0),
+    (acc, v) => acc + (Number(v) || 0),
     0
   );
 
-  // Remaining points if it's a budget (allocation) style vote
+  // if we're in budget mode, what's left
   const remaining = budget > 0 ? Math.max(0, budget - total) : 0;
 
-  function updateValue(id: string, next: number) {
-    // Cap per-slider at either full budget (if budget voting)
-    // or 10 (if rating style).
+  // update slider for a single item while enforcing rules
+  function updateValue(id: string, rawNext: number) {
+    // per-slider ceiling:
+    //   - budget mode: can't exceed total budget anyway
+    //   - rating mode: 0–10
     const cap = budget > 0 ? budget : 10;
-    next = Math.max(0, Math.min(cap, Math.round(next)));
+    let next = Math.round(
+      Math.max(0, Math.min(cap, Number(rawNext) || 0))
+    );
 
-    const prev = values[id] ?? 0;
-    const currentSumExcluding = total - prev;
+    const prevForThis = values[id] ?? 0;
+    const sumWithoutThis = total - prevForThis;
 
     if (budget > 0) {
-      // You can't exceed the total budget across all sliders
-      const allowed = Math.max(0, budget - currentSumExcluding);
-      const clamped = Math.min(next, allowed);
-      setValues((v) => ({ ...v, [id]: clamped }));
-    } else {
-      // Rating mode (0–10 per item, independent)
-      setValues((v) => ({ ...v, [id]: next }));
+      // enforce global budget: don't allow this change to push us past total
+      const allowedForThis = Math.max(0, budget - sumWithoutThis);
+      next = Math.min(next, allowedForThis);
     }
+
+    setValues((old) => ({ ...old, [id]: next }));
   }
 
   async function submitAll() {
-    // Basic validation
+    // simple validation
     if (budget > 0 && (total <= 0 || total > budget)) {
       toast(`Use up to ${budget} points (currently ${total})`, "error");
       return;
     }
 
     setSubmitting(true);
-
-    // Build vote payload
-    const items = Object.entries(values).map(
-      ([submission_id, value]: [string, number]) => ({
-        submission_id,
-        value,
-      })
-    );
-
-    const body = activityId
-      ? { activity_id: activityId, items }
-      : { session_id: sessionId, items };
-
-    const r = await fetch("/api/votes/bulk", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    const textResponse = await r.text();
-    let j: any = {};
     try {
-      j = textResponse ? JSON.parse(textResponse) : {};
-    } catch {
-      // ignore parse error, we'll just use text
-    }
+      const items = Object.entries(values).map(
+        ([submission_id, value]) => ({
+          submission_id,
+          value,
+        })
+      );
 
-    setSubmitting(false);
+      const payload = activityId
+        ? { activity_id: activityId, items }
+        : { session_id: sessionId, items };
 
-    if (!r.ok) {
-      toast(j.error || "Failed to submit votes", "error");
-      return;
-    }
+      const r = await fetch("/api/votes/bulk", {
+        method: "POST",
+        credentials: "include", // send participant cookie
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    // success
-    toast("Votes submitted", "success");
-    setSubmitted(true);
-    setShowLeaderboard(true);
-
-    // fetch leaderboard from results endpoint
-    if (resolvedActivityId) {
+      const textResp = await r.text();
+      let j: any = {};
       try {
-        const res = await fetch(
-          `/api/activities/${resolvedActivityId}/results`,
-          {
-            cache: "no-store",
-          }
-        );
-        const data = await res.json();
-
-        const rows = Array.isArray(data?.submissions)
-          ? (data.submissions as any[])
-          : [];
-
-        const lb = rows
-          .map((s: any) => ({
-            id: s.id as string,
-            text: (s.text as string) ?? "",
-            total: Array.isArray(s.votes)
-              ? (s.votes as any[]).reduce(
-                  (acc, v) => acc + Number(v.value || 0),
-                  0
-                )
-              : 0,
-            n: Number(
-              s.n ??
-                (Array.isArray(s.votes)
-                  ? (s.votes as any[]).length
-                  : 0)
-            ),
-          }))
-          .sort((a, b) => b.total - a.total);
-
-        setLeaderboard(lb);
+        j = textResp ? JSON.parse(textResp) : {};
       } catch {
-        // ignore leaderboard fetch errors - not critical to UX
+        // ignore non-JSON error bodies
       }
+
+      if (!r.ok) {
+        console.error("[VotingPanel] submit error:", j.error || textResp);
+        toast(j.error || "Failed to submit votes", "error");
+        setSubmitting(false);
+        return;
+      }
+
+      toast("Votes submitted", "success");
+      setSubmitted(true);
+      setShowLeaderboard(true);
+
+      // build first leaderboard snapshot
+      if (resolvedActivityId) {
+        try {
+          const res = await fetch(
+            `/api/activities/${resolvedActivityId}/results`,
+            { cache: "no-store" }
+          );
+          const data = await res.json();
+          setLeaderboard(extractLeaderboard(data));
+        } catch (err) {
+          console.error(
+            "[VotingPanel] leaderboard initial fetch error:",
+            err
+          );
+        }
+      }
+    } catch (err) {
+      console.error("[VotingPanel] submitAll crash:", err);
+      toast("Failed to submit votes", "error");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -227,7 +272,7 @@ export default function VotingPanel({
               <div
                 className={`p-2 rounded-md text-xs mb-2 ${
                   remaining === 0
-                    ? "bg-green-500/10 text-green-200 border border-green-400/30"
+                    ? "bg-green-500/10 text-[var(--text)] border border-green-400/30"
                     : "bg-white/5 text-[var(--muted)] border border-white/10"
                 }`}
               >
@@ -248,8 +293,9 @@ export default function VotingPanel({
                     max={budget > 0 ? budget : 10}
                     value={values[s.id] ?? 0}
                     onChange={(e) => {
-                      if (!submitted)
+                      if (!submitted) {
                         updateValue(s.id, Number(e.target.value));
+                      }
                     }}
                     disabled={submitted}
                     className="w-64"
@@ -263,10 +309,13 @@ export default function VotingPanel({
 
             <div className="flex justify-between mt-3">
               <button
+                type="button"
                 className="text-xs text-[var(--muted)] hover:underline"
                 onClick={() => setShowLeaderboard((s) => !s)}
               >
-                {showLeaderboard ? "Hide leaderboard" : "View leaderboard"}
+                {showLeaderboard
+                  ? "Hide leaderboard"
+                  : "View leaderboard"}
               </button>
 
               {!submitted && (
@@ -277,7 +326,7 @@ export default function VotingPanel({
                     (budget > 0 && (total <= 0 || total > budget))
                   }
                 >
-                  {submitting ? "Submitting..." : "Submit all votes"}
+                  {submitting ? "Submitting…" : "Submit all votes"}
                 </Button>
               )}
             </div>
@@ -308,19 +357,23 @@ export default function VotingPanel({
                           </tr>
                         </thead>
                         <tbody>
-                          {leaderboard.map((r, idx) => (
+                          {leaderboard.map((row, idx) => (
                             <tr
-                              key={r.id}
+                              key={row.id}
                               className="border-t border-white/10"
                             >
                               <td className="py-3 px-4 w-10">
                                 {idx + 1}
                               </td>
-                              <td className="py-3 px-4">{r.text}</td>
-                              <td className="py-3 px-4 font-semibold">
-                                {r.total}
+                              <td className="py-3 px-4">
+                                {row.text}
                               </td>
-                              <td className="py-3 px-4">{r.n}</td>
+                              <td className="py-3 px-4 font-semibold">
+                                {row.total}
+                              </td>
+                              <td className="py-3 px-4">
+                                {row.n}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
