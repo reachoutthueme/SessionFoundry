@@ -3,6 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/supabaseClient";
 import Button from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
@@ -10,8 +11,9 @@ import { useToast } from "@/components/ui/Toast";
 
 export default function LoginPage() {
   const toast = useToast();
+  const router = useRouter();
 
-  // mode: "signin" | "signup"
+  // signin | signup
   const [mode, setMode] = useState<"signin" | "signup">("signin");
 
   // form state
@@ -20,43 +22,40 @@ export default function LoginPage() {
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // On first render in the browser, look at ?mode=signup
+  // read ?mode=signup on mount
   useEffect(() => {
     try {
       const qs = new URLSearchParams(window.location.search);
       const m = qs.get("mode");
-      if (m === "signup") {
-        setMode("signup");
-      } else {
-        setMode("signin");
-      }
+      setMode(m === "signup" ? "signup" : "signin");
     } catch {
       // ignore
     }
   }, []);
 
-  // If already signed in, bounce to dashboard
+  // if already signed in, go to dashboard
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch("/api/auth/session", {
-          cache: "no-store",
-        });
+        const r = await fetch("/api/auth/session", { cache: "no-store" });
+        if (!r.ok) return;
         const j = await r.json();
         if (j?.user) {
-          location.href = "/dashboard";
+          router.push("/dashboard");
         }
-      } catch {
-        // ignore
+      } catch (err) {
+        console.error("session check failed", err);
       }
     })();
-  }, []);
+  }, [router]);
 
+  // after successful auth: sync cookie + navigate
   async function afterAuth() {
     try {
       const s = await supabase.auth.getSession();
       const at = s.data.session?.access_token;
       const rt = s.data.session?.refresh_token;
+
       if (at) {
         await fetch("/api/auth/set-token", {
           method: "POST",
@@ -67,10 +66,11 @@ export default function LoginPage() {
           }),
         });
       }
-    } catch {
-      // ignore sync failures
+    } catch (err) {
+      console.error("afterAuth sync failed", err);
     }
-    location.href = "/dashboard";
+
+    router.push("/dashboard");
   }
 
   async function signIn() {
@@ -78,20 +78,24 @@ export default function LoginPage() {
       toast("Supabase not configured", "error");
       return;
     }
+
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    setLoading(false);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
-    if (error) {
-      toast(error.message, "error");
-      return;
+      if (error) {
+        toast(error.message, "error");
+        return;
+      }
+
+      toast("Signed in", "success");
+      await afterAuth();
+    } finally {
+      setLoading(false);
     }
-
-    toast("Signed in", "success");
-    await afterAuth();
   }
 
   async function signUp() {
@@ -99,6 +103,7 @@ export default function LoginPage() {
       toast("Supabase not configured", "error");
       return;
     }
+
     if (password.length < 8) {
       toast("Password must be at least 8 characters", "error");
       return;
@@ -109,20 +114,23 @@ export default function LoginPage() {
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-      options: { data: { plan: "free" } },
-    });
-    setLoading(false);
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: { data: { plan: "free" } },
+      });
 
-    if (error) {
-      toast(error.message, "error");
-      return;
+      if (error) {
+        toast(error.message, "error");
+        return;
+      }
+
+      toast("Account created", "success");
+      await afterAuth();
+    } finally {
+      setLoading(false);
     }
-
-    toast("Account created", "success");
-    await signIn();
   }
 
   const title = useMemo(
@@ -139,79 +147,108 @@ export default function LoginPage() {
   );
 
   return (
-    <div className="max-w-sm mx-auto">
-      <Card>
-        <CardHeader title={title} subtitle={subtitle} />
-        <CardBody>
-          {/* form */}
-          <div className="space-y-3">
-            <input
-              className="w-full h-10 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-
-            <input
-              type="password"
-              className="w-full h-10 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-
-            {mode === "signup" && (
-              <input
-                type="password"
-                className="w-full h-10 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none"
-                placeholder="Confirm password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-              />
-            )}
-
-            {mode === "signin" ? (
-              <div className="flex gap-2">
-                <Button onClick={signIn} disabled={loading}>
-                  Sign in
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setMode("signup")}
+    <div className="min-h-dvh flex items-center justify-center px-4">
+      <div className="w-full max-w-sm">
+        <Card>
+          <CardHeader title={title} subtitle={subtitle} />
+          <CardBody>
+            <div className="space-y-3">
+              {/* Email */}
+              <div className="space-y-1">
+                <label htmlFor="email" className="sr-only">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  className="h-10 w-full rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
+                  placeholder="Email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   disabled={loading}
-                >
-                  Create account
-                </Button>
+                />
               </div>
-            ) : (
-              <div className="flex gap-2">
-                <Button
-                  onClick={signUp}
-                  disabled={
-                    loading ||
-                    password !== confirm ||
-                    password.length < 8
-                  }
-                >
-                  Create account
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setMode("signin")}
-                  disabled={loading}
-                >
-                  Back to sign in
-                </Button>
-              </div>
-            )}
 
-            <div className="text-xs text-[var(--muted)]">
-              Free plan: 1 session, no exports. Pro: unlimited +
-              exports.
+              {/* Password */}
+              <div className="space-y-1">
+                <label htmlFor="password" className="sr-only">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  className="h-10 w-full rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
+                  placeholder="Password"
+                  autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+
+              {/* Confirm password (signup only) */}
+              {mode === "signup" && (
+                <div className="space-y-1">
+                  <label htmlFor="confirm" className="sr-only">
+                    Confirm password
+                  </label>
+                  <input
+                    id="confirm"
+                    type="password"
+                    className="h-10 w-full rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
+                    placeholder="Confirm password"
+                    autoComplete="new-password"
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+              )}
+
+              {/* Action row */}
+              {mode === "signin" ? (
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button onClick={signIn} disabled={loading}>
+                    Sign in
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setMode("signup")}
+                    disabled={loading}
+                  >
+                    Create account
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button
+                    onClick={signUp}
+                    disabled={
+                      loading ||
+                      password !== confirm ||
+                      password.length < 8
+                    }
+                  >
+                    Create account
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setMode("signin")}
+                    disabled={loading}
+                  >
+                    Back to sign in
+                  </Button>
+                </div>
+              )}
+
+              <div className="text-xs text-[var(--muted)]">
+                Free plan: 1 session, no exports. Pro: unlimited +
+                exports.
+              </div>
             </div>
-          </div>
-        </CardBody>
-      </Card>
+          </CardBody>
+        </Card>
+      </div>
     </div>
   );
 }
