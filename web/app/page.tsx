@@ -1,72 +1,156 @@
 "use client";
+
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
 
 export default function RootJoinPage() {
+  const router = useRouter();
+
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [err, setErr] = useState<string | null>(null);
+  const [joining, setJoining] = useState(false);
 
   async function submit() {
+    // reset old error
     setErr(null);
-    const r = await fetch("/api/join", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ join_code: code.trim().toUpperCase(), display_name: name.trim() || undefined }),
-    });
-    const j = await r.json();
-    if (!r.ok) { setErr(j.error || "Failed to join"); return; }
-    location.href = `/participant/${j.session.id}`;
+
+    const cleanCode = code.trim().toUpperCase();
+    const cleanName = name.trim();
+
+    if (!cleanCode) {
+      setErr("Please enter a join code.");
+      return;
+    }
+
+    setJoining(true);
+
+    try {
+      const r = await fetch("/api/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          join_code: cleanCode,
+          display_name: cleanName || undefined,
+        }),
+      });
+
+      // we try parsing JSON either way because server gives us errors in JSON too
+      const j = await r.json().catch(() => ({} as any));
+
+      if (!r.ok) {
+        setErr(j.error || "Failed to join");
+        setJoining(false);
+        return;
+      }
+
+      if (!j?.session?.id) {
+        setErr("Joined, but no session returned.");
+        setJoining(false);
+        return;
+      }
+
+      // navigate to participant view without full reload
+      router.push(`/participant/${j.session.id}`);
+    } catch (e) {
+      console.error("Join failed", e);
+      setErr("Network error. Please try again.");
+      setJoining(false);
+    }
   }
 
   return (
     <div className="min-h-dvh flex flex-col p-6">
-      <div className="flex-1" />
-      <div className="text-center mb-2">
-<h1 className="text-3xl md:text-5xl font-semibold tracking-tight whitespace-nowrap">
-  <span className="text-white">Session</span>
-  <span className="text-[var(--brand)]">Foundry</span>
-</h1>
-      </div>
+      {/* spacer above heading */}
       <div className="flex-1" />
 
+      {/* logo / hero */}
+      <div className="mb-2 text-center">
+        <h1 className="whitespace-nowrap text-3xl font-semibold tracking-tight text-white md:text-5xl">
+          <span className="text-white">Session</span>
+          <span className="text-[var(--brand)]">Foundry</span>
+        </h1>
+      </div>
+
+      {/* spacer between heading and card */}
+      <div className="flex-1" />
+
+      {/* join card */}
       <div className="w-full max-w-md self-center">
-        <div className="rounded-[var(--radius)] border border-white/15 bg-white/10 backdrop-blur-md shadow-lg p-6 text-left">
-          <h1 className="text-lg font-semibold mb-4">Join a workshop</h1>
+        <div className="rounded-[var(--radius)] border border-white/15 bg-white/10 p-6 text-left shadow-lg backdrop-blur-md">
+          <h2 className="mb-4 text-lg font-semibold">
+            Join a workshop
+          </h2>
+
           <div className="space-y-3">
             <div>
-              <label className="block text-sm mb-1">Join code</label>
+              <label
+                htmlFor="join-code"
+                className="mb-1 block text-sm"
+              >
+                Join code
+              </label>
               <input
+                id="join-code"
                 value={code}
-                onChange={e=>setCode(e.target.value.toUpperCase())}
+                onChange={(e) =>
+                  setCode(e.target.value.toUpperCase())
+                }
                 placeholder="Enter code (e.g., F7KM)"
-                className="w-full h-10 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none focus:ring-[var(--ring)]"
+                className="h-10 w-full rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none focus:ring-[var(--ring)]"
+                disabled={joining}
               />
             </div>
+
             <div>
-              <label className="block text-sm mb-1">Your name (optional)</label>
+              <label
+                htmlFor="display-name"
+                className="mb-1 block text-sm"
+              >
+                Your name (optional)
+              </label>
               <input
+                id="display-name"
                 value={name}
-                onChange={e=>setName(e.target.value)}
+                onChange={(e) => setName(e.target.value)}
                 placeholder="How should we show your name?"
-                className="w-full h-10 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none focus:ring-[var(--ring)]"
+                className="h-10 w-full rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none focus:ring-[var(--ring)]"
+                disabled={joining}
               />
             </div>
-            {err && <div className="text-sm text-red-300">{err}</div>}
+
+            {err && (
+              <div className="text-sm text-red-300">
+                {err}
+              </div>
+            )}
+
             <div className="pt-1">
-              <Button onClick={submit} className="w-full">Join</Button>
+              <Button
+                onClick={submit}
+                className="w-full"
+                disabled={joining}
+              >
+                {joining ? "Joining..." : "Join"}
+              </Button>
             </div>
           </div>
         </div>
-        <div className="text-center mt-3">
-          <Link href="/home"><Button variant="outline">Create workshop</Button></Link>
+
+        <div className="mt-3 text-center">
+          <Link href="/home">
+            <Button variant="outline">
+              Create workshop
+            </Button>
+          </Link>
         </div>
       </div>
+
+      {/* spacer below card */}
       <div className="flex-[2]" />
     </div>
   );
 }
-
-
