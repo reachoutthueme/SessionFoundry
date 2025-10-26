@@ -66,7 +66,7 @@ export default function Shell({ children }: PropsWithChildren) {
   const pathname = usePathname() || "/";
   const router = useRouter();
 
-  // These routes shouldn't show full chrome (participant/public surfaces)
+  // participant / public surfaces shouldn't get the full chrome
   const isParticipant =
     pathname.startsWith("/join") || pathname.startsWith("/participant");
   const isPublicHome =
@@ -74,7 +74,7 @@ export default function Shell({ children }: PropsWithChildren) {
     pathname === "/home" ||
     pathname.startsWith("/login");
 
-  // Auth state
+  // auth state
   const [me, setMe] = useState<{
     id: string;
     email?: string | null;
@@ -82,8 +82,8 @@ export default function Shell({ children }: PropsWithChildren) {
   } | null>(null);
   const [meLoading, setMeLoading] = useState(true);
 
-  // Sidebar collapse (persisted in localStorage).
-  // We read localStorage in the initializer so there’s no layout flicker.
+  // sidebar collapsed state (persisted). We read localStorage in the initializer
+  // so we don't render expanded and then snap to collapsed.
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try {
       return localStorage.getItem("sf_sidebar_collapsed") === "1";
@@ -92,7 +92,7 @@ export default function Shell({ children }: PropsWithChildren) {
     }
   });
 
-  // Get user session
+  // fetch current user/session
   useEffect(() => {
     (async () => {
       try {
@@ -111,7 +111,7 @@ export default function Shell({ children }: PropsWithChildren) {
     })();
   }, [pathname]);
 
-  // Persist collapse preference
+  // persist collapse preference
   useEffect(() => {
     try {
       localStorage.setItem("sf_sidebar_collapsed", collapsed ? "1" : "0");
@@ -120,7 +120,7 @@ export default function Shell({ children }: PropsWithChildren) {
     }
   }, [collapsed]);
 
-  // Lock unauthenticated users out of restricted routes
+  // prevent logged-out users from landing on facilitator-only routes
   useEffect(() => {
     if (meLoading) return;
 
@@ -140,7 +140,7 @@ export default function Shell({ children }: PropsWithChildren) {
     }
   }, [me, meLoading, pathname, router]);
 
-  // If this is a public/participant view, render minimal shell
+  // Strip chrome entirely on participant/public entry pages
   if (isParticipant || isPublicHome) {
     return (
       <main className="min-h-dvh bg-[var(--bg)]">
@@ -149,7 +149,7 @@ export default function Shell({ children }: PropsWithChildren) {
     );
   }
 
-  // Sidebar width is still dynamic in the main layout, but header is no longer "smart".
+  // Sidebar width (still used for main layout grid)
   const sidebarWidth = collapsed ? "64px" : "240px";
 
   return (
@@ -162,9 +162,11 @@ export default function Shell({ children }: PropsWithChildren) {
     >
       {/* HEADER */}
       <header className="col-[1_/_span_2] row-[1] border-b border-white/10 bg-[var(--panel-2)]">
-        {/* full-width row with left group & right group */}
-        <div className="flex h-14 w-full items-center justify-between px-4 md:px-6">
-          {/* LEFT SIDE: logo + product name + beta, always visible */}
+        {/* flex row: brand on the left, account/search on the right
+           pl-3 matches the sidebar nav's left padding (~12px),
+           so the logo/brand lines up visually above the sidebar content */}
+        <div className="flex h-14 w-full items-center justify-between pl-3 pr-4 md:pr-6">
+          {/* LEFT SIDE: logo + product name + beta tag, always visible */}
           <div className="flex items-center gap-3">
             <Logo size={20} className="-top-0.5" />
             <Link
@@ -176,7 +178,7 @@ export default function Shell({ children }: PropsWithChildren) {
             <span className="text-xs text-[var(--muted)]">Beta</span>
           </div>
 
-          {/* RIGHT SIDE: search, plan info, account */}
+          {/* RIGHT SIDE: search, plan info, upgrade/manage plan, auth controls */}
           <div className="flex items-center justify-end gap-2">
             <input
               aria-label="Search"
@@ -223,7 +225,7 @@ export default function Shell({ children }: PropsWithChildren) {
       <aside className="col-[1] row-[2] border-r border-white/10 bg-[var(--panel)]">
         <div className="flex h-full flex-col">
           <nav className={`p-3 text-sm ${collapsed ? "space-y-2" : ""}`}>
-            {/* General section */}
+            {/* GENERAL */}
             <Section label="General" collapsed={collapsed}>
               <div className="relative">
                 <NavLink
@@ -263,7 +265,7 @@ export default function Shell({ children }: PropsWithChildren) {
               />
             </Section>
 
-            {/* Admin section */}
+            {/* ADMIN */}
             <Section label="Admin" collapsed={collapsed}>
               <NavLink
                 collapsed={collapsed}
@@ -279,9 +281,11 @@ export default function Shell({ children }: PropsWithChildren) {
               />
             </Section>
 
-            {/* Theme toggle */}
+            {/* THEME TOGGLE */}
             <div className="flex flex-col items-center pt-2">
-              <div className="mb-1 text-xs text-[var(--muted)]">Colormode:</div>
+              <div className="mb-1 text-xs text-[var(--muted)]">
+                Colormode:
+              </div>
               <div>
                 <ThemeToggle />
               </div>
