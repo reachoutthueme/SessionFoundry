@@ -13,10 +13,7 @@ export default function LoginPage() {
   const toast = useToast();
   const router = useRouter();
 
-  // signin | signup
   const [mode, setMode] = useState<"signin" | "signup">("signin");
-
-  // form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -49,7 +46,6 @@ export default function LoginPage() {
     })();
   }, [router]);
 
-  // after successful auth: sync cookie + navigate
   async function afterAuth() {
     try {
       const s = await supabase.auth.getSession();
@@ -147,7 +143,8 @@ export default function LoginPage() {
   );
 
   return (
-    <div className="min-h-dvh flex items-center justify-center px-4">
+    // fixed overlay that fills the viewport and centers content
+    <div className="fixed inset-0 z-10 grid place-items-center bg-[var(--bg)] px-4">
       <div className="w-full max-w-sm">
         <Card>
           <CardHeader title={title} subtitle={subtitle} />
@@ -200,7 +197,7 @@ export default function LoginPage() {
                     autoComplete="new-password"
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
-                    disabled={loading}
+                  disabled={loading}
                   />
                 </div>
               )}
