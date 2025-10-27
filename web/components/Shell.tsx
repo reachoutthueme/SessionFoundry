@@ -82,8 +82,7 @@ export default function Shell({ children }: PropsWithChildren) {
   } | null>(null);
   const [meLoading, setMeLoading] = useState(true);
 
-  // sidebar collapsed state (persisted). We read localStorage in the initializer
-  // so we don't render expanded and then snap to collapsed.
+  // sidebar collapsed state (persisted)
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try {
       return localStorage.getItem("sf_sidebar_collapsed") === "1";
@@ -116,7 +115,7 @@ export default function Shell({ children }: PropsWithChildren) {
     try {
       localStorage.setItem("sf_sidebar_collapsed", collapsed ? "1" : "0");
     } catch {
-      // ignore
+      /* ignore */
     }
   }, [collapsed]);
 
@@ -149,7 +148,7 @@ export default function Shell({ children }: PropsWithChildren) {
     );
   }
 
-  // Sidebar width (still used for main layout grid)
+  // Sidebar width used in grid
   const sidebarWidth = collapsed ? "64px" : "240px";
 
   return (
@@ -162,23 +161,23 @@ export default function Shell({ children }: PropsWithChildren) {
     >
       {/* HEADER */}
       <header className="col-[1_/_span_2] row-[1] border-b border-white/10 bg-[var(--panel-2)]">
-        {/* flex row: brand on the left, account/search on the right
-           pl-3 matches the sidebar nav's left padding (~12px),
-           so the logo/brand lines up visually above the sidebar content */}
         <div className="flex h-14 w-full items-center justify-between pl-3 pr-4 md:pr-6">
-          {/* LEFT SIDE: logo + product name + beta tag, always visible */}
+          {/* LEFT SIDE: logo + brand + beta */}
           <div className="flex items-center gap-3">
             <Logo size={20} className="-top-0.5" />
+
             <Link
               href="/"
-              className="font-semibold tracking-tight text-white"
+              className="font-semibold tracking-tight flex items-baseline gap-1"
             >
-              SessionFoundry
+              <span className="text-[var(--text)]">Session</span>
+              <span className="text-[var(--brand)]">Foundry</span>
             </Link>
+
             <span className="text-xs text-[var(--muted)]">Beta</span>
           </div>
 
-          {/* RIGHT SIDE: search, plan info, upgrade/manage plan, auth controls */}
+          {/* RIGHT SIDE: search + account/plan */}
           <div className="flex items-center justify-end gap-2">
             <input
               aria-label="Search"
@@ -257,8 +256,7 @@ export default function Shell({ children }: PropsWithChildren) {
                 href="/templates"
                 label={
                   <>
-                    <span>Templates</span>{" "}
-                    {!collapsed && <ProTag />}
+                    <span>Templates</span> {!collapsed && <ProTag />}
                   </>
                 }
                 icon={<IconTemplates />}
