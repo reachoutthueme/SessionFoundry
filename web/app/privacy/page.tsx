@@ -1,12 +1,11 @@
-import Link from "next/link";
+// no local nav in header; policies are shown standalone or in modals
 
 export const metadata = {
   title: "Privacy Policy - SessionFoundry",
   description: "How SessionFoundry handles and protects your data.",
 };
 
-export default function PrivacyPage({ searchParams }: { searchParams?: { embed?: string } }) {
-  const embedded = (searchParams?.embed || "") === "1";
+export default function PrivacyPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <header className="mb-6">
@@ -17,14 +16,6 @@ export default function PrivacyPage({ searchParams }: { searchParams?: { embed?:
               Our commitment to your privacy, in clear and simple terms.
             </p>
           </div>
-          {!embedded && (
-            <Link
-              href="/login?mode=signup"
-              className="shrink-0 rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10"
-            >
-              Back to create account
-            </Link>
-          )}
         </div>
       </header>
 

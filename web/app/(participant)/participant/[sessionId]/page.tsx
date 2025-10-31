@@ -90,9 +90,9 @@ export default function ParticipantPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6 relative">
+    <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6 relative">
       {/* Light/Dark toggle for participants */}
-      <div className="absolute right-4 top-4">
+      <div className="absolute right-3 top-3 sm:right-4 sm:top-4">
         <ThemeToggle />
       </div>
       {/* Header / Hero */}
@@ -100,7 +100,7 @@ export default function ParticipantPage() {
         <div className="relative overflow-hidden rounded-[var(--radius)] border border-white/10 bg-gradient-to-r from-[var(--panel-2)]/90 to-[var(--panel)]/90">
           <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-[var(--brand)]/20 blur-3xl" />
           <div className="p-5 relative">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="text-xs uppercase tracking-wider text-[var(--muted)]">Participant</div>
                 <h1 className="text-xl font-semibold mt-1">Welcome{participant?.display_name ? `, ${participant.display_name}` : ''}</h1>
@@ -135,10 +135,10 @@ export default function ParticipantPage() {
                 <div className="space-y-2">
                   {activities.map((a) => (
                     <div key={a.id} className="p-3 rounded-md bg-white/5 border border-white/10 cursor-pointer" onClick={()=>setSelected(a)}>
-                      <div className="flex items-start justify-between">
-                        <div className="font-medium flex items-center gap-2">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="font-medium flex items-start gap-2 min-w-0">
                           {a.type==='brainstorm' ? <IconBrain size={20} className="text-[var(--brand)] shrink-0" /> : <IconList size={20} className="text-[var(--brand)] shrink-0" />}
-                          <span>{a.title || (a.type==='brainstorm' ? 'Standard' : a.type)}</span>
+                          <span className="truncate">{a.title || (a.type==='brainstorm' ? 'Standard' : a.type)}</span>
                         </div>
                         <div className={`text-xs px-2 py-1 rounded-full border flex items-center gap-1 ${a.status==='Active'||a.status==='Voting' ? 'border-green-400/30 text-green-200 bg-green-500/10' : 'border-white/20 text-[var(--muted)]'}`}>
                           {a.status==='Closed' ? (<IconLock size={14} />) : a.status==='Voting' ? (<IconVote size={14} />) : a.status==='Active' ? (<IconTimer size={14} />) : null}
@@ -164,13 +164,13 @@ export default function ParticipantPage() {
 
           {selected ? (
             <div className="space-y-3">
-              <div className="p-3 rounded-md bg-white/5 border border-white/10 flex items-center justify-between">
-                <div>
+              <div className="p-3 rounded-md bg-white/5 border border-white/10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                   <div className="font-medium">{selected.title || (selected.type==='brainstorm' ? 'Standard' : selected.type)}</div>
                   {selected.instructions && (<div className="text-sm text-[var(--muted)] mt-0.5">{selected.instructions}</div>)}
                   {selected.ends_at && (<div className="mt-1"><Timer endsAt={selected.ends_at} /></div>)}
                 </div>
-                <Button size="sm" variant="outline" className="px-4 shrink-0" onClick={() => setSelected(null)}>Back to activities</Button>
+                <Button size="sm" variant="outline" className="px-4 shrink-0 self-start sm:self-auto" onClick={() => setSelected(null)}>Back to activities</Button>
               </div>
 
               {selected.type === "brainstorm" ? (
@@ -226,9 +226,9 @@ function CreateGroupInline({ sessionId, onCreated }: { sessionId: string; onCrea
     onCreated(j.group.id);
   }
   return (
-    <div className="flex items-center gap-2 pt-2 border-t border-white/10 mt-2">
-      <input value={name} onChange={e=>setName(e.target.value)} placeholder="Create a group" className="h-10 flex-1 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none" />
-      <Button size="sm" onClick={create} disabled={busy}>Create</Button>
+    <div className="flex flex-col gap-2 pt-2 border-t border-white/10 mt-2 sm:flex-row sm:items-center">
+      <input value={name} onChange={e=>setName(e.target.value)} placeholder="Create a group" className="h-10 w-full sm:flex-1 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none" />
+      <Button size="sm" onClick={create} disabled={busy} className="self-start sm:self-auto">Create</Button>
     </div>
   );
 }
