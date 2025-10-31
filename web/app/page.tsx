@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
+import pkg from "@/package.json";
 
 export default function RootJoinPage() {
   const router = useRouter();
@@ -64,6 +65,12 @@ export default function RootJoinPage() {
 
   return (
     <div className="min-h-dvh flex flex-col p-6">
+      {/* Version badge */}
+      <div className="fixed right-3 bottom-3 z-50">
+        <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-[var(--muted)]">
+          v{(pkg as any)?.version || "dev"}
+        </span>
+      </div>
       {/* spacer above heading */}
       <div className="flex-1" />
 
