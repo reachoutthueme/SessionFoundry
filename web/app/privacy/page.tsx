@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export const metadata = {
   title: "Privacy Policy - SessionFoundry",
   description: "How SessionFoundry handles and protects your data.",
@@ -7,10 +9,20 @@ export default function PrivacyPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <header className="mb-6">
-        <h1 className="text-xl font-semibold">Privacy Policy</h1>
-        <p className="mt-1 text-sm text-[var(--muted)]">
-          Our commitment to your privacy, in clear and simple terms.
-        </p>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-semibold">Privacy Policy</h1>
+            <p className="mt-1 text-sm text-[var(--muted)]">
+              Our commitment to your privacy, in clear and simple terms.
+            </p>
+          </div>
+          <Link
+            href="/login?mode=signup"
+            className="shrink-0 rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10"
+          >
+            Back to create account
+          </Link>
+        </div>
       </header>
 
       <article className="prose-sm leading-6 text-[var(--muted)]">
@@ -336,4 +348,3 @@ export default function PrivacyPage() {
     </div>
   );
 }
-

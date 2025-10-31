@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Button from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 import IntakePanel from "@/components/session/IntakePanel";
 import VotingPanel from "@/components/session/VotingPanel.vibrant";
 import StocktakePanel from "@/components/session/StocktakePanel";
@@ -89,7 +90,11 @@ export default function ParticipantPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
+    <div className="max-w-5xl mx-auto p-6 space-y-6 relative">
+      {/* Light/Dark toggle for participants */}
+      <div className="absolute right-4 top-4">
+        <ThemeToggle />
+      </div>
       {/* Header / Hero */}
       {!selected && (
         <div className="relative overflow-hidden rounded-[var(--radius)] border border-white/10 bg-gradient-to-r from-[var(--panel-2)]/90 to-[var(--panel)]/90">

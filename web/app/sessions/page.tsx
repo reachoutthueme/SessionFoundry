@@ -94,6 +94,23 @@ export default function Page() {
     load();
   }, [load]);
 
+  // Open create modal if query param ?new=1 is present
+  useEffect(() => {
+    try {
+      const qs = new URLSearchParams(window.location.search);
+      if (qs.get("new") === "1") {
+        if (reachedFreeLimit) {
+          toast("Free plan allows 1 session. Upgrade to create more.", "error");
+        } else {
+          setOpen(true);
+        }
+      }
+    } catch {
+      // ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reachedFreeLimit]);
+
   const isFreePlan = me?.plan === "free";
   const reachedFreeLimit = isFreePlan && sessions.length >= 1;
 

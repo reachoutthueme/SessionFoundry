@@ -6,9 +6,9 @@ import { usePathname, useRouter } from "next/navigation";
 
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import {
-  IconDashboard,
-  IconSessions,
-  IconTemplates,
+  IconFoundry,
+  IconGroup,
+  IconList,
   IconSettings,
   IconHelp,
   IconChevronLeft,
@@ -72,7 +72,10 @@ export default function Shell({ children }: PropsWithChildren) {
   const isPublicHome =
     pathname === "/" ||
     pathname === "/home" ||
-    pathname.startsWith("/login");
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/privacy") ||
+    pathname.startsWith("/terms") ||
+    pathname.startsWith("/policies");
 
   // auth state
   const [me, setMe] = useState<{
@@ -81,6 +84,7 @@ export default function Shell({ children }: PropsWithChildren) {
     plan: "free" | "pro";
   } | null>(null);
   const [meLoading, setMeLoading] = useState(true);
+  const [authCheckedPath, setAuthCheckedPath] = useState<string | null>(null);
 
   // sidebar collapsed state (persisted)
   const [collapsed, setCollapsed] = useState<boolean>(() => {
@@ -95,6 +99,7 @@ export default function Shell({ children }: PropsWithChildren) {
   useEffect(() => {
     (async () => {
       setMeLoading(true);
+      setAuthCheckedPath(null);
       try {
         const r = await fetch("/api/auth/session", { cache: "no-store" });
         if (r.ok) {
@@ -107,6 +112,7 @@ export default function Shell({ children }: PropsWithChildren) {
         setMe(null);
       } finally {
         setMeLoading(false);
+        setAuthCheckedPath(pathname);
       }
     })();
   }, [pathname]);
@@ -123,6 +129,7 @@ export default function Shell({ children }: PropsWithChildren) {
   // prevent logged-out users from landing on facilitator-only routes
   useEffect(() => {
     if (meLoading) return;
+    if (authCheckedPath !== pathname) return;
 
     const restrictedPrefixes = [
       "/dashboard",
@@ -138,7 +145,7 @@ export default function Shell({ children }: PropsWithChildren) {
     if (!me && isRestricted) {
       router.replace("/");
     }
-  }, [me, meLoading, pathname, router]);
+  }, [me, meLoading, pathname, authCheckedPath, router]);
 
   // Strip chrome entirely on participant/public entry pages
   if (isParticipant || isPublicHome) {
@@ -232,7 +239,7 @@ export default function Shell({ children }: PropsWithChildren) {
                   collapsed={collapsed}
                   href="/dashboard"
                   label="Dashboard"
-                  icon={<IconDashboard />}
+                  icon={<IconFoundry />}
                 />
                 <button
                   className="absolute top-1/2 z-10 h-8 w-8 -translate-y-1/2 grid place-items-center rounded-md border border-white/10 bg-[var(--panel-2)] hover:bg-white/5"
@@ -249,7 +256,7 @@ export default function Shell({ children }: PropsWithChildren) {
                 collapsed={collapsed}
                 href="/sessions"
                 label="Sessions"
-                icon={<IconSessions />}
+                icon={<IconGroup />}
               />
 
               <NavLink
@@ -260,7 +267,7 @@ export default function Shell({ children }: PropsWithChildren) {
                     <span>Templates</span> {!collapsed && <ProTag />}
                   </>
                 }
-                icon={<IconTemplates />}
+                icon={<IconList />}
               />
             </Section>
 

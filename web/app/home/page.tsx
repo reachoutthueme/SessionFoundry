@@ -31,7 +31,7 @@ export default function HomeLandingPage() {
                 className="text-3xl font-semibold tracking-tight text-balance md:text-5xl"
                 aria-label="Session Foundry"
               >
-                <span className="text-white">Session</span>
+                <span className="text-[var(--text)]">Session</span>
                 <span className="text-[var(--brand)]">Foundry</span>
               </h1>
 

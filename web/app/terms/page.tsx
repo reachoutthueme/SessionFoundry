@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export const metadata = {
   title: "Terms & Conditions - SessionFoundry",
   description: "Terms and conditions for using SessionFoundry.",
@@ -7,10 +9,20 @@ export default function TermsPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <header className="mb-6">
-        <h1 className="text-xl font-semibold">Terms & Conditions</h1>
-        <p className="mt-1 text-sm text-[var(--muted)]">
-          The rules and conditions for using SessionFoundry.
-        </p>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-semibold">Terms & Conditions</h1>
+            <p className="mt-1 text-sm text-[var(--muted)]">
+              The rules and conditions for using SessionFoundry.
+            </p>
+          </div>
+          <Link
+            href="/login?mode=signup"
+            className="shrink-0 rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10"
+          >
+            Back to create account
+          </Link>
+        </div>
       </header>
 
       <article className="prose-sm leading-6 text-[var(--muted)]">
@@ -214,4 +226,3 @@ export default function TermsPage() {
     </div>
   );
 }
-

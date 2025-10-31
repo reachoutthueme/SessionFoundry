@@ -142,7 +142,7 @@ export default function Page() {
             <Button variant="outline" onClick={() => router.push("/sessions")}>
               View Sessions
             </Button>
-            <Button onClick={() => router.push("/sessions/new")}>
+            <Button onClick={() => router.push("/sessions?new=1")}>
               New Session
             </Button>
           </div>
