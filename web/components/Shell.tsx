@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import {
   IconDashboard,
-  IconGroup,
+  IconPresentation,
   IconList,
   IconSettings,
   IconHelp,
@@ -261,7 +261,7 @@ export default function Shell({ children }: PropsWithChildren) {
                 collapsed={collapsed}
                 href="/sessions"
                 label="Sessions"
-                icon={<IconGroup />}
+                icon={<IconPresentation />}
               />
 
               <NavLink

@@ -68,6 +68,11 @@ export const IconLock     = (p: IconProps) => svg(p, (<><rect x="5" y="11" width
 export const IconShield   = (p: IconProps) => svg(p, (<>
   <path d="M12 3l7 4v5a9 9 0 0 1-7 8 9 9 0 0 1-7-8V7l7-4z"/>
  </>));
+export const IconPresentation = (p: IconProps) => svg(p, (<>
+  <rect x="3" y="4" width="18" height="12" rx="2" />
+  <path d="M12 16v4" />
+  <path d="M8 20h8" />
+</>));
 
 export const IconSun = (p: IconProps) => svg(p, (
   <>
@@ -104,6 +109,7 @@ export default {
   IconTrophy,
   IconLock,
   IconShield,
+  IconPresentation,
   IconSun,
   IconMoon,
 };
