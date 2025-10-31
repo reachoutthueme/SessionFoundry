@@ -94,6 +94,9 @@ export default function Page() {
     load();
   }, [load]);
 
+  const isFreePlan = me?.plan === "free";
+  const reachedFreeLimit = isFreePlan && sessions.length >= 1;
+
   // Open create modal if query param ?new=1 is present
   useEffect(() => {
     try {
@@ -110,9 +113,6 @@ export default function Page() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reachedFreeLimit]);
-
-  const isFreePlan = me?.plan === "free";
-  const reachedFreeLimit = isFreePlan && sessions.length >= 1;
 
   // Create a new session
   async function create() {
