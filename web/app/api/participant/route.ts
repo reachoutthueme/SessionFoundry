@@ -13,6 +13,7 @@ export async function GET(req: Request) {
     .from("participants")
     .select("id, session_id, display_name, group_id")
     .eq("id", pid)
+    .eq("session_id", session_id)
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ participant: data });

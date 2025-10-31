@@ -25,3 +25,61 @@ export async function getUserFromRequest(req: Request): Promise<AuthedUser> {
   }
 }
 
+// Authorization helpers
+
+export async function userOwnsSession(userId: string, sessionId: string): Promise<boolean> {
+  if (!userId || !sessionId) return false;
+  const { data, error } = await supabaseAdmin
+    .from("sessions")
+    .select("id,facilitator_user_id")
+    .eq("id", sessionId)
+    .maybeSingle();
+  if (error) return false;
+  return !!data && (data as any).facilitator_user_id === userId;
+}
+
+export async function userOwnsActivity(userId: string, activityId: string): Promise<boolean> {
+  if (!userId || !activityId) return false;
+  const { data, error } = await supabaseAdmin
+    .from("activities")
+    .select("session_id")
+    .eq("id", activityId)
+    .maybeSingle();
+  if (error || !data) return false;
+  const sessionId = (data as any).session_id as string | undefined;
+  if (!sessionId) return false;
+  return userOwnsSession(userId, sessionId);
+}
+
+// Participant + session helpers for participant-facing routes
+export type ParticipantRow = { id: string; session_id: string; group_id: string | null; display_name?: string | null };
+
+export async function getParticipantInSession(req: Request, sessionId: string): Promise<ParticipantRow | null> {
+  try {
+    if (!sessionId) return null;
+    const c = await cookies();
+    const pid = c.get(`sf_pid_${sessionId}`)?.value || '';
+    if (!pid) return null;
+    const { data, error } = await supabaseAdmin
+      .from('participants')
+      .select('id, session_id, group_id, display_name')
+      .eq('id', pid)
+      .eq('session_id', sessionId)
+      .maybeSingle();
+    if (error || !data) return null;
+    return data as any;
+  } catch {
+    return null;
+  }
+}
+
+export async function getSessionStatus(sessionId: string): Promise<string | null> {
+  if (!sessionId) return null;
+  const { data, error } = await supabaseAdmin
+    .from('sessions')
+    .select('status')
+    .eq('id', sessionId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return (data as any).status as string;
+}

@@ -1,6 +1,6 @@
 ﻿import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { getParticipantInSession, getSessionStatus } from "@/app/api/_util/auth";
 
 // POST body: { session_id?: string, activity_id?: string, items: { submission_id: string, value: number }[] }
 export async function POST(req: Request) {
@@ -26,9 +26,12 @@ export async function POST(req: Request) {
   }
   if (!activity_id) return NextResponse.json({ error: "activity_id required" }, { status: 400 });
 
-  const cookieStore = await cookies();
-  const pid = session_id ? cookieStore.get(`sf_pid_${session_id}`)?.value : undefined;
-  const voter_id = pid || "anon";
+  const participant = await getParticipantInSession(req, session_id);
+  if (!participant) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const voter_id = participant.id;
+
+  const sStatus = await getSessionStatus(session_id);
+  if (sStatus !== 'Active') return NextResponse.json({ error: "Session not accepting votes" }, { status: 403 });
 
   // Filter + validate values
     // Prevent re-voting: if this voter already has any votes for this activity, block

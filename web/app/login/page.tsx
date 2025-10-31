@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "@/app/lib/supabaseClient";
 import Button from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
@@ -18,6 +19,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
 
   // read ?mode=signup on mount
   useEffect(() => {
@@ -106,6 +108,10 @@ export default function LoginPage() {
     }
     if (password !== confirm) {
       toast("Passwords do not match", "error");
+      return;
+    }
+    if (!acceptTerms) {
+      toast("Please accept the Terms & Conditions", "error");
       return;
     }
 
@@ -202,6 +208,30 @@ export default function LoginPage() {
                 </div>
               )}
 
+              {mode === "signup" && (
+                <div className="mt-1 flex items-start gap-2 text-xs text-[var(--muted)]">
+                  <input
+                    id="accept_terms"
+                    type="checkbox"
+                    className="mt-0.5 h-3.5 w-3.5 rounded border border-white/20 bg-[var(--panel)]"
+                    checked={acceptTerms}
+                    onChange={(e) => setAcceptTerms(e.target.checked)}
+                    disabled={loading}
+                  />
+                  <label htmlFor="accept_terms">
+                    I accept the {" "}
+                    <Link className="underline" href="/terms" target="_blank" rel="noopener noreferrer">
+                      Terms & Conditions
+                    </Link>
+                    {" "}and acknowledge the {" "}
+                    <Link className="underline" href="/privacy" target="_blank" rel="noopener noreferrer">
+                      Privacy Policy
+                    </Link>
+                    .
+                  </label>
+                </div>
+              )}
+
               {/* Action row */}
               {mode === "signin" ? (
                 <div className="flex flex-col gap-2 sm:flex-row">
@@ -223,7 +253,8 @@ export default function LoginPage() {
                     disabled={
                       loading ||
                       password !== confirm ||
-                      password.length < 8
+                      password.length < 8 ||
+                      !acceptTerms
                     }
                   >
                     Create account

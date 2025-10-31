@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
+import { getUserFromRequest, userOwnsSession } from "@/app/api/_util/auth";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const session_id = url.searchParams.get("session_id");
   if (!session_id) return NextResponse.json({ groups: [] });
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  const owns = await userOwnsSession(user.id, session_id);
+  if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const { data, error } = await supabaseAdmin
     .from("groups")
     .select("id, name, session_id, created_at")
@@ -15,10 +20,14 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   const body = await req.json().catch(() => ({}));
   const session_id = (body?.session_id ?? "").toString();
   const name = (body?.name ?? "").toString().trim();
   if (!session_id || !name) return NextResponse.json({ error: "session_id and name required" }, { status: 400 });
+  const owns = await userOwnsSession(user.id, session_id);
+  if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const { data, error } = await supabaseAdmin
     .from("groups")
     .insert({ session_id, name })
@@ -27,4 +36,3 @@ export async function POST(req: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ group: data }, { status: 201 });
 }
-

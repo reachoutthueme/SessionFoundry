@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { getUserFromRequest, userOwnsSession } from "@/app/api/_util/auth";
 
 // GET /api/activities/submission_counts?session_id=...
 // Returns per-activity submission counts by group, plus max_submissions
@@ -7,6 +8,11 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const session_id = url.searchParams.get("session_id");
   if (!session_id) return NextResponse.json({ counts: {} });
+
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  const owns = await userOwnsSession(user.id, session_id);
+  if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const { data: activities, error: ae } = await supabaseAdmin
     .from("activities")

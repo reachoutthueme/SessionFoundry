@@ -5,6 +5,7 @@ import { getUserFromRequest } from "@/app/api/_util/auth";
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   const { data, error } = await supabaseAdmin
     .from("sessions")
     .select("id,name,status,join_code,created_at,facilitator_user_id")
@@ -13,7 +14,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 404 });
   const s: any = data || null;
-  if (s) delete s.facilitator_user_id;
+  if (!s || s.facilitator_user_id !== user.id) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  delete s.facilitator_user_id;
   return NextResponse.json({ session: s });
 }
 

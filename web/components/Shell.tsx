@@ -94,6 +94,7 @@ export default function Shell({ children }: PropsWithChildren) {
   // fetch current user/session
   useEffect(() => {
     (async () => {
+      setMeLoading(true);
       try {
         const r = await fetch("/api/auth/session", { cache: "no-store" });
         if (r.ok) {
@@ -273,8 +274,8 @@ export default function Shell({ children }: PropsWithChildren) {
               />
               <NavLink
                 collapsed={collapsed}
-                href="/help"
-                label="Help"
+                href="/policies"
+                label="Policies"
                 icon={<IconHelp />}
               />
             </Section>

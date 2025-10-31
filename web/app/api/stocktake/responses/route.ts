@@ -1,20 +1,19 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { getParticipantInSession, getSessionStatus } from "@/app/api/_util/auth";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const activity_id = url.searchParams.get("activity_id");
   const session_id = url.searchParams.get("session_id");
-  if (!activity_id || !session_id) return NextResponse.json({ responses: [] });
-  const cookieStore = await cookies();
-  const pid = cookieStore.get(`sf_pid_${session_id}`)?.value;
-  if (!pid) return NextResponse.json({ responses: [] });
+  if (!activity_id || !session_id) return NextResponse.json({ error: "activity_id and session_id required" }, { status: 400 });
+  const participant = await getParticipantInSession(req, session_id);
+  if (!participant) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const { data, error } = await supabaseAdmin
     .from("stocktake_responses")
     .select("initiative_id, choice")
     .eq("activity_id", activity_id)
-    .eq("participant_id", pid);
+    .eq("participant_id", participant.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ responses: data ?? [] });
 }
@@ -26,10 +25,13 @@ export async function POST(req: Request) {
   const choice = (body?.choice ?? "").toString();
   const session_id = (body?.session_id ?? "").toString();
   if (!activity_id || !initiative_id || !choice) return NextResponse.json({ error: "activity_id, initiative_id, choice required" }, { status: 400 });
+  if (!session_id) return NextResponse.json({ error: "session_id required" }, { status: 400 });
+  const participant = await getParticipantInSession(req, session_id);
+  if (!participant) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const participant_id = participant.id;
 
-  const cookieStore = await cookies();
-  const pid = session_id ? cookieStore.get(`sf_pid_${session_id}`)?.value : undefined;
-  const participant_id = pid || "anon";
+  const sStatus = await getSessionStatus(session_id);
+  if (sStatus !== 'Active') return NextResponse.json({ error: "Session not accepting responses" }, { status: 403 });
 
   const { data, error } = await supabaseAdmin
     .from("stocktake_responses")

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabaseAdmin } from "@/app/lib/supabaseAdmin";
+import { getUserFromRequest, getParticipantInSession, getSessionStatus, userOwnsActivity, userOwnsSession } from "@/app/api/_util/auth";
 
 // GET supports activity_id or resolves latest Active/Voting brainstorm activity by session_id
 export async function GET(req: Request) {
@@ -25,6 +26,25 @@ export async function GET(req: Request) {
 
   if (!resolvedActivity) return NextResponse.json({ submissions: [] });
 
+  // Determine session id (needed for auth decisions)
+  let sid = sessionId || '';
+  if (!sid) {
+    const { data: act0 } = await supabaseAdmin.from('activities').select('session_id').eq('id', resolvedActivity).maybeSingle();
+    sid = (act0 as any)?.session_id || '';
+  }
+
+  // Authorization: facilitator owner OR participant of this session
+  const user = await getUserFromRequest(req);
+  let facilitatorCanViewAll = false;
+  if (user && sid) {
+    facilitatorCanViewAll = await userOwnsSession(user.id, sid);
+  }
+  if (!facilitatorCanViewAll) {
+    // Require participant cookie
+    const participant = await getParticipantInSession(req, sid);
+    if (!participant) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   // Try to select with group_id and participant_id if present; fall back otherwise
   let rows: any[] = [];
   {
@@ -46,13 +66,9 @@ export async function GET(req: Request) {
     }
   }
 
-  if (groupOnly) {
+  if (!facilitatorCanViewAll || groupOnly) {
     // Determine session id
-    let sid = sessionId || '';
-    if (!sid) {
-      const { data: act0 } = await supabaseAdmin.from('activities').select('session_id').eq('id', resolvedActivity).maybeSingle();
-      sid = (act0 as any)?.session_id || '';
-    }
+    // sid already resolved above
     // Find this participant's group via cookie
     const cookieStore = await cookies();
     const pid = sid ? cookieStore.get(`sf_pid_${sid}`)?.value : undefined;
@@ -113,19 +129,16 @@ export async function POST(req: Request) {
     session_id = (act0 as any)?.session_id || session_id;
   }
 
-  // participant + group from cookie
-  const cookieStore = await cookies();
-  const pid = session_id ? cookieStore.get(`sf_pid_${session_id}`)?.value : undefined;
-  const participant_id = pid || "anon";
+  // participant + group from cookie (required)
+  const participant = await getParticipantInSession(req, session_id);
+  if (!participant) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const participant_id = participant.id;
   let group_id: string | null = null;
-  if (pid) {
-    const { data: p } = await supabaseAdmin
-      .from("participants")
-      .select("group_id")
-      .eq("id", pid)
-      .maybeSingle();
-    group_id = p?.group_id ?? null;
-  }
+  group_id = participant.group_id ?? null;
+
+  // ensure session is Active for writing
+  const sStatus = await getSessionStatus(session_id);
+  if (sStatus !== 'Active') return NextResponse.json({ error: "Session not accepting submissions" }, { status: 403 });
 
   // Enforce max submissions per activity (per group if present else per participant)
   const { data: act } = await supabaseAdmin

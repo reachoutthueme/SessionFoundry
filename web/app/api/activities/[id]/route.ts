@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { getUserFromRequest, userOwnsActivity } from "@/app/api/_util/auth";
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  const owns = await userOwnsActivity(user.id, id);
+  if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const body = await req.json().catch(() => ({}));
 
   // Allow a controlled set of fields to be updated

@@ -14,6 +14,9 @@ export async function POST(req: Request) {
     .eq("join_code", join_code)
     .single();
   if (se || !ses) return NextResponse.json({ error: "Invalid join code" }, { status: 404 });
+  if ((ses as any).status === 'Completed') {
+    return NextResponse.json({ error: "Session is closed" }, { status: 403 });
+  }
 
   const { data: part, error: pe } = await supabaseAdmin
     .from("participants")

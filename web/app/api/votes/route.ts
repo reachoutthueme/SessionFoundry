@@ -1,6 +1,6 @@
 ﻿import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
+import { getParticipantInSession, getSessionStatus } from "@/app/api/_util/auth";
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
@@ -33,19 +33,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "activity_id or session_id required" }, { status: 400 });
   }
 
-  // participant cookie and group
-  const cookieStore = await cookies();
-  const pid = session_id ? cookieStore.get(`sf_pid_${session_id}`)?.value : undefined;
-  const voter_id = pid || "anon";
-  let group_id: string | null = null;
-  if (pid) {
-    const { data: p } = await supabaseAdmin
-      .from("participants")
-      .select("group_id")
-      .eq("id", pid)
-      .maybeSingle();
-    group_id = p?.group_id ?? null;
-  }
+  // participant from cookie (required) and group
+  const participant = await getParticipantInSession(req, session_id);
+  if (!participant) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const voter_id = participant.id;
+  let group_id: string | null = participant.group_id ?? null;
+
+  // session must be Active for voting
+  const sStatus = await getSessionStatus(session_id);
+  if (sStatus !== 'Active') return NextResponse.json({ error: "Session not accepting votes" }, { status: 403 });
 
   const { data, error } = await supabaseAdmin
     .from("votes")

@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Privacy Policy • SessionFoundry",
+  title: "Privacy Policy - SessionFoundry",
   description: "How SessionFoundry handles and protects your data.",
 };
 
@@ -13,141 +13,325 @@ export default function PrivacyPage() {
         </p>
       </header>
 
-      <article
-        className="prose-sm leading-6 text-[var(--muted)] whitespace-pre-wrap"
-        style={{}}
-      >
-        <div className="whitespace-pre-wrap">
-1. Who we are
-SessionFoundry (�?owe�??, �?ous�??, �?oour�??) is a web app for planning and running workshops, collecting input from participants, voting on ideas, and exporting results.
-Data controller:
-SessionFoundry 
-Contact: reachoutthueme@gmail.com
-Under the EU General Data Protection Regulation (�?oGDPR�??), the �?odata controller�?? is the party that decides why and how personal data is processed. We act as controller for facilitator accounts and participant data in sessions you run.
-2. What data we collect
-We collect only what we need to run the service.
-2.1 Facilitator account data
-When you create an account or sign in as a facilitator, we collect:
-�?�	Email address
-�?�	Password (stored as a secure hash through our authentication provider, not in plain text)
-�?�	Plan / subscription status (e.g. �?ofree�??, �?opro�??)
-�?�	Basic app activity like �?owhich sessions you created�??
-Why we need it: to let you sign in, manage workshops, access exports, and enforce plan limits.
-2.2 Workshop/session data
-When you create a session:
-�?�	Session name, description and metadata
-�?�	Activities you configure (e.g. brainstorm prompts, stocktake prompts, timing, voting rules)
-�?�	Internal tags/labels you add
-�?�	Whether voting is enabled, budget, max submissions, etc.
-Why we need it: to actually run your workshop experience and show you results.
-2.3 Participant data
-When someone joins a session as a participant:
-�?�	Display name they enter (this could be a real name, a nickname, or a group name - it's up to what they type)
-�?�	Which group/team they joined
-�?�	Their submissions (ideas, comments, suggestions)
-�?�	Their votes in voting activities
-Why we need it:
-�?�	to show input live to the facilitator and (in some cases) to other participants
-�?�	to calculate scores, consensus and results
-�?�	to let the facilitator export a summary after the workshop
-Note: �?oparticipant display name + their submission�?? can be personal data under GDPR if it can be linked back to an identifiable person. Personal data is any information relating to an identified or identifiable natural person (GDPR Article 4(1)). We treat it as personal data.
-2.4 Usage and technical data
-When you use the app, we (or our hosting providers) may automatically receive:
-�?�	IP address
-�?�	Browser/device info
-�?�	Timestamps, basic request logs, error logs
-Why we need it:
-�?�	to keep the service reliable and secure
-�?�	to debug performance issues
-�?�	to prevent abuse/fraud
-We currently do not run advertising trackers or behavioral ad pixels.
-2.5 Cookies / local storage
-We use:
-�?�	An authentication/session cookie so that when you refresh the page you remain signed in
-�?�	Local storage flags (for example, remembering if you collapsed the sidebar, and in some flows a �?ologged_out�?? marker so we don�?Tt auto-log you back in when you�?Tve explicitly chosen to sign out)
-We do not use third-party advertising cookies.
-3. Why we process your data (legal bases)
-Under GDPR we must tell you the �?olegal basis�?? for processing your data.
-We process personal data because:
-1.	We need to perform a contract with you
-o	Example: creating and maintaining your facilitator account, letting you run workshops.
-This is allowed under GDPR when processing is necessary for the performance of a contract with the data subject (GDPR Article 6(1)(b)).
-2.	We have a legitimate interest in running and improving a secure service
-o	Example: preventing spam/joke sessions, limiting abuse, debugging crashes, enforcing rate limits, keeping audit trails to investigate misuse.
-Controllers can rely on �?olegitimate interests�?? where those interests are not overridden by the rights and freedoms of the data subject (GDPR Article 6(1)(f)).
-3.	We need to comply with legal obligations
-o	Example: retaining minimal records of access or activity if required to respond to lawful requests, fraud investigations, or data subject rights requests.
-This is allowed under GDPR Article 6(1)(c) (legal obligation).
-We do not currently do automated decision-making that has legal or similarly significant effects, and we do not do marketing profiling.
-4. How we use (and share) data
-We use your data to:
-�?�	authenticate you
-�?�	show you your sessions and activities
-�?�	let participants submit ideas and votes in real time
-�?�	calculate and display results, leaderboards, consensus, averages, etc.
-�?�	generate exports (e.g. a summary / report / deck) for the facilitator
-We share data with:
-�?�	Our hosting providers:
-o	Vercel (app hosting / deployment)
-o	Supabase (database, auth, storage)
-That means personal data you enter (email, submissions, etc.) is stored and processed on those providers�?T infrastructure.
-�?�	Other participants in the same session:
-Depending on settings, participants may see each other�?Ts submissions, votes, names, or scores. That�?Ts part of how collaborative workshops work.
-We do not sell personal data to advertisers.
-International transfers:
-Hosting providers may process data in the EU or outside the EEA. If personal data is transferred to a country outside the EEA, GDPR requires appropriate safeguards (for example, standard contractual clauses) to protect that data (GDPR Article 46).
-5. How long we keep data
-We keep:
-�?�	facilitator account data for as long as your account is active
-�?�	session content (activities, submissions, votes) so you can revisit and export outcomes
-�?�	basic access logs and diagnostic logs for security and abuse prevention
-We may delete or anonymize workshop data after a period of inactivity, or if you ask us to delete it (see �?oYour rights�?? below). If we are legally required to keep certain minimal records (e.g. to show when a request was made, or to enforce a �?odo not contact�?? rule), we may keep that limited record even after deletion of the main content. Under GDPR, the right to erasure is not absolute and can be refused in some cases where retention is still legally required or needed for legal claims.
-6. Your rights under GDPR
-If you are in the EU/EEA (or similar regimes that mirror GDPR), you have rights over your personal data. In plain language:
-1.	Right of access.
-You can ask us for a copy of the personal data we hold about you, plus details like why we�?Tre processing it, who receives it, and how long we plan to store it. This is GDPR Article 15. 
-We have to respond without undue delay and generally within one month. 
-In some cases we may need to ask you to prove you are you, to protect everyone�?Ts data.
-2.	Right to rectification.
-You can ask us to correct inaccurate personal data (GDPR Article 16).
-3.	Right to erasure (�?oright to be forgotten�??).
-You can ask us to delete your personal data when it�?Ts no longer needed, you withdraw consent (if consent was the basis), or you object and there�?Ts no overriding reason to keep processing. This is GDPR Article 17. 
-This right is not absolute; for example, we may keep minimal records if we�?Tre required to for legal reasons or to prevent abuse.
-4.	Right to restriction of processing.
-You can ask us to pause certain processing of your data, for example while we verify accuracy (GDPR Article 18).
-5.	Right to data portability.
-You can ask for the data you provided us in a structured, commonly used, machine-readable format (GDPR Article 20).
-Practically, this can include exporting your workshop content.
-6.	Right to object.
-You can object to certain kinds of processing, especially if we�?Tre relying on �?olegitimate interests�?? (GDPR Article 21).
-7.	Right to complain.
-You can lodge a complaint with your local data protection authority if you believe we�?Tre mishandling your personal data. (For Denmark this is Datatilsynet.)
-How to use these rights:
-Email us at reachoutthueme@gmail.com and clearly describe which right you�?Tre exercising. We�?Tll respond as required by GDPR (usually within one month, unless the request is unusually complex).
-We may ask you to verify identity to protect accounts and participant data.
-7. Children�?Ts data
-SessionFoundry is not designed for children under 16 to create facilitator accounts.
-Workshop facilitators are responsible for how they invite participants. If you run a workshop with minors or collect personal information about minors, you are responsible for having the appropriate consent/authority to do so under local law.
-If you believe we have collected personal data from a child without proper basis, contact us at reachoutthueme@gmail.com and we will review and, if appropriate, delete it.
-8. Security
-We take reasonable technical and organizational measures to protect data, including:
-�?�	Authentication through Supabase (passwords are hashed; we never store raw passwords)
-�?�	Role separation between �?ofacilitator�?? and �?oparticipant�??
-�?�	Access controls limiting who can view certain session data
-�?�	HTTPS/TLS in transit
-�?�	Logged access to backend actions to help detect abuse
-No online system is 100% secure, but we actively try to reduce risk and detect misuse early.
-9. Data retention for exported reports
-One of SessionFoundry�?Ts core features is generating a summary/�?odeck�?? of all submissions, votes, and insights after a workshop.
-That export can contain personal data (like participant display names and what they said). Once you download an export, you-as the facilitator-are responsible for storing/using/sharing that export in a GDPR-compliant way within your own organization.
-If a participant later asks for their data to be removed, we can delete it from our live systems (subject to legal exceptions), but we cannot automatically pull it back from files you�?Tve already exported and stored elsewhere. This is normal under GDPR: your right to erasure applies to data we control, and does not force deletion of independently stored copies in every circumstance. 
-10. Changes to this policy
-We may update this Privacy Policy as we add features (for example: payments, organization workspaces, analytics dashboards). If we make material changes, we'll update the "Last updated" date at the top and, where appropriate, notify account holders via email or in-app notice.
-11. Contact
-To ask questions or exercise your GDPR rights, contact us:
-Email: reachoutthueme@gmail.com
-If you are unsatisfied with our response, you can contact your local data protection authority. In Denmark, that is Datatilsynet (the Danish Data Protection Agency).
-        </div>
+      <article className="prose-sm leading-6 text-[var(--muted)]">
+        <section className="space-y-2">
+          <h2 className="text-base font-medium text-white">1. Who we are</h2>
+          <p>
+            SessionFoundry ("we", "us", "our") is a web app for planning and
+            running workshops, collecting input from participants, voting on
+            ideas, and exporting results.
+          </p>
+          <p>
+            <strong>Data controller:</strong> SessionFoundry
+            <br />
+            <strong>Contact:</strong> reachoutthueme@gmail.com
+          </p>
+          <p>
+            Under the EU General Data Protection Regulation (GDPR), the "data
+            controller" is the party that decides why and how personal data is
+            processed. We act as controller for facilitator accounts and
+            participant data in sessions you run.
+          </p>
+        </section>
+
+        <section className="mt-6 space-y-2">
+          <h2 className="text-base font-medium text-white">2. What data we collect</h2>
+          <p>We collect only what we need to run the service.</p>
+
+          <h3 className="font-medium">2.1 Facilitator account data</h3>
+          <p>When you create an account or sign in as a facilitator, we collect:</p>
+          <ul className="list-disc pl-6">
+            <li>Email address</li>
+            <li>
+              Password (stored as a secure hash through our authentication
+              provider, not in plain text)
+            </li>
+            <li>Plan / subscription status (for example, "free", "pro")</li>
+            <li>Basic app activity like which sessions you created</li>
+          </ul>
+          <p>
+            <em>Why we need it:</em> to let you sign in, manage workshops,
+            access exports, and enforce plan limits.
+          </p>
+
+          <h3 className="font-medium">2.2 Workshop/session data</h3>
+          <p>When you create a session we store:</p>
+          <ul className="list-disc pl-6">
+            <li>Session name, description and metadata</li>
+            <li>
+              Activities you configure (for example, brainstorm prompts,
+              stocktake prompts, timing, voting rules)
+            </li>
+            <li>Internal tags/labels you add</li>
+            <li>Whether voting is enabled, budget, max submissions, etc.</li>
+          </ul>
+          <p>
+            <em>Why we need it:</em> to run your workshop and show you results.
+          </p>
+
+          <h3 className="font-medium">2.3 Participant data</h3>
+          <p>When someone joins a session as a participant we collect:</p>
+          <ul className="list-disc pl-6">
+            <li>
+              Display name they enter (real name, nickname, or group name - up
+              to what they type)
+            </li>
+            <li>Which group/team they joined</li>
+            <li>Their submissions (ideas, comments, suggestions)</li>
+            <li>Their votes in voting activities</li>
+          </ul>
+          <p>
+            <em>Why we need it:</em>
+          </p>
+          <ul className="list-disc pl-6">
+            <li>
+              to show input live to the facilitator and (in some cases) to other
+              participants
+            </li>
+            <li>to calculate scores, consensus and results</li>
+            <li>to let the facilitator export a summary after the workshop</li>
+          </ul>
+          <p>
+            Note: participant display name plus their submission can be personal
+            data under GDPR if it can be linked back to an identifiable person
+            (GDPR Article 4(1)). We treat it as personal data.
+          </p>
+
+          <h3 className="font-medium">2.4 Usage and technical data</h3>
+          <p>When you use the app, we (or our hosting providers) may receive:</p>
+          <ul className="list-disc pl-6">
+            <li>IP address</li>
+            <li>Browser/device info</li>
+            <li>Timestamps, basic request logs, error logs</li>
+          </ul>
+          <p>
+            <em>Why we need it:</em>
+          </p>
+          <ul className="list-disc pl-6">
+            <li>to keep the service reliable and secure</li>
+            <li>to debug performance issues</li>
+            <li>to prevent abuse/fraud</li>
+          </ul>
+          <p>We currently do not run advertising trackers or behavioral ad pixels.</p>
+
+          <h3 className="font-medium">2.5 Cookies / local storage</h3>
+          <p>We use:</p>
+          <ul className="list-disc pl-6">
+            <li>
+              An authentication/session cookie so that when you refresh the page
+              you remain signed in
+            </li>
+            <li>
+              Local storage flags (for example, remembering if you collapsed the
+              sidebar, and in some flows a "logged_out" marker so we do not
+              auto-log you back in when you have explicitly chosen to sign out)
+            </li>
+          </ul>
+          <p>We do not use third-party advertising cookies.</p>
+        </section>
+
+        <section className="mt-6 space-y-2">
+          <h2 className="text-base font-medium text-white">
+            3. Why we process your data (legal bases)
+          </h2>
+          <p>Under GDPR we must tell you the legal basis for processing.</p>
+          <ol className="list-decimal pl-6 space-y-2">
+            <li>
+              <strong>Contract necessity (GDPR 6(1)(b)).</strong> Creating and
+              maintaining your facilitator account; letting you run workshops.
+            </li>
+            <li>
+              <strong>Legitimate interests (GDPR 6(1)(f)).</strong> Preventing
+              spam and abuse, debugging crashes, enforcing rate limits, keeping
+              audit trails to investigate misuse.
+            </li>
+            <li>
+              <strong>Legal obligations (GDPR 6(1)(c)).</strong> Retaining
+              minimal records if required to respond to lawful requests, fraud
+              investigations, or data subject rights requests.
+            </li>
+          </ol>
+          <p>
+            We do not perform automated decision-making with legal or similar
+            significant effects, and we do not do marketing profiling.
+          </p>
+        </section>
+
+        <section className="mt-6 space-y-2">
+          <h2 className="text-base font-medium text-white">
+            4. How we use (and share) data
+          </h2>
+          <p>We use your data to:</p>
+          <ul className="list-disc pl-6">
+            <li>authenticate you</li>
+            <li>show you your sessions and activities</li>
+            <li>let participants submit ideas and votes in real time</li>
+            <li>calculate and display results, leaderboards, consensus, averages</li>
+            <li>generate exports (for example, a summary/report/deck)</li>
+          </ul>
+          <p>We share data with:</p>
+          <ul className="list-disc pl-6">
+            <li>
+              Hosting providers: Vercel (app hosting/deployment) and Supabase
+              (database, auth, storage). Personal data you enter is stored and
+              processed on those providers' infrastructure.
+            </li>
+            <li>
+              Other participants in the same session (depending on settings),
+              who may see each other's submissions, votes, names, or scores.
+            </li>
+          </ul>
+          <p>We do not sell personal data to advertisers.</p>
+          <p>
+            <strong>International transfers:</strong> Providers may process data
+            in the EU or outside the EEA. If personal data is transferred to a
+            country outside the EEA, GDPR requires appropriate safeguards (for
+            example, standard contractual clauses) to protect that data (GDPR
+            Article 46).
+          </p>
+        </section>
+
+        <section className="mt-6 space-y-2">
+          <h2 className="text-base font-medium text-white">
+            5. How long we keep data
+          </h2>
+          <ul className="list-disc pl-6">
+            <li>Facilitator account data: as long as your account is active</li>
+            <li>
+              Session content (activities, submissions, votes): so you can
+              revisit and export outcomes
+            </li>
+            <li>
+              Basic access logs and diagnostic logs: for security and abuse
+              prevention
+            </li>
+          </ul>
+          <p>
+            We may delete or anonymize workshop data after a period of
+            inactivity, or if you ask us to delete it (see "Your rights"). If we
+            are legally required to keep certain minimal records (for example, to
+            show when a request was made, or to enforce a "do not contact"
+            rule), we may keep that limited record even after deleting the main
+            content. Under GDPR, the right to erasure is not absolute.
+          </p>
+        </section>
+
+        <section className="mt-6 space-y-2">
+          <h2 className="text-base font-medium text-white">
+            6. Your rights under GDPR
+          </h2>
+          <ol className="list-decimal pl-6 space-y-2">
+            <li>
+              <strong>Right of access (Art. 15).</strong> Get a copy of your
+              personal data and details about processing. We respond without
+              undue delay and generally within one month.
+            </li>
+            <li>
+              <strong>Right to rectification (Art. 16).</strong> Ask us to
+              correct inaccurate personal data.
+            </li>
+            <li>
+              <strong>Right to erasure (Art. 17).</strong> Ask us to delete your
+              personal data when it is no longer needed, consent is withdrawn,
+              or you object and there is no overriding reason.
+            </li>
+            <li>
+              <strong>Right to restriction (Art. 18).</strong> Ask us to pause
+              certain processing, for example while verifying accuracy.
+            </li>
+            <li>
+              <strong>Right to data portability (Art. 20).</strong> Receive the
+              data you provided in a structured, commonly used, machine-readable
+              format.
+            </li>
+            <li>
+              <strong>Right to object (Art. 21).</strong> Object to certain
+              processing, especially where we rely on legitimate interests.
+            </li>
+            <li>
+              <strong>Right to complain.</strong> Lodge a complaint with your
+              local data protection authority (in Denmark: Datatilsynet).
+            </li>
+          </ol>
+          <p>
+            To exercise your rights, email
+            {' '}<a className="underline" href="mailto:reachoutthueme@gmail.com">reachoutthueme@gmail.com</a>
+            {' '}and describe which right you are exercising. We may ask you to
+            verify your identity.
+          </p>
+        </section>
+
+        <section className="mt-6 space-y-2">
+          <h2 className="text-base font-medium text-white">7. Children's data</h2>
+          <p>
+            SessionFoundry is not designed for children under 16 to create
+            facilitator accounts. Facilitators are responsible for how they
+            invite participants and for obtaining appropriate consent where
+            required.
+          </p>
+          <p>
+            If you believe we collected personal data from a child without
+            proper basis, contact us and we will review and, if appropriate,
+            delete it.
+          </p>
+        </section>
+
+        <section className="mt-6 space-y-2">
+          <h2 className="text-base font-medium text-white">8. Security</h2>
+          <p>We take reasonable technical and organizational measures to protect data, including:</p>
+          <ul className="list-disc pl-6">
+            <li>Authentication through Supabase (passwords are hashed)</li>
+            <li>Role separation between "facilitator" and "participant"</li>
+            <li>Access controls limiting who can view certain session data</li>
+            <li>HTTPS/TLS in transit</li>
+            <li>Logged access to backend actions to help detect abuse</li>
+          </ul>
+          <p>No online system is 100% secure, but we work to reduce risk.</p>
+        </section>
+
+        <section className="mt-6 space-y-2">
+          <h2 className="text-base font-medium text-white">
+            9. Data retention for exported reports
+          </h2>
+          <p>
+            One of SessionFoundry's core features is generating a summary/deck
+            of all submissions, votes, and insights after a workshop. That
+            export can contain personal data (like participant display names and
+            what they said). Once you download an export, you - as the
+            facilitator - are responsible for storing/using/sharing it in a
+            GDPR-compliant way within your organization.
+          </p>
+          <p>
+            If a participant asks for their data to be removed, we can delete it
+            from our live systems (subject to legal exceptions), but we cannot
+            automatically pull it back from files you have already exported and
+            stored elsewhere.
+          </p>
+        </section>
+
+        <section className="mt-6 space-y-2">
+          <h2 className="text-base font-medium text-white">
+            10. Changes to this policy
+          </h2>
+          <p>
+            We may update this Privacy Policy as we add features (for example:
+            payments, organization workspaces, analytics dashboards). If we make
+            material changes, we will update the "Last updated" date at the top
+            and, where appropriate, notify account holders via email or in-app
+            notice.
+          </p>
+        </section>
+
+        <section className="mt-6 space-y-2">
+          <h2 className="text-base font-medium text-white">11. Contact</h2>
+          <p>
+            To ask questions or exercise your GDPR rights, contact us at
+            {' '}<a className="underline" href="mailto:reachoutthueme@gmail.com">reachoutthueme@gmail.com</a>.
+            If you are unsatisfied with our response, you can contact your local
+            data protection authority. In Denmark, that is Datatilsynet (the
+            Danish Data Protection Agency).
+          </p>
+        </section>
       </article>
     </div>
   );

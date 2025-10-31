@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
+import { getUserFromRequest, userOwnsSession } from "@/app/api/_util/auth";
 
 // GET /api/leaderboard?session_id=...
 // Returns group totals across all brainstorm activities in a session.
@@ -7,6 +8,10 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const session_id = url.searchParams.get("session_id");
   if (!session_id) return NextResponse.json({ error: "session_id required" }, { status: 400 });
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  const owns = await userOwnsSession(user.id, session_id);
+  if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Activities (brainstorm only)
   const { data: acts, error: ae } = await supabaseAdmin
@@ -76,4 +81,3 @@ export async function GET(req: Request) {
 
   return NextResponse.json({ leaderboard: out });
 }
-
