@@ -6,14 +6,16 @@ import { usePathname, useRouter } from "next/navigation";
 
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import {
-  IconFoundry,
+  IconDashboard,
   IconGroup,
   IconList,
   IconSettings,
   IconHelp,
+  IconShield,
   IconChevronLeft,
   IconChevronRight,
 } from "@/components/ui/Icons";
+import Modal from "@/components/ui/Modal";
 import ProTag from "@/components/ui/ProTag";
 import Logo from "@/components/ui/Logo";
 import LogoutButton from "@/components/ui/LogoutButton";
@@ -85,6 +87,9 @@ export default function Shell({ children }: PropsWithChildren) {
   } | null>(null);
   const [meLoading, setMeLoading] = useState(true);
   const [authCheckedPath, setAuthCheckedPath] = useState<string | null>(null);
+  const [policiesOpen, setPoliciesOpen] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   // sidebar collapsed state (persisted)
   const [collapsed, setCollapsed] = useState<boolean>(() => {
@@ -239,7 +244,7 @@ export default function Shell({ children }: PropsWithChildren) {
                   collapsed={collapsed}
                   href="/dashboard"
                   label="Dashboard"
-                  icon={<IconFoundry />}
+                  icon={<IconDashboard />}
                 />
                 <button
                   className="absolute top-1/2 z-10 h-8 w-8 -translate-y-1/2 grid place-items-center rounded-md border border-white/10 bg-[var(--panel-2)] hover:bg-white/5"
@@ -279,12 +284,33 @@ export default function Shell({ children }: PropsWithChildren) {
                 label="Settings"
                 icon={<IconSettings />}
               />
-              <NavLink
-                collapsed={collapsed}
-                href="/policies"
-                label="Policies"
-                icon={<IconHelp />}
-              />
+              {/* Policies accordion */}
+              <div>
+                <button
+                  className={`w-full flex items-center ${collapsed ? 'justify-center' : 'gap-2'} rounded-md border border-transparent px-3 py-2 hover:border-white/10 hover:bg-white/5`}
+                  onClick={() => setPoliciesOpen((o) => !o)}
+                  aria-expanded={policiesOpen}
+                >
+                  <IconShield />
+                  {!collapsed && <span>Policies</span>}
+                </button>
+                {!collapsed && policiesOpen && (
+                  <div className="mt-1 ml-9 space-y-1">
+                    <button
+                      className="w-full text-left text-sm rounded-md border border-transparent px-3 py-2 hover:border-white/10 hover:bg-white/5"
+                      onClick={() => setShowPrivacy(true)}
+                    >
+                      Privacy Policy
+                    </button>
+                    <button
+                      className="w-full text-left text-sm rounded-md border border-transparent px-3 py-2 hover:border-white/10 hover:bg-white/5"
+                      onClick={() => setShowTerms(true)}
+                    >
+                      Terms & Conditions
+                    </button>
+                  </div>
+                )}
+              </div>
             </Section>
 
             {/* THEME TOGGLE */}
@@ -306,6 +332,18 @@ export default function Shell({ children }: PropsWithChildren) {
           {children}
         </div>
       </main>
+
+      {/* Policy modals */}
+      <Modal open={showPrivacy} onClose={() => setShowPrivacy(false)} title="Privacy Policy" size="lg">
+        <div className="w-full h-[70vh]">
+          <iframe src="/privacy" className="w-full h-full rounded" />
+        </div>
+      </Modal>
+      <Modal open={showTerms} onClose={() => setShowTerms(false)} title="Terms & Conditions" size="lg">
+        <div className="w-full h-[70vh]">
+          <iframe src="/terms" className="w-full h-full rounded" />
+        </div>
+      </Modal>
     </div>
   );
 }

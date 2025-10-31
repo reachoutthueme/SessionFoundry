@@ -65,6 +65,9 @@ export const IconTimer    = (p: IconProps) => svg(p, (<><circle cx="12" cy="14" 
 export const IconTrophy   = (p: IconProps) => svg(p, (<><path d="M8 21h8"/><path d="M12 17v4"/><path d="M17 5h3a3 3 0 0 1-3 3"/><path d="M7 5H4a3 3 0 0 0 3 3"/><rect x="7" y="2" width="10" height="12" rx="5"/></>));
 
 export const IconLock     = (p: IconProps) => svg(p, (<><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>));
+export const IconShield   = (p: IconProps) => svg(p, (<>
+  <path d="M12 3l7 4v5a9 9 0 0 1-7 8 9 9 0 0 1-7-8V7l7-4z"/>
+ </>));
 
 export const IconSun = (p: IconProps) => svg(p, (
   <>
@@ -100,6 +103,7 @@ export default {
   IconTimer,
   IconTrophy,
   IconLock,
+  IconShield,
   IconSun,
   IconMoon,
 };
