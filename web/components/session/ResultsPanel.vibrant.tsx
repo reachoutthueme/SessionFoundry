@@ -346,6 +346,85 @@ function BrainstormBlock({ subs }: { subs: Sub[] }) {
     );
   }
 
+  // Sorting + filtering state
+  const [sortKey, setSortKey] = useState<
+    "avg" | "stdev" | "n" | "consensus" | "idea" | "author"
+  >("avg");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [ideaQuery, setIdeaQuery] = useState("");
+  const [authorQuery, setAuthorQuery] = useState("");
+  const [minAvg, setMinAvg] = useState<string>("");
+  const [maxStdev, setMaxStdev] = useState<string>("");
+  const [minN, setMinN] = useState<string>("");
+
+  function getSortValue(s: Sub) {
+    const consensusVal = 1 / (1 + ((s.stdev ?? 0) as number));
+    switch (sortKey) {
+      case "avg":
+        return s.avg ?? -Infinity;
+      case "stdev":
+        return s.stdev ?? Infinity;
+      case "n":
+        return s.n ?? 0;
+      case "consensus":
+        return consensusVal;
+      case "idea":
+        return (s.text || "").toLowerCase();
+      case "author":
+        return (s.participant_name || "").toLowerCase();
+    }
+  }
+
+  const filteredSorted = useMemo(() => {
+    const q = ideaQuery.trim().toLowerCase();
+    const qa = authorQuery.trim().toLowerCase();
+    const minAvgNum = minAvg.trim() === "" ? null : Number(minAvg);
+    const maxStNum = maxStdev.trim() === "" ? null : Number(maxStdev);
+    const minNNum = minN.trim() === "" ? null : Number(minN);
+
+    const rows = subs.filter((s) => {
+      if (q && !(s.text || "").toLowerCase().includes(q)) return false;
+      if (qa && !(s.participant_name || "").toLowerCase().includes(qa)) return false;
+      if (minAvgNum !== null && Number.isFinite(minAvgNum)) {
+        if ((s.avg ?? -Infinity) < minAvgNum) return false;
+      }
+      if (maxStNum !== null && Number.isFinite(maxStNum)) {
+        if ((s.stdev ?? Infinity) > maxStNum) return false;
+      }
+      if (minNNum !== null && Number.isFinite(minNNum)) {
+        if ((s.n ?? 0) < minNNum) return false;
+      }
+      return true;
+    });
+
+    rows.sort((a, b) => {
+      const av = getSortValue(a);
+      const bv = getSortValue(b);
+      if (av === bv) return 0;
+      const dir = sortDir === "asc" ? 1 : -1;
+      // string vs number safe compare
+      if (typeof av === "string" && typeof bv === "string") {
+        return av < bv ? -1 * dir : 1 * dir;
+      }
+      return (Number(av) - Number(bv)) * dir;
+    });
+
+    return rows;
+  }, [subs, ideaQuery, authorQuery, minAvg, maxStdev, minN, sortKey, sortDir]);
+
+  function onHeaderClick(k: typeof sortKey) {
+    if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
+      setSortKey(k);
+      setSortDir(k === "stdev" ? "asc" : "desc"); // stdev low→high by default
+    }
+  }
+
+  function sortIndicator(k: typeof sortKey) {
+    if (sortKey !== k) return null;
+    return <span className="ml-1 opacity-70">{sortDir === "asc" ? "▲" : "▼"}</span>;
+  }
+
   return (
     <div className="space-y-4">
       {/* Scatter plot of consensus vs avg */}
@@ -359,66 +438,115 @@ function BrainstormBlock({ subs }: { subs: Sub[] }) {
         }))}
       />
 
-      {/* List of ideas with metrics */}
-      {subs.map((s, idx) => (
-        <div
-          key={s.id}
-          className="p-3 rounded-md bg-white/5 border border-white/10"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center justify-center w-5 h-5 text-[10px] rounded-full bg-[var(--brand)]/20 border border-[var(--border)] text-[var(--text)]">
-                {idx + 1}
-              </span>
-              <div className="font-medium break-words">{s.text}</div>
-            </div>
-            <div className="text-xs text-[var(--muted)]">
-              by {s.participant_name || "Anonymous"}
-            </div>
-          </div>
-
-          <div className="mt-1 text-xs text-[var(--muted)] flex items-center gap-2 flex-wrap">
-            {badge(
-              "Avg",
-              s.avg === null ? "-" : (s.avg as number).toFixed(2),
-              norm(s.avg ?? 0, avgMM, false)
-            )}
-            {badge(
-              "Stdev",
-              s.stdev === null ? "-" : (s.stdev as number).toFixed(2),
-              norm(s.stdev ?? 0, stMM, true) // lower stdev is better
-            )}
-            {badge(
-              "N",
-              String(s.n ?? 0),
-              norm(s.n ?? 0, nMM, false)
-            )}
-            {badge(
-              "Consensus",
-              `${Math.round(
-                (1 / (1 + ((s.stdev ?? 0) as number))) * 100
-              )}%`,
-              norm(
-                1 / (1 + ((s.stdev ?? 0) as number)),
-                cMM,
-                false
-              )
-            )}
-          </div>
-
-          {s.votes && s.votes.length > 0 && (
-            <div className="mt-2 text-xs text-[var(--muted)]/90">
-              Votes:{" "}
-              {s.votes.map((v, i) => (
-                <span key={i} className="mr-3">
-                  {v.value}
-                  {v.voter_name ? ` by ${v.voter_name}` : ""}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
+      {/* Tabular summary of ideas with metrics */}
+      <div className="overflow-x-auto rounded-[var(--radius)] border border-white/10">
+        <table className="w-full text-sm">
+          <thead className="bg-white/5 text-[var(--muted)]">
+            <tr>
+              <th className="px-3 py-2 text-left w-10">#</th>
+              <th className="px-3 py-2 text-left cursor-pointer" onClick={() => onHeaderClick("idea")}>
+                Idea{sortIndicator("idea")}
+              </th>
+              <th className="px-3 py-2 text-right cursor-pointer" onClick={() => onHeaderClick("avg")}>
+                Avg{sortIndicator("avg")}
+              </th>
+              <th className="px-3 py-2 text-right cursor-pointer" onClick={() => onHeaderClick("stdev")}>
+                Stdev{sortIndicator("stdev")}
+              </th>
+              <th className="px-3 py-2 text-right cursor-pointer" onClick={() => onHeaderClick("n")}>
+                N{sortIndicator("n")}
+              </th>
+              <th className="px-3 py-2 text-right cursor-pointer" onClick={() => onHeaderClick("consensus")}>
+                Consensus{sortIndicator("consensus")}
+              </th>
+              <th className="px-3 py-2 text-left cursor-pointer" onClick={() => onHeaderClick("author")}>
+                Author{sortIndicator("author")}
+              </th>
+            </tr>
+            {/* Filter row */}
+            <tr className="text-xs">
+              <th />
+              <th className="px-3 py-1">
+                <input
+                  placeholder="Filter idea"
+                  value={ideaQuery}
+                  onChange={(e) => setIdeaQuery(e.target.value)}
+                  className="w-full rounded-md border border-white/10 bg-white/5 px-2 py-1 outline-none"
+                />
+              </th>
+              <th className="px-3 py-1 text-right">
+                <input
+                  placeholder=">= avg"
+                  value={minAvg}
+                  onChange={(e) => setMinAvg(e.target.value)}
+                  className="w-24 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-right outline-none"
+                />
+              </th>
+              <th className="px-3 py-1 text-right">
+                <input
+                  placeholder="<= stdev"
+                  value={maxStdev}
+                  onChange={(e) => setMaxStdev(e.target.value)}
+                  className="w-24 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-right outline-none"
+                />
+              </th>
+              <th className="px-3 py-1 text-right">
+                <input
+                  placeholder=">= N"
+                  value={minN}
+                  onChange={(e) => setMinN(e.target.value)}
+                  className="w-20 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-right outline-none"
+                />
+              </th>
+              <th />
+              <th className="px-3 py-1">
+                <input
+                  placeholder="Filter author"
+                  value={authorQuery}
+                  onChange={(e) => setAuthorQuery(e.target.value)}
+                  className="w-full rounded-md border border-white/10 bg-white/5 px-2 py-1 outline-none"
+                />
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredSorted.map((s, idx) => {
+                const avgStr = s.avg == null ? "-" : (s.avg as number).toFixed(2);
+                const stdevStr = s.stdev == null ? "-" : (s.stdev as number).toFixed(2);
+                const nStr = String(s.n ?? 0);
+                const consensusVal = 1 / (1 + ((s.stdev ?? 0) as number));
+                const consensusStr = `${Math.round(consensusVal * 100)}%`;
+                return (
+                  <tr key={s.id} className="border-t border-white/10 hover:bg-white/5">
+                    <td className="px-3 py-2 text-left align-top">
+                      <span className="inline-flex items-center justify-center w-5 h-5 text-[10px] rounded-full bg-[var(--brand)]/20 border border-[var(--border)] text-[var(--text)]">
+                        {idx + 1}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 align-top">
+                      <div className="font-medium leading-snug break-words">{s.text}</div>
+                    </td>
+                    <td className="px-3 py-2 text-right align-top">
+                      {badge("", avgStr, norm(s.avg ?? 0, avgMM, false))}
+                    </td>
+                    <td className="px-3 py-2 text-right align-top">
+                      {badge("", stdevStr, norm(s.stdev ?? 0, stMM, true))}
+                    </td>
+                    <td className="px-3 py-2 text-right align-top">
+                      {badge("", nStr, norm(s.n ?? 0, nMM, false))}
+                    </td>
+                    <td className="px-3 py-2 text-right align-top">
+                      {badge("", consensusStr, norm(consensusVal, cMM, false))}
+                    </td>
+                    <td className="px-3 py-2 text-left align-top text-xs text-[var(--muted)]">
+                      {s.participant_name || "Anonymous"}
+                    </td>
+                  </tr>
+                );
+              })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
