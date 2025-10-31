@@ -5,7 +5,8 @@ export const metadata = {
   description: "How SessionFoundry handles and protects your data.",
 };
 
-export default function PrivacyPage() {
+export default function PrivacyPage({ searchParams }: { searchParams?: { embed?: string } }) {
+  const embedded = (searchParams?.embed || "") === "1";
   return (
     <div className="mx-auto max-w-3xl">
       <header className="mb-6">
@@ -16,12 +17,14 @@ export default function PrivacyPage() {
               Our commitment to your privacy, in clear and simple terms.
             </p>
           </div>
-          <Link
-            href="/login?mode=signup"
-            className="shrink-0 rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10"
-          >
-            Back to create account
-          </Link>
+          {!embedded && (
+            <Link
+              href="/login?mode=signup"
+              className="shrink-0 rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10"
+            >
+              Back to create account
+            </Link>
+          )}
         </div>
       </header>
 

@@ -334,14 +334,40 @@ export default function Shell({ children }: PropsWithChildren) {
       </main>
 
       {/* Policy modals */}
-      <Modal open={showPrivacy} onClose={() => setShowPrivacy(false)} title="Privacy Policy" size="lg">
+      <Modal
+        open={showPrivacy}
+        onClose={() => setShowPrivacy(false)}
+        title="Privacy Policy"
+        size="lg"
+        footer={
+          <button
+            className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10"
+            onClick={() => setShowPrivacy(false)}
+          >
+            Close
+          </button>
+        }
+      >
         <div className="w-full h-[70vh]">
-          <iframe src="/privacy" className="w-full h-full rounded" />
+          <iframe src="/privacy?embed=1" className="w-full h-full rounded" />
         </div>
       </Modal>
-      <Modal open={showTerms} onClose={() => setShowTerms(false)} title="Terms & Conditions" size="lg">
+      <Modal
+        open={showTerms}
+        onClose={() => setShowTerms(false)}
+        title="Terms & Conditions"
+        size="lg"
+        footer={
+          <button
+            className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10"
+            onClick={() => setShowTerms(false)}
+          >
+            Close
+          </button>
+        }
+      >
         <div className="w-full h-[70vh]">
-          <iframe src="/terms" className="w-full h-full rounded" />
+          <iframe src="/terms?embed=1" className="w-full h-full rounded" />
         </div>
       </Modal>
     </div>

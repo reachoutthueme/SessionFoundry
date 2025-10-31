@@ -5,7 +5,8 @@ export const metadata = {
   description: "Terms and conditions for using SessionFoundry.",
 };
 
-export default function TermsPage() {
+export default function TermsPage({ searchParams }: { searchParams?: { embed?: string } }) {
+  const embedded = (searchParams?.embed || "") === "1";
   return (
     <div className="mx-auto max-w-3xl">
       <header className="mb-6">
@@ -16,12 +17,14 @@ export default function TermsPage() {
               The rules and conditions for using SessionFoundry.
             </p>
           </div>
-          <Link
-            href="/login?mode=signup"
-            className="shrink-0 rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10"
-          >
-            Back to create account
-          </Link>
+          {!embedded && (
+            <Link
+              href="/login?mode=signup"
+              className="shrink-0 rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10"
+            >
+              Back to create account
+            </Link>
+          )}
         </div>
       </header>
 
