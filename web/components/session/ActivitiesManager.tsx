@@ -426,12 +426,10 @@ export default function ActivitiesManager({
                 ) : null}
               </div>
               <div className="flex items-center gap-2 ml-auto">
-                {current ? (
-                  current.status === 'Active' ? (
-                    <Button size="sm" variant="outline" onClick={() => setStatus(current.id, 'Voting')}>Pause</Button>
-                  ) : (
+                {!current || current.status !== 'Active' ? (
+                  current ? (
                     <Button size="sm" onClick={() => setStatus(current.id, 'Active')}>Start</Button>
-                  )
+                  ) : null
                 ) : null}
                 <div className="relative">
                   <details className="group">
@@ -440,27 +438,17 @@ export default function ActivitiesManager({
                     </summary>
                     <div className="absolute right-0 mt-1 rounded-md border border-white/12 bg-[var(--panel)] shadow-lg overflow-hidden">
                       {[1,3,5].map(m => (
-                        <button key={m} className="block w-full text-left px-3 py-1.5 text-sm hover:bg-white/5" onClick={() => current && extendTimer(current.id, m)}>+{m} min</button>
+                        <button key={m} className="block w-full text-left px-3 py-1.5 text-sm hover:bg-white/5" onClick={(e) => { const d = (e.currentTarget.closest('details') as HTMLDetailsElement | null); if (current) extendTimer(current.id, m); if (d) d.open = false; }}>+{m} min</button>
                       ))}
                     </div>
                   </details>
                 </div>
-<Button
-  size="sm"
-  variant="outline"
-  onClick={async () => {
-    const idx = current ? sorted.findIndex(x => x.id === current.id) : -1;
-    // FIX: don't compare against 'Inactive' (not part of Activity["status"])
-    const next = sorted
-      .slice(Math.max(idx + 1, 0))
-      .find(x => x.status === 'Draft' || x.status === 'Voting');
-
-    if (current) await setStatus(current.id, 'Closed');
-    if (next) await setStatus(next.id, 'Active');
-  }}
->
-  Next
-</Button>
+                <Button size="sm" variant="outline" onClick={async () => {
+                  const idx = current ? sorted.findIndex(x => x.id === current.id) : -1;
+                  const next = sorted.slice(Math.max(idx + 1, 0)).find(x => x.status === 'Draft' || x.status === 'Voting');
+                  if (current) await setStatus(current.id, 'Closed');
+                  if (next) await setStatus(next.id, 'Active');
+                }}>Next</Button>
                 {current ? (
                   <Button size="sm" variant="outline" onClick={() => setStatus(current.id, 'Closed')}>End</Button>
                 ) : null}
