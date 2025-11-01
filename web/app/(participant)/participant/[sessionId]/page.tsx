@@ -188,7 +188,7 @@ export default function ParticipantPage() {
                 <h1 className="text-xl font-semibold mt-1">Welcome{participant?.display_name ? `, ${participant.display_name}` : ''}</h1>
                 <div className="mt-1">Jump into the active activities below and help your team climb the leaderboard.</div>
               </div>
-              <div />
+              <div className="self-center"><ThemeToggle /></div>
             </div>
             {/* leaderboard toggle moved below */}
           </div>
@@ -199,12 +199,9 @@ export default function ParticipantPage() {
                 <span className="font-medium">{active ? (active.title || getActivityDisplayName(active.type)) : 'Nothing active'}</span>
               </div>
               {active?.ends_at ? (
-                <span className={`timer-pill ${timerPillClass(active.ends_at)}`} aria-live="polite">â± <Timer endsAt={active.ends_at} /></span>
+                <span className={`timer-pill ${timerPillClass(active.ends_at)}`} aria-live="polite"><IconTimer size={12} /> <Timer endsAt={active.ends_at} /></span>
               ) : null}
               {groupName ? (<div className="truncate"><span className="opacity-70">Group:</span> {groupName}</div>) : null}
-              <button className="underline hover:opacity-80 text-left" onClick={()=>setShowOverall(s=>!s)}>
-                {showOverall ? 'Hide leaderboard' : 'View leaderboard'}
-              </button>
               <div className="sr-only" aria-live="polite" ref={liveRef} />
             </div>
           </div>
@@ -236,7 +233,7 @@ export default function ParticipantPage() {
                     const isClosed = a.status === 'Closed';
                     const title = a.title || getActivityDisplayName(a.type);
                     const outcomeLine = a.instructions || a.description || '';
-                    const short = outcomeLine.length > 0 ? (outcomeLine.length > 70 ? outcomeLine.slice(0,70) + 'ï¿½' : outcomeLine) : '';
+                    const short = outcomeLine.length > 0 ? (outcomeLine.length > 70 ? outcomeLine.slice(0,70) + '...' : outcomeLine) : '';
                     return (
                       <div key={a.id} className={`rounded-2xl border ${isActive ? 'bg-white/6 border-white/20 shadow-[0_0_0_4px_rgba(123,77,242,.15)] animate-active-pulse' : 'bg-white/4 border-white/10 hover:bg-white/[.06]'}`}>
                         <div className="p-4">
@@ -271,12 +268,12 @@ export default function ParticipantPage() {
                                 {expanded[a.id] ? 'Hide details ▴' : 'Show details ▾'}
                               </button>
                             </div>
-                          ) : null}
+                                
                           <div className="mt-3 flex items-center justify-between">
                             {isActive ? (
                               <>
                                 <Button onClick={() => setSelected(a)} className="px-4">Open activity</Button>
-                                <div className="text-[11px] text-[var(--muted)]">1 idea per line ï¿½ Undo supported</div>
+                                <div className="text-[11px] text-[var(--muted)]">1 idea per line | Undo supported</div>
                               </>
                             ) : isClosed ? (
                               <button className="text-sm underline opacity-80 hover:opacity-100" onClick={() => setSelected(a)}>View results</button>
@@ -348,6 +345,9 @@ export default function ParticipantPage() {
                 ) : (
                   <button className="underline hover:opacity-80" onClick={() => { setEditName(""); setEditNameOpen(true); }}>Add your name</button>
                 )}
+              </div>
+              <div className="mt-1 text-xs">
+                <button className="underline hover:opacity-80" onClick={() => { try { localStorage.removeItem(`sf_group_confirmed_${sessionId}`); } catch {}; setMustChoose(true); }}>Change group</button>
               </div>
             </div>
           )}
@@ -554,6 +554,7 @@ function GroupJoinScreen({
     </div>
   );
 }
+
 
 
 
