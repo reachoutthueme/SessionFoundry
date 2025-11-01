@@ -476,7 +476,7 @@ export default function ActivitiesManager({
                 ) : null}
               </div>
               <div className="flex items-center gap-0 ml-auto">
-                <div className="inline-flex items-stretch rounded-md overflow-hidden border border-white/12">
+                <div className="inline-flex items-stretch rounded-md border border-white/12">
                   <div className={`relative ${!current ? 'opacity-60 pointer-events-none' : ''}`}>
                     <details className="group">
                       <summary className="list-none">

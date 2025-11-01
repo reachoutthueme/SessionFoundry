@@ -9,7 +9,7 @@ import Modal from "@/components/ui/Modal";
 import Link from "next/link";
 import { useToast } from "@/components/ui/Toast";
 import ProTag from "@/components/ui/ProTag";
-import { IconCopy, IconChevronRight } from "@/components/ui/Icons";
+import { IconCopy } from "@/components/ui/Icons";
 
 type Sess = {
   id: string;
@@ -36,7 +36,7 @@ export default function Page() {
   const [sessions, setSessions] = useState<Sess[]>([]);
   const [me, setMe] = useState<Me>(null);
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<"All"|"Active"|"Completed"|"Draft">("All");
+  const [tab, setTab] = useState<"All"|"Active"|"Completed"|"Inactive">("All");
   const [selected, setSelected] = useState<Record<string, boolean>>({});
 
   // Action states
@@ -103,8 +103,13 @@ export default function Page() {
 
   const filtered = sessions.filter((s) => {
     if (tab !== "All") {
-      const t = tab === "Draft" ? "Draft" : tab;
-      if ((s.status || "").toLowerCase() !== t.toLowerCase()) return false;
+      if (tab === "Inactive") {
+        const st = (s.status || "").toLowerCase();
+        if (!(st === "inactive" || st === "draft")) return false;
+      } else {
+        const t = tab.toLowerCase();
+        if ((s.status || "").toLowerCase() !== t) return false;
+      }
     }
     if (search.trim()) {
       const q = search.trim().toLowerCase();
@@ -242,7 +247,7 @@ export default function Page() {
         {/* Filters row */}
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1">
-            {(["All","Active","Completed","Draft"] as const).map(t => (
+            {(["All","Active","Completed","Inactive"] as const).map(t => (
               <button key={t} onClick={()=>setTab(t)} className={`px-3 py-1 text-sm rounded-full ${tab===t? 'bg-[var(--brand)] text-[var(--btn-on-brand)]':'text-[var(--muted)] hover:bg-white/5'}`}>{t}</button>
             ))}
           </div>
@@ -303,7 +308,7 @@ export default function Page() {
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3">Updated</th>
                     <th className="px-4 py-3">Join code</th>
-                    <th className="px-4 py-3 text-right">Open</th>
+                    <th className="px-4 py-3 text-right"></th>
                   </tr>
                 </thead>
                 <tbody>
