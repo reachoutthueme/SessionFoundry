@@ -509,6 +509,7 @@ export default function ActivitiesManager({
           </div>
 
           {/* Progress + Now panel */}
+          <div className="mb-6 rounded-lg border border-white/15 bg-white/7 p-4 shadow-[0_8px_30px_rgba(0,0,0,.12)]">
             {/* Progress bar */}
             <div className="mb-2 flex items-center justify-between">
               <div className="text-sm">{summary.closed}/{summary.total} completed {'\u2022'} {summary.pct}%</div>
