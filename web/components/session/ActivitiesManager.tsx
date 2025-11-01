@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Button from "@/components/ui/Button";
 import { IconSettings } from "@/components/ui/Icons";
-import { IconTimer } from "@/components/ui/Icons";
+import { IconTimer, IconChevronRight } from "@/components/ui/Icons";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { getActivityDisplayName } from "@/lib/activities/registry";
 import Modal from "@/components/ui/Modal";
@@ -460,8 +460,12 @@ export default function ActivitiesManager({
                         <button className="timer-pill timer-red" aria-live="polite"><IconTimer size={12} /> Time's up</button>
                       </summary>
                       <div className="absolute left-0 mt-1 rounded-md border border-white/12 bg-[var(--panel)] shadow-lg overflow-hidden">
-                        {[1,3,5].map(m => (
-                          <button key={m} className="block w-full text-left px-3 py-1.5 text-sm hover:bg-white/5" onClick={(e) => { const d = (e.currentTarget.closest('details') as HTMLDetailsElement | null); if (current) extendTimer(current.id, m); if (d) d.open = false; }}>+{m} min</button>
+                        {[
+                          { m: 1, label: '+1 minute' },
+                          { m: 3, label: '+3 minutes' },
+                          { m: 5, label: '+5 minutes' },
+                        ].map(({m,label}) => (
+                          <button key={m} className="block w-full text-left px-3 py-1.5 text-sm hover:bg-white/5" onClick={(e) => { const d = (e.currentTarget.closest('details') as HTMLDetailsElement | null); if (current) extendTimer(current.id, m); if (d) d.open = false; }}>{label}</button>
                         ))}
                         <button className="block w-full text-left px-3 py-1.5 text-sm hover:bg-white/5" onClick={(e)=>{ const d=(e.currentTarget.closest('details') as HTMLDetailsElement|null); if(current) resetTimer(current.id); if(d) d.open=false; }}>Reset</button>
                       </div>
@@ -476,11 +480,15 @@ export default function ActivitiesManager({
                   <div className={`relative ${!current ? 'opacity-60 pointer-events-none' : ''}`}>
                     <details className="group">
                       <summary className="list-none">
-                        <Button size="sm" variant="outline" className="rounded-none border-0">+ time</Button>
+                        <Button size="sm" variant="outline" className="rounded-none border-0">Add time</Button>
                       </summary>
                       <div className="absolute right-0 mt-1 rounded-md border border-white/12 bg-[var(--panel)] shadow-lg overflow-hidden">
-                        {[1,3,5].map(m => (
-                          <button key={m} className="block w-full text-left px-3 py-1.5 text-sm hover:bg-white/5" onClick={(e) => { const d = (e.currentTarget.closest('details') as HTMLDetailsElement | null); if (current) extendTimer(current.id, m); if (d) d.open = false; }}>+{m} min</button>
+                        {[
+                          { m: 1, label: '+1 minute' },
+                          { m: 3, label: '+3 minutes' },
+                          { m: 5, label: '+5 minutes' },
+                        ].map(({m,label}) => (
+                          <button key={m} className="block w-full text-left px-3 py-1.5 text-sm hover:bg-white/5" onClick={(e) => { const d = (e.currentTarget.closest('details') as HTMLDetailsElement | null); if (current) extendTimer(current.id, m); if (d) d.open = false; }}>{label}</button>
                         ))}
                         <button className="block w-full text-left px-3 py-1.5 text-sm hover:bg-white/5" onClick={(e)=>{ const d=(e.currentTarget.closest('details') as HTMLDetailsElement|null); if(current) resetTimer(current.id); if(d) d.open=false; }}>Reset</button>
                       </div>
@@ -792,10 +800,8 @@ export default function ActivitiesManager({
                                 menuId === a.id
                               }
                             >
-                              Actions{" "}
-                              <span className="ml-1">
-                                ?
-                              </span>
+                              Actions
+                              <IconChevronRight size={12} className={`ml-1 transition-transform ${menuId === a.id ? 'rotate-90' : ''}`} />
                             </Button>
 
                             {menuId === a.id && (
@@ -946,7 +952,7 @@ export default function ActivitiesManager({
                                 );
                               }}
                             >
-                              ?
+                              <IconChevronRight size={12} className="transform -rotate-90" />
                             </button>
                             <button
                               className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-xs hover:bg-white/10"
@@ -959,7 +965,7 @@ export default function ActivitiesManager({
                                 );
                               }}
                             >
-                              ?
+                              <IconChevronRight size={12} className="transform rotate-90" />
                             </button>
                           </div>
                         </div>
