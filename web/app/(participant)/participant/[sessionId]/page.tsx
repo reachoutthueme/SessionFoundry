@@ -97,28 +97,6 @@ export default function ParticipantPage() {
       />
     );
   }
-  if (needsGroup) {
-    return (
-      <div className="max-w-md mx-auto p-6">
-        <Card>
-          <CardHeader title="Welcome" subtitle="Pick your group to start" />
-          <CardBody>
-            <div className="space-y-2">
-              {groups.length === 0 ? (
-                <div className="text-sm text-[var(--muted)]">Waiting for facilitator to create a group…</div>
-              ) : groups.map(g => (
-                <div key={g.id} className="flex items-center justify-between p-2 rounded bg-white/5 border border-white/10">
-                  <div>{g.name}</div>
-                  <Button size="sm" onClick={()=>join(g.id)}>Join</Button>
-                </div>
-              ))}
-              <CreateGroupInline sessionId={sessionId as string} onCreated={(gid)=>join(gid)} />
-            </div>
-          </CardBody>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6 relative">
@@ -336,12 +314,12 @@ function GroupJoinScreen({
   return (
     <div className="min-h-dvh grid place-items-center p-6">
       <div className="w-full max-w-xl sm:max-w-2xl animate-fade-up">
-        <div className="mb-3 text-center text-xs uppercase tracking-wide text-[var(--muted)]">Step 2 of 3 — Join a group</div>
+        <div className="mb-3 text-center text-xs uppercase tracking-wide text-[var(--muted)]">Step 2 of 3 ï¿½ Join a group</div>
         <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,.35)] p-6">
           <div className="text-center mb-4">
             <div className="text-sm text-[var(--muted)]">{sessionName} • Host</div>
             <div className="mt-1 text-2xl font-semibold">Pick a group to join</div>
-            <div className="mt-1 text-sm text-[var(--muted)]">You’ll collaborate with teammates in this group.</div>
+            <div className="mt-1 text-sm text-[var(--muted)]">Youï¿½ll collaborate with teammates in this group.</div>
             <div className="mt-2 text-xs text-[var(--muted)]">
               {participant?.display_name ? (
                 <>
@@ -381,9 +359,9 @@ function GroupJoinScreen({
                       </div>
                       <div>
                         <button
-                          ref={el => (cardRefs.current[idx] = el)}
+                          ref={(el) => { cardRefs.current[idx] = el; }}
                           onClick={() => onJoin(g.id)}
-                          className="w-full inline-flex items-center justify-center h-9 px-3 rounded-md bg-[var(--brand)] text-[var(--btn-on-brand)] focus:outline-none focus:ring-2 focus:ring-brand"
+                          className="w-full inline-flex items-center justify-center h-9 px-3 rounded-md bg-[var(--brand)] text-[var(--btn-on-brand)] focus:outline-none focus:ring-[var(--ring)]"
                           tabIndex={idx === focusIdx ? 0 : -1}
                         >
                           Join
@@ -412,7 +390,7 @@ function GroupJoinScreen({
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button onClick={createGroup} disabled={!newGroupName.trim() || createBusy}>{createBusy ? 'Creating…' : 'Create'}</Button>
+            <Button onClick={createGroup} disabled={!newGroupName.trim() || createBusy}>{createBusy ? 'Creatingï¿½' : 'Create'}</Button>
           </div>
         </div>
       </Modal>
@@ -433,29 +411,4 @@ function GroupJoinScreen({
     </div>
   );
 }
-
-function CreateGroupInline({ sessionId, onCreated }: { sessionId: string; onCreated: (groupId: string)=>void }) {
-  const [name, setName] = useState("");
-  const [busy, setBusy] = useState(false);
-  async function create() {
-    const t = name.trim();
-    if (!t) return;
-    setBusy(true);
-    const r = await fetch(`/api/groups`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: sessionId, name: t }) });
-    const j = await r.json();
-    setBusy(false);
-    if (!r.ok) { alert(j.error || 'Failed to create'); return; }
-    setName("");
-    onCreated(j.group.id);
-  }
-  return (
-    <div className="flex flex-col gap-2 pt-2 border-t border-white/10 mt-2 sm:flex-row sm:items-center">
-      <input value={name} onChange={e=>setName(e.target.value)} placeholder="Create a group" className="h-10 w-full sm:flex-1 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none" />
-      <Button size="sm" onClick={create} disabled={busy} className="self-start sm:self-auto">Create</Button>
-    </div>
-  );
-}
-
-
-
 
