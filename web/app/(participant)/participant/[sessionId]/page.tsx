@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Button from "@/components/ui/Button";
@@ -25,6 +25,7 @@ export default function ParticipantPage() {
   const [completed, setCompleted] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<Activity | null>(null);
   const [showOverall, setShowOverall] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   // Require explicit confirmation on arriving at participant view
   const [mustChoose, setMustChoose] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
@@ -38,7 +39,14 @@ export default function ParticipantPage() {
   const sessionName = useMemo(() => {
     try { return localStorage.getItem(`sf_last_session_name_${sessionId}`) || "Session"; } catch { return "Session"; }
   }, [sessionId]);
-  // groupName already defined above; remove duplicate
+  const groupName = useMemo(() => {
+    try {
+      const gid = (participant as any)?.group_id as string | undefined;
+      if (!gid) return null;
+      const g = (groups as any[]).find((x:any) => x.id === gid);
+      return g?.name || null;
+    } catch { return null; }
+  }, [participant, groups]);
   // Timer pill color ramp helper
   const [nowTs, setNowTs] = useState(() => Date.now());
   useEffect(() => {
@@ -183,7 +191,7 @@ export default function ParticipantPage() {
                 <span className="font-medium">{active ? (active.title || getActivityDisplayName(active.type)) : 'Nothing active'}</span>
               </div>
               {active?.ends_at ? (
-                <span className={`timer-pill ${timerPillClass(active.ends_at)}`} aria-live="polite">⏱ <Timer endsAt={active.ends_at} /></span>
+                <span className={`timer-pill ${timerPillClass(active.ends_at)}`} aria-live="polite">â± <Timer endsAt={active.ends_at} /></span>
               ) : null}
               {groupName ? (<div className="truncate"><span className="opacity-70">Group:</span> {groupName}</div>) : null}
               <button className="underline hover:opacity-80 text-left" onClick={()=>setShowOverall(s=>!s)}>
@@ -220,7 +228,7 @@ export default function ParticipantPage() {
                     const isClosed = a.status === 'Closed';
                     const title = a.title || getActivityDisplayName(a.type);
                     const outcomeLine = a.instructions || a.description || '';
-                    const short = outcomeLine.length > 0 ? (outcomeLine.length > 70 ? outcomeLine.slice(0,70) + '�' : outcomeLine) : '';
+                    const short = outcomeLine.length > 0 ? (outcomeLine.length > 70 ? outcomeLine.slice(0,70) + 'ï¿½' : outcomeLine) : '';
                     return (
                       <div key={a.id} className={`rounded-2xl border ${isActive ? 'bg-white/6 border-white/20 shadow-[0_0_0_4px_rgba(123,77,242,.15)] animate-active-pulse' : 'bg-white/4 border-white/10 hover:bg-white/[.06]'}`}>
                         <div className="p-4">
@@ -232,18 +240,35 @@ export default function ParticipantPage() {
                             <div className="flex items-center gap-2 shrink-0">
                               <span className={`text-xs px-2 py-1 rounded-full border ${isActive ? 'border-green-400/30 text-green-200 bg-green-500/10' : isClosed ? 'border-white/20 text-[var(--muted)]' : 'border-white/20 text-[var(--muted)]'}`}>{isActive ? 'Active' : isClosed ? 'Closed' : 'Inactive'}</span>
                               {isActive && a.ends_at ? (
-                                <span className={`timer-pill ${timerPillClass(a.ends_at)}`}>⏱ <Timer endsAt={a.ends_at} /></span>
+                                <span className={`timer-pill ${timerPillClass(a.ends_at)}`}>â± <Timer endsAt={a.ends_at} /></span>
                               ) : null}
                             </div>
                           </div>
                           <div className="mt-1 text-[11px] uppercase tracking-wide text-[var(--muted)]">
                             {short ? (<span>Outcome: <span className="normal-case not-italic">{short}{outcomeLine.length>70 ? ' More' : ''}</span></span>) : <span>&nbsp;</span>}
                           </div>
+                          {(a.instructions || a.description) ? (
+                            <div className="mt-1 text-sm text-[var(--muted)]">
+                              {expanded[a.id] ? (
+                                <div>
+                                  {a.instructions ? (<div>{a.instructions}</div>) : null}
+                                  {a.description ? (<div className="mt-1">{a.description}</div>) : null}
+                                </div>
+                              ) : null}
+                              <button
+                                className="mt-1 text-xs underline hover:opacity-80"
+                                aria-expanded={!!expanded[a.id]}
+                                onClick={() => setExpanded(prev => ({ ...prev, [a.id]: !prev[a.id] }))}
+                              >
+                                {expanded[a.id] ? 'Hide details' : 'Show details'}
+                              </button>
+                            </div>
+                          ) : null}
                           <div className="mt-3 flex items-center justify-between">
                             {isActive ? (
                               <>
                                 <Button onClick={() => setSelected(a)} className="px-4">Open activity</Button>
-                                <div className="text-[11px] text-[var(--muted)]">1 idea per line � Undo supported</div>
+                                <div className="text-[11px] text-[var(--muted)]">1 idea per line ï¿½ Undo supported</div>
                               </>
                             ) : isClosed ? (
                               <button className="text-sm underline opacity-80 hover:opacity-100" onClick={() => setSelected(a)}>View results</button>
@@ -353,14 +378,6 @@ function GroupJoinScreen({
   const sessionName = useMemo(() => {
     try { return localStorage.getItem(`sf_last_session_name_${sessionId}`) || "Session"; } catch { return "Session"; }
   }, [sessionId]);
-  const groupName = useMemo(() => {
-    try {
-      const gid = (participant as any)?.group_id as string | undefined;
-      if (!gid) return null;
-      const g = (groups as any[]).find((x:any) => x.id === gid);
-      return g?.name || null;
-    } catch { return null; }
-  }, [participant, groups]);
   const groupName = useMemo(() => {
     try {
       const gid = (participant as any)?.group_id as string | undefined;
