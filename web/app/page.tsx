@@ -90,7 +90,7 @@ export default function RootJoinPage() {
   }
 
   return (
-    <div className="relative min-h-dvh flex flex-col p-6">
+    <div className="relative min-h-dvh flex flex-col p-6 overflow-hidden">
       {/* Background layers */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         {/* subtle grid */}
@@ -112,7 +112,7 @@ export default function RootJoinPage() {
         />
         {/* gentle brand gradient sweep */}
         <div
-          className="absolute -inset-16 opacity-20 animate-gradient-drift"
+          className="absolute inset-0 opacity-20 animate-gradient-drift"
           style={{
             background:
               "linear-gradient(120deg, rgba(155,107,255,.25), rgba(90,168,255,.18), rgba(99,62,214,.22))",
@@ -212,7 +212,7 @@ export default function RootJoinPage() {
                 htmlFor="display-name"
                 className="mb-1 block text-sm"
               >
-                Your display name
+                Display name
               </label>
               <div className="flex items-center gap-2">
                 <div className="grid place-items-center h-9 w-9 rounded-full bg-white/10 border border-white/10 text-sm">
@@ -254,7 +254,7 @@ export default function RootJoinPage() {
               Create workshop
             </Button>
           </Link>
-          <div className="mt-1 text-xs text-[var(--muted)]">Facilitators only</div>
+          
         </div>
       </div>
 
