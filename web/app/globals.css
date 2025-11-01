@@ -114,6 +114,31 @@ button:active{ transform: translateY(1px) scale(.98); }
 }
 .animate-modal-in { animation: modal-in .18s ease-out both; }
 
+/* Shared subtle animations */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px) scale(.995); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-fade-up { animation: fade-up 160ms ease-out both; }
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-in { animation: slide-in 160ms ease-out both; }
+
+@keyframes gradient-drift {
+  0%   { transform: translate3d(0,0,0) }
+  100% { transform: translate3d(0,-2%,0) }
+}
+.animate-gradient-drift { animation: gradient-drift 12s ease-in-out infinite alternate; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-slide-in,
+  .animate-gradient-drift { animation: none !important; }
+}
+
 /* Logo theme switching */
 .logo-light { display: none; }
 [data-theme="light"] .logo-light { display: block; }

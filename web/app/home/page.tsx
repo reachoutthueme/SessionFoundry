@@ -1,3 +1,5 @@
+﻿"use client";
+
 import { useEffect, useRef } from "react";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
@@ -71,9 +73,7 @@ export default function HomeLandingPage() {
               </h1>
 
               <p className="mx-auto mt-4 max-w-[70ch] text-[var(--muted)] text-balance leading-[1.7]">
-                Capture ideas from every group, prioritize them with live
-                voting, and instantly turn the winners into owned actions
-                with deadlines — all in the same session, all in one place.
+                Capture ideas from every team, prioritize with live voting, and turn winners into owned actions with deadlines - all in one flow.
               </p>
 
               {/* CTA block */}
@@ -85,7 +85,7 @@ export default function HomeLandingPage() {
                   Sign in
                 </Link>
               </div>
-              <div className="mt-2 text-xs text-[var(--muted)]">No credit card • 2-min setup</div>
+              <div className="mt-2 text-xs text-[var(--muted)]">No credit card - 2 min setup</div>
 
               {/* Guided path */}
               <div className="mt-6 flex items-center justify-center gap-3 text-sm text-[var(--muted)]">
@@ -130,17 +130,7 @@ export default function HomeLandingPage() {
           </section>
         </div>
       </div>
-      <style jsx>{`
-        @keyframes fade-up { from { opacity: 0; transform: translateY(6px) scale(.995); } to { opacity: 1; transform: translateY(0) scale(1); } }
-        .animate-fade-up { animation: fade-up 160ms ease-out both; }
-        @keyframes slide-in { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-slide-in { animation: slide-in 160ms ease-out both; }
-        @keyframes gradient-drift { 0%{ transform: translate3d(0,0,0) } 100%{ transform: translate3d(0,-2%,0) } }
-        .animate-gradient-drift { animation: gradient-drift 12s ease-in-out infinite alternate; }
-        @media (prefers-reduced-motion: reduce) {
-          .animate-fade-up, .animate-slide-in, .animate-gradient-drift { animation: none !important; }
-        }
-      `}</style>
+      {/* animations moved to globals.css */}
     </main>
   );
 }
@@ -187,3 +177,5 @@ function Step({ icon, label }: { icon: React.ReactNode; label: string }) {
     </div>
   );
 }
+
+

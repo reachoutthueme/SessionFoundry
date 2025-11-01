@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -42,7 +42,7 @@ export default function RootJoinPage() {
     const cleanName = name.trim();
 
     if (cleanCode.length !== 4) {
-      setErr("That code doesn’t look right.");
+      setErr("That code doesn't look right.");
       return;
     }
 
@@ -240,7 +240,7 @@ export default function RootJoinPage() {
                 className={`w-full ${joining ? 'opacity-80' : ''}`}
                 disabled={joining || code.length !== 4 || name.trim().length === 0}
               >
-                {joining ? "Joining…" : "Join"}
+                {joining ? "Joining..." : "Join"}
               </Button>
             </div>
           </form>
@@ -252,7 +252,6 @@ export default function RootJoinPage() {
               Create workshop
             </Button>
           </Link>
-          
         </div>
       </div>
 
@@ -262,9 +261,9 @@ export default function RootJoinPage() {
       {/* footer links (pinned bottom) */}
       <footer className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 text-center text-sm text-[var(--muted)]">
         <button type="button" className="hover:underline" onClick={() => setShowTerms(true)}>Terms</button>
-        <span className="mx-2">•</span>
+        <span className="mx-2">|</span>
         <button type="button" className="hover:underline" onClick={() => setShowPrivacy(true)}>Privacy</button>
-        <span className="mx-2">•</span>
+        <span className="mx-2">|</span>
         <span>v{(pkg as any)?.version || "dev"}</span>
       </footer>
 
@@ -306,16 +305,7 @@ export default function RootJoinPage() {
         </div>
       </Modal>
 
-      {/* Page-local animations */}
-      <style jsx>{`
-        @keyframes fade-up { from { opacity: 0; transform: translateY(6px) scale(.995); } to { opacity: 1; transform: translateY(0) scale(1); } }
-        .animate-fade-up { animation: fade-up 120ms ease-out both; }
-        @keyframes gradient-drift { 0%{ transform: translate3d(0,0,0) } 100%{ transform: translate3d(0,-1%,0) } }
-        .animate-gradient-drift { animation: gradient-drift 8s ease-in-out infinite alternate; }
-        @media (prefers-reduced-motion: reduce) {
-          .animate-fade-up, .animate-gradient-drift { animation: none !important; }
-        }
-      `}</style>
+      {/* animations moved to globals.css */}
     </div>
   );
 }
