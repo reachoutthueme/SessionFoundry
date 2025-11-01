@@ -1,9 +1,9 @@
-﻿"use client";
-import { useEffect, useState, FormEvent } from "react";
+"use client";
+import { useEffect, useState, FormEvent, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Button from "@/components/ui/Button";
 
-export default function JoinPage() {
+function JoinForm() {
   const router = useRouter();
   const params = useSearchParams();
 
@@ -111,19 +111,19 @@ export default function JoinPage() {
                 aria-invalid={!codeIsValid && code.length > 0}
               />
               <div className="mt-1 text-xs text-[var(--muted)]">
-                Use the 4–8 letter code from your facilitator.
+                Use the 4-8 letter code from your facilitator.
               </div>
             </div>
 
             <div>
               <label htmlFor="display-name" className="block text-sm mb-1">
-                Your name (optional)
+                Your display name
               </label>
               <input
                 id="display-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="How should we show your name?"
+                placeholder="How should we display your name?"
                 className="w-full h-10 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none focus:ring-[var(--ring)]"
                 autoComplete="name"
               />
@@ -146,7 +146,7 @@ export default function JoinPage() {
                 className="w-full"
                 disabled={!codeIsValid || loading}
               >
-                {loading ? "Joining…" : "Join"}
+                {loading ? "Joining." : "Join"}
               </Button>
             </div>
           </div>
@@ -156,3 +156,12 @@ export default function JoinPage() {
     </div>
   );
 }
+
+export default function JoinPage() {
+  return (
+    <Suspense fallback={<div className="min-h-dvh grid place-items-center text-[var(--muted)]">Loading…</div>}>
+      <JoinForm />
+    </Suspense>
+  );
+}
+
