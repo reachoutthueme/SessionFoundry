@@ -264,17 +264,12 @@ function GroupJoinScreen({
       if (e.key === "ArrowLeft")  { e.preventDefault(); setFocusIdx(i => Math.max(0, i - 1)); }
       if (e.key === "ArrowDown")  { e.preventDefault(); setFocusIdx(i => Math.min(groups.length - 1, i + cols)); }
       if (e.key === "ArrowUp")    { e.preventDefault(); setFocusIdx(i => Math.max(0, i - cols)); }
-      if (e.key === "Enter")      { const g = groups[focusIdx]; if (g) void onJoin(g.id); }
+      // Note: Do NOT bind Enter globally to avoid accidental joins
       if (e.key.toLowerCase() === "n") setCreateOpen(true);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [groups, focusIdx, onJoin]);
-
-  useEffect(() => {
-    const el = cardRefs.current[focusIdx];
-    if (el) el.focus();
-  }, [focusIdx, groups]);
+  }, [groups]);
 
   function membersFor(gid: string) {
     return participants.filter(p => p.group_id === gid);
