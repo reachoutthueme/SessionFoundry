@@ -9,6 +9,7 @@ import Modal from "@/components/ui/Modal";
 import Link from "next/link";
 import { useToast } from "@/components/ui/Toast";
 import ProTag from "@/components/ui/ProTag";
+import { IconCopy, IconChevronRight } from "@/components/ui/Icons";
 
 type Sess = {
   id: string;
@@ -34,6 +35,9 @@ export default function Page() {
 
   const [sessions, setSessions] = useState<Sess[]>([]);
   const [me, setMe] = useState<Me>(null);
+  const [search, setSearch] = useState("");
+  const [tab, setTab] = useState<"All"|"Active"|"Completed"|"Draft">("All");
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
 
   // Action states
   const [creating, setCreating] = useState(false);
@@ -96,6 +100,18 @@ export default function Page() {
 
   const isFreePlan = me?.plan === "free";
   const reachedFreeLimit = isFreePlan && sessions.length >= 1;
+
+  const filtered = sessions.filter((s) => {
+    if (tab !== "All") {
+      const t = tab === "Draft" ? "Draft" : tab;
+      if ((s.status || "").toLowerCase() !== t.toLowerCase()) return false;
+    }
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      if (!s.name.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
 
   // Open create modal if query param ?new=1 is present
   useEffect(() => {
@@ -207,21 +223,33 @@ export default function Page() {
 
   return (
     <div className="space-y-6">
-      {/* Header row */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">Sessions</h1>
-          <p className="text-sm text-[var(--muted)]">
-            All workshops in your org
-          </p>
+      {/* Header panel */}
+      <div className="rounded-[var(--radius)] border border-white/10 bg-white/5 p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Sessions</h1>
+            <p className="text-sm text-[var(--muted)]">All workshops in your org</p>
+          </div>
+          <div>
+            <Button onClick={onClickNewSession}>
+              New session{" "}
+              {reachedFreeLimit && (
+                <ProTag className="border-white/80 bg-white text-[var(--brand)]" />
+              )}
+            </Button>
+          </div>
         </div>
-
-        <Button onClick={onClickNewSession}>
-          New session{" "}
-          {reachedFreeLimit && (
-            <ProTag className="border-white/80 bg-white text-[var(--brand)]" />
-          )}
-        </Button>
+        {/* Filters row */}
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1">
+            {(["All","Active","Completed","Draft"] as const).map(t => (
+              <button key={t} onClick={()=>setTab(t)} className={`px-3 py-1 text-sm rounded-full ${tab===t? 'bg-[var(--brand)] text-[var(--btn-on-brand)]':'text-[var(--muted)] hover:bg-white/5'}`}>{t}</button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search sessions" className="h-9 w-64 rounded-md border border-white/10 bg-[var(--panel)] px-3 text-sm outline-none focus:ring-[var(--ring)]" />
+          </div>
+        </div>
       </div>
 
       {/* Content area */}
@@ -245,87 +273,72 @@ export default function Page() {
           hint="Create your first session to get started."
         />
       ) : (
-        // sessions table
         <Card>
-          <CardHeader title="All sessions" />
           <CardBody className="p-0">
-            <table className="w-full text-sm">
-              <thead className="text-left text-[var(--muted)]">
-                <tr>
-                  <th className="px-4 py-3">Name</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Created</th>
-                  <th className="px-4 py-3">Join code</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {sessions.map((s) => (
-                  <tr
-                    key={s.id}
-                    className="cursor-pointer border-t border-white/10 hover:bg-white/5"
-                    onClick={() => {
-                      router.push(`/session/${s.id}`);
-                    }}
-                  >
-                    <td className="px-4 py-3">{s.name}</td>
-                    <td className="px-4 py-3">
-                      {s.status === "Draft" ? "Inactive" : s.status}
-                    </td>
-                    <td className="px-4 py-3">
-                      {new Date(s.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3">{s.join_code}</td>
-
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {(s.status === "Draft" ||
-                          s.status === "Inactive") && (
-                          <Button
-                            variant="outline"
-                            disabled={rowBusyId === s.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              updateStatus(s.id, "Active");
-                            }}
-                          >
-                            {rowBusyId === s.id
-                              ? "Working..."
-                              : "Activate"}
-                          </Button>
-                        )}
-
-                        {s.status === "Active" && (
-                          <Button
-                            variant="outline"
-                            disabled={rowBusyId === s.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              updateStatus(s.id, "Completed");
-                            }}
-                          >
-                            {rowBusyId === s.id
-                              ? "Working..."
-                              : "Complete"}
-                          </Button>
-                        )}
-
-                        <Link
-                          href={`/session/${s.id}`}
-                          onClick={(e) => {
-                            // Stop row click nav so <Link> handles it
-                            e.stopPropagation();
-                          }}
-                        >
-                          <Button variant="ghost">Open</Button>
-                        </Link>
-                      </div>
-                    </td>
+            {/* Selection bar */}
+            {Object.values(selected).some(Boolean) && (
+              <div className="flex items-center gap-2 border-b border-white/10 bg-white/5 px-4 py-2 text-sm">
+                <div className="font-medium">{Object.values(selected).filter(Boolean).length} selected</div>
+                <Button size="sm" variant="outline" onClick={async ()=>{
+                  const ids = Object.entries(selected).filter(([,v])=>v).map(([id])=>id);
+                  for (const id of ids) await updateStatus(id, 'Completed');
+                  setSelected({});
+                }}>Complete</Button>
+                <Button size="sm" variant="outline" disabled>Archive</Button>
+                <Button size="sm" variant="outline" disabled>Delete</Button>
+              </div>
+            )}
+            <div className="overflow-auto">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 z-10 bg-[var(--panel)]/95 backdrop-blur-sm shadow-[inset_0_-1px_0_rgba(255,255,255,.08)]">
+                  <tr className="text-left text-[var(--muted)]">
+                    <th className="px-4 py-3 w-8">
+                      <input type="checkbox" aria-label="Select all" checked={filtered.length>0 && filtered.every(s=>selected[s.id])} onChange={(e)=>{
+                        const all: Record<string, boolean> = {};
+                        if (e.target.checked) filtered.forEach(s=>{ all[s.id]=true; });
+                        setSelected(all);
+                      }} />
+                    </th>
+                    <th className="px-4 py-3">Name</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Updated</th>
+                    <th className="px-4 py-3">Join code</th>
+                    <th className="px-4 py-3 text-right">Open</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filtered.map((s, idx) => (
+                    <tr key={s.id} className={`border-t border-white/10 ${idx % 2 === 1 ? 'bg-white/5' : ''} hover:bg-white/10`}
+                      onClick={() => router.push(`/session/${s.id}`)}>
+                      <td className="px-4 py-3" onClick={(e)=>e.stopPropagation()}>
+                        <input type="checkbox" aria-label={`Select ${s.name}`} checked={!!selected[s.id]} onChange={(e)=> setSelected(prev=> ({ ...prev, [s.id]: e.target.checked }))} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium">{s.name}</div>
+                        <div className="mt-0.5 text-xs text-[var(--muted)]">You</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-block rounded-full border px-2 py-0.5 text-xs ${s.status==='Active' ? 'status-chip-active border-green-400/30 text-green-200 bg-green-500/10' : s.status==='Completed' ? 'border-rose-400/30 text-rose-200 bg-rose-500/10' : 'border-white/20 text-[var(--muted)]'}`}>{s.status==='Draft'?'Inactive':s.status}</span>
+                      </td>
+                      <td className="px-4 py-3">{new Date(s.created_at).toLocaleDateString()}</td>
+                      <td className="px-4 py-3">
+                        {s.join_code ? (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5">
+                            <span className="font-mono text-[11px] leading-none">{s.join_code}</span>
+                            <button className="rounded p-0.5 hover:bg-white/5" title="Copy join code" aria-label="Copy join code" onClick={async (e)=>{ e.stopPropagation(); try { await navigator.clipboard.writeText(s.join_code); toast('Join code copied','success'); } catch { toast('Copy failed','error'); } }}><IconCopy size={12} /></button>
+                          </span>
+                        ) : (
+                          <span className="text-[var(--muted)]">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right" onClick={(e)=>e.stopPropagation()}>
+                        <Link href={`/session/${s.id}`}><Button variant="ghost">Open</Button></Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </CardBody>
         </Card>
       )}
