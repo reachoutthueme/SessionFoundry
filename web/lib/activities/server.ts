@@ -2,9 +2,12 @@ import { supabaseAdmin } from "@/app/lib/supabaseAdmin";
 
 export type BrainSubsRow = { id: string; text: string; created_at: string; participant_id: string };
 
-export type ActivityServerHooks = {`n  aggregateResults: (activity_id: string, session_id: string) => Promise<{ submissions?: any[]; stocktake?: any }>;`n  canSubmit?: (opts: { session_id: string; activity_id: string; participant_id: string; group_id: string | null }) => Promise<{ ok: boolean; error?: string }>;`n  saveSubmission?: (opts: { activity_id: string; text: string; participant_id: string; group_id: string | null }) => Promise<{ submission: any } | { error: string }>;`n  canRespond?: (opts: { session_id: string; activity_id: string; participant_id: string }) => Promise<{ ok: boolean; error?: string }>;`n  saveResponse?: (opts: { activity_id: string; initiative_id: string; choice: string; participant_id: string }) => Promise<{ response: any } | { error: string }>;`n};
+export type ActivityServerHooks = {
+  aggregateResults: (activity_id: string, session_id: string) => Promise<{ submissions?: any[]; stocktake?: any }>;
   canSubmit?: (opts: { session_id: string; activity_id: string; participant_id: string; group_id: string | null }) => Promise<{ ok: boolean; error?: string }>;
   saveSubmission?: (opts: { activity_id: string; text: string; participant_id: string; group_id: string | null }) => Promise<{ submission: any } | { error: string }>;
+  canRespond?: (opts: { session_id: string; activity_id: string; participant_id: string }) => Promise<{ ok: boolean; error?: string }>;
+  saveResponse?: (opts: { activity_id: string; initiative_id: string; choice: string; participant_id: string }) => Promise<{ response: any } | { error: string }>;
 };
 
 async function aggregateBrainstorm(activity_id: string, session_id: string) {
@@ -142,8 +145,3 @@ export function getServerHooks(type: string | null | undefined): ActivityServerH
     default: return null;
   }
 }
-
-
-
-
-
