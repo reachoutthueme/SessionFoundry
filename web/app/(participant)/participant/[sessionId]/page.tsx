@@ -25,6 +25,8 @@ export default function ParticipantPage() {
   const [completed, setCompleted] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<Activity | null>(null);
   const [showOverall, setShowOverall] = useState(false);
+  // Require explicit confirmation on arriving at participant view
+  const [mustChoose, setMustChoose] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [createBusy, setCreateBusy] = useState(false);
@@ -63,6 +65,13 @@ export default function ParticipantPage() {
   }
 
   useEffect(() => { load(); }, [sessionId]);
+  useEffect(() => {
+    // If user has already confirmed their group choice on this device, skip the chooser
+    try {
+      const v = localStorage.getItem(`sf_group_confirmed_${sessionId}`);
+      setMustChoose(v !== '1');
+    } catch { setMustChoose(true); }
+  }, [sessionId]);
   // Light polling to reflect live joins/leaves while choosing a group
   useEffect(() => {
     const needs = !participant || !participant.group_id;
@@ -84,7 +93,7 @@ export default function ParticipantPage() {
   }
 
   const needsGroup = !participant || !participant.group_id;
-  if (needsGroup) {
+  if (needsGroup || mustChoose) {
     return (
       <GroupJoinScreen
         sessionId={sessionId as string}
@@ -94,6 +103,7 @@ export default function ParticipantPage() {
         onJoin={join}
         reload={load}
         setParticipant={setParticipant}
+        onConfirm={() => { try { localStorage.setItem(`sf_group_confirmed_${sessionId}`, '1'); } catch {}; setMustChoose(false); }}
       />
     );
   }
@@ -202,124 +212,12 @@ export default function ParticipantPage() {
         <aside className="space-y-4">
           {!needsGroup && participant?.group_id && (
             <div className="rounded-[var(--radius)] border border-white/10 bg-white/5 p-4">
-              <div className="text-sm font-medium">Your group</div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {participants.filter(p=>p.group_id===participant.group_id).map(p=> (
-                  <span key={p.id} className="text-xs px-2 py-0.5 rounded-full border border-white/15 bg-white/10">
-                    {p.display_name || `#${p.id.slice(0,6)}`}
-                  </span>
-                ))}
-                {participants.filter(p=>p.group_id===participant.group_id).length===0 && (
-                  <div className="text-xs text-[var(--muted)]">No members yet.</div>
-                )}
-              </div>
-            </div>
-          )}
-        </aside>
-      </div>
-    </div>
-  );
-}
-
-function GroupJoinScreen({
-  sessionId,
-  participant,
-  groups,
-  participants,
-  onJoin,
-  reload,
-  setParticipant,
-}: {
-  sessionId: string;
-  participant: any;
-  groups: any[];
-  participants: Part[];
-  onJoin: (gid: string) => Promise<void> | void;
-  reload: () => Promise<void> | void;
-  setParticipant: (p: any) => void;
-}) {
-  const [createOpen, setCreateOpen] = useState(false);
-  const [newGroupName, setNewGroupName] = useState("");
-  const [createBusy, setCreateBusy] = useState(false);
-  const [focusIdx, setFocusIdx] = useState(0);
-  const cardRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const [editNameOpen, setEditNameOpen] = useState(false);
-  const [editName, setEditName] = useState("");
-  const sessionName = useMemo(() => {
-    try { return localStorage.getItem(`sf_last_session_name_${sessionId}`) || "Session"; } catch { return "Session"; }
-  }, [sessionId]);
-
-  useEffect(() => {
-    const needs = !participant || !participant.group_id;
-    if (!needs) return;
-    const t = setInterval(() => { void reload(); }, 3000);
-    return () => clearInterval(t);
-  }, [participant, reload]);
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (!groups?.length) return;
-      const cols = 2;
-      if (e.key === "ArrowRight") { e.preventDefault(); setFocusIdx(i => Math.min(groups.length - 1, i + 1)); }
-      if (e.key === "ArrowLeft")  { e.preventDefault(); setFocusIdx(i => Math.max(0, i - 1)); }
-      if (e.key === "ArrowDown")  { e.preventDefault(); setFocusIdx(i => Math.min(groups.length - 1, i + cols)); }
-      if (e.key === "ArrowUp")    { e.preventDefault(); setFocusIdx(i => Math.max(0, i - cols)); }
-      // Note: Do NOT bind Enter globally to avoid accidental joins
-      if (e.key.toLowerCase() === "n") setCreateOpen(true);
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [groups]);
-
-  function membersFor(gid: string) {
-    return participants.filter(p => p.group_id === gid);
-  }
-  function initials(name?: string | null) {
-    const s = (name || "").trim();
-    if (!s) return "?";
-    const parts = s.split(/\s+/);
-    return (parts[0]?.[0] || "").toUpperCase() + (parts[1]?.[0] || "").toUpperCase();
-  }
-
-  async function createGroup() {
-    const t = newGroupName.trim();
-    if (!t) return;
-    setCreateBusy(true);
-    try {
-      const r = await fetch(`/api/groups`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: String(sessionId), name: t }) });
-      const j = await r.json().catch(()=>({} as any));
-      if (!r.ok) { alert(j.error || 'Failed to create group'); return; }
-      setNewGroupName("");
-      setCreateOpen(false);
-      await reload();
-      if (j?.group?.id) await onJoin(j.group.id);
-    } finally { setCreateBusy(false); }
-  }
-
-  async function saveName() {
-    const clean = editName.trim();
-    const r = await fetch(`/api/participant?session_id=${sessionId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ display_name: clean || null }) });
-    const j = await r.json().catch(()=>({} as any));
-    if (!r.ok) { alert(j.error || 'Failed to update name'); return; }
-    try { if (clean) localStorage.setItem('sf_display_name', clean); } catch {}
-    setParticipant(j.participant || null);
-    setEditNameOpen(false);
-  }
-
-  return (
-    <div className="min-h-dvh grid place-items-center p-6">
-      <div className="w-full max-w-xl sm:max-w-2xl animate-fade-up">
-        <div className="mb-3 text-center text-xs uppercase tracking-wide text-[var(--muted)]">Step 2 of 3 ï¿½ Join a group</div>
-        <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,.35)] p-6">
-          <div className="text-center mb-4">
-            <div className="text-sm text-[var(--muted)]">{sessionName} • Host</div>
-            <div className="mt-1 text-2xl font-semibold">Pick a group to join</div>
-            <div className="mt-1 text-sm text-[var(--muted)]">Youï¿½ll collaborate with teammates in this group.</div>
+              <div className="text-sm font-medium">You'll collaborate with teammates in this group.</div>
             <div className="mt-2 text-xs text-[var(--muted)]">
               {participant?.display_name ? (
                 <>
-                  Signed in as <span className="opacity-90">{participant.display_name}</span>.{' '}
-                  <button className="underline hover:opacity-80" onClick={() => { setEditName(participant.display_name || ""); setEditNameOpen(true); }}>Not you?</button>
+                  Your display name: <span className="opacity-90">{participant.display_name}</span>.{' '}
+                  <button className="underline hover:opacity-80" onClick={() => { setEditName(participant.display_name || ""); setEditNameOpen(true); }}>Edit</button>
                 </>
               ) : (
                 <button className="underline hover:opacity-80" onClick={() => { setEditName(""); setEditNameOpen(true); }}>Add your name</button>
@@ -355,7 +253,7 @@ function GroupJoinScreen({
                       <div>
                         <button
                           ref={(el) => { cardRefs.current[idx] = el; }}
-                          onClick={() => onJoin(g.id)}
+                          onClick={async () => { await onJoin(g.id); onConfirm(); }}
                           className="w-full inline-flex items-center justify-center h-9 px-3 rounded-md bg-[var(--brand)] text-[var(--btn-on-brand)] focus:outline-none focus:ring-[var(--ring)]"
                           tabIndex={idx === focusIdx ? 0 : -1}
                         >
@@ -371,7 +269,12 @@ function GroupJoinScreen({
 
           <div className="mt-4 flex items-center justify-between">
             <div className="text-xs text-[var(--muted)]">Press N to create a new group</div>
-            <Button variant="outline" onClick={() => setCreateOpen(true)}>Create group</Button>
+            <div className="flex items-center gap-2">
+              {participant?.group_id ? (
+                <Button variant="ghost" onClick={() => onConfirm()}>Continue with current group</Button>
+              ) : null}
+              <Button variant="outline" onClick={() => setCreateOpen(true)}>Create group</Button>
+            </div>
           </div>
         </div>
       </div>
@@ -385,7 +288,7 @@ function GroupJoinScreen({
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button onClick={createGroup} disabled={!newGroupName.trim() || createBusy}>{createBusy ? 'Creatingï¿½' : 'Create'}</Button>
+            <Button onClick={createGroup} disabled={!newGroupName.trim() || createBusy}>{createBusy ? 'Creating...' : 'Create'}</Button>
           </div>
         </div>
       </Modal>
@@ -406,4 +309,7 @@ function GroupJoinScreen({
     </div>
   );
 }
+
+
+
 
