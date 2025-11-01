@@ -27,13 +27,7 @@ export default function RootJoinPage() {
     useRef<HTMLInputElement | null>(null),
   ];
 
-  // Prefill display name from localStorage
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("sf_display_name");
-      if (saved) setName(saved);
-    } catch {}
-  }, []);
+  // Do not prefill display name on first visit
   useEffect(() => {
     try {
       if (name) localStorage.setItem("sf_display_name", name);
@@ -226,6 +220,10 @@ export default function RootJoinPage() {
                   className="h-10 flex-1 rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none focus:ring-[var(--ring)]"
                   disabled={joining}
                   ref={displayRef}
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
               </div>
             </div>
