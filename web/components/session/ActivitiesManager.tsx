@@ -201,6 +201,18 @@ export default function ActivitiesManager({
     [sorted]
   );
 
+  // Timer helpers for UI state (expiry, etc.)
+  const [nowTs, setNowTs] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNowTs(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const isExpired = useMemo(() => {
+    if (!current?.ends_at) return false;
+    const ms = new Date(current.ends_at).getTime() - nowTs;
+    return Number.isFinite(ms) && ms <= 0;
+  }, [current?.ends_at, nowTs]);
+
   // create new activity
   async function create() {
     const cleanTitle = title.trim();
@@ -317,14 +329,12 @@ export default function ActivitiesManager({
   async function extendTimer(id: string, minutes: number) {
     const act = items.find((a) => a.id === id);
     if (!act) return;
-    if (act.status !== "Active") return; // only allow while Active
 
     const prev = act.ends_at ? new Date(act.ends_at).getTime() : Date.now();
     const base = Number.isFinite(prev) ? Math.max(prev, Date.now()) : Date.now();
     const next = new Date(base + minutes * 60_000).toISOString();
 
-    // Server currently only accepts starts_at/ends_at when status is Active in the same PATCH.
-    // Include status and the existing starts_at to satisfy that constraint.
+    // Reactivate or keep active while extending time
     const startsAt = act.starts_at || new Date().toISOString();
 
     try {
@@ -345,6 +355,28 @@ export default function ActivitiesManager({
     } catch (err) {
       console.error("[ActivitiesManager] extendTimer() failed:", err);
       toast("Failed to extend timer", "error");
+    }
+  }
+
+  async function resetTimer(id: string) {
+    const act = items.find((a) => a.id === id);
+    if (!act) return;
+    const tl = Number((act.config as any)?.time_limit_sec || 300);
+    const starts = new Date().toISOString();
+    const ends = new Date(Date.now() + tl * 1000).toISOString();
+    try {
+      const r = await fetch(`/api/activities/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Active", starts_at: starts, ends_at: ends }),
+      });
+      const j = await r.json().catch(() => ({} as any));
+      if (!r.ok) { toast(j.error || "Failed to reset timer", "error"); return; }
+      toast("Timer reset", "success");
+      await load();
+    } catch (err) {
+      console.error("[ActivitiesManager] resetTimer() failed:", err);
+      toast("Failed to reset timer", "error");
     }
   }
 
@@ -422,36 +454,48 @@ export default function ActivitiesManager({
                 <span className="opacity-70">Now:</span>
                 <span className="font-medium truncate max-w-[40ch]">{current ? (current.title || getActivityDisplayName(current.type)) : 'Nothing live'}</span>
                 {current?.ends_at ? (
-                  <span className="timer-pill timer-brand" aria-live="polite"><IconTimer size={12} /> <Timer endsAt={current.ends_at} /></span>
+                  isExpired ? (
+                    <details className="relative group">
+                      <summary className="list-none">
+                        <button className="timer-pill timer-red" aria-live="polite"><IconTimer size={12} /> Time's up</button>
+                      </summary>
+                      <div className="absolute left-0 mt-1 rounded-md border border-white/12 bg-[var(--panel)] shadow-lg overflow-hidden">
+                        {[1,3,5].map(m => (
+                          <button key={m} className="block w-full text-left px-3 py-1.5 text-sm hover:bg-white/5" onClick={(e) => { const d = (e.currentTarget.closest('details') as HTMLDetailsElement | null); if (current) extendTimer(current.id, m); if (d) d.open = false; }}>+{m} min</button>
+                        ))}
+                        <button className="block w-full text-left px-3 py-1.5 text-sm hover:bg-white/5" onClick={(e)=>{ const d=(e.currentTarget.closest('details') as HTMLDetailsElement|null); if(current) resetTimer(current.id); if(d) d.open=false; }}>Reset</button>
+                      </div>
+                    </details>
+                  ) : (
+                    <span className="timer-pill timer-brand" aria-live="polite"><IconTimer size={12} /> <Timer endsAt={current.ends_at} /></span>
+                  )
                 ) : null}
               </div>
-              <div className="flex items-center gap-2 ml-auto">
-                {!current || current.status !== 'Active' ? (
-                  current ? (
-                    <Button size="sm" onClick={() => setStatus(current.id, 'Active')}>Start</Button>
-                  ) : null
-                ) : null}
-                <div className={`relative ${!current || current.status !== 'Active' ? 'opacity-60 pointer-events-none' : ''}`}>
-                  <details className="group">
-                    <summary className="list-none">
-                      <Button size="sm" variant="outline">+ time</Button>
-                    </summary>
-                    <div className="absolute right-0 mt-1 rounded-md border border-white/12 bg-[var(--panel)] shadow-lg overflow-hidden">
-                      {[1,3,5].map(m => (
-                        <button key={m} className="block w-full text-left px-3 py-1.5 text-sm hover:bg-white/5" onClick={(e) => { const d = (e.currentTarget.closest('details') as HTMLDetailsElement | null); if (current) extendTimer(current.id, m); if (d) d.open = false; }}>+{m} min</button>
-                      ))}
-                    </div>
-                  </details>
+              <div className="flex items-center gap-0 ml-auto">
+                <div className="inline-flex items-stretch rounded-md overflow-hidden border border-white/12">
+                  <div className={`relative ${!current ? 'opacity-60 pointer-events-none' : ''}`}>
+                    <details className="group">
+                      <summary className="list-none">
+                        <Button size="sm" variant="outline" className="rounded-none border-0">+ time</Button>
+                      </summary>
+                      <div className="absolute right-0 mt-1 rounded-md border border-white/12 bg-[var(--panel)] shadow-lg overflow-hidden">
+                        {[1,3,5].map(m => (
+                          <button key={m} className="block w-full text-left px-3 py-1.5 text-sm hover:bg-white/5" onClick={(e) => { const d = (e.currentTarget.closest('details') as HTMLDetailsElement | null); if (current) extendTimer(current.id, m); if (d) d.open = false; }}>+{m} min</button>
+                        ))}
+                        <button className="block w-full text-left px-3 py-1.5 text-sm hover:bg-white/5" onClick={(e)=>{ const d=(e.currentTarget.closest('details') as HTMLDetailsElement|null); if(current) resetTimer(current.id); if(d) d.open=false; }}>Reset</button>
+                      </div>
+                    </details>
+                  </div>
+                  <Button size="sm" className="rounded-none border-l border-white/12" onClick={async () => {
+                    const idx = current ? sorted.findIndex(x => x.id === current.id) : -1;
+                    const next = sorted.slice(Math.max(idx + 1, 0)).find(x => x.status === 'Draft' || x.status === 'Voting');
+                    if (current) await setStatus(current.id, 'Closed');
+                    if (next) await setStatus(next.id, 'Active');
+                  }}>Next</Button>
+                  {current ? (
+                    <Button size="sm" variant="outline" className="rounded-none border-l border-white/12" onClick={() => setStatus(current.id, 'Closed')}>End</Button>
+                  ) : null}
                 </div>
-                <Button size="sm" variant="outline" onClick={async () => {
-                  const idx = current ? sorted.findIndex(x => x.id === current.id) : -1;
-                  const next = sorted.slice(Math.max(idx + 1, 0)).find(x => x.status === 'Draft' || x.status === 'Voting');
-                  if (current) await setStatus(current.id, 'Closed');
-                  if (next) await setStatus(next.id, 'Active');
-                }}>Next</Button>
-                {current ? (
-                  <Button size="sm" variant="outline" onClick={() => setStatus(current.id, 'Closed')}>End</Button>
-                ) : null}
               </div>
             </div>
           </div>
@@ -465,30 +509,24 @@ export default function ActivitiesManager({
           </div>
 
           {/* Progress + Now panel */}
-          <div className="mb-6 rounded-lg border border-white/15 bg-white/7 p-4 shadow-[0_8px_30px_rgba(0,0,0,.12)]">
             {/* Progress bar */}
             <div className="mb-2 flex items-center justify-between">
-              <div className="text-sm">{summary.closed}/{summary.total} completed • {summary.pct}%</div>
+              <div className="text-sm">{summary.closed}/{summary.total} completed {'\u2022'} {summary.pct}%</div>
             </div>
-            <div className="h-1 overflow-hidden rounded-full bg-white/10">
+            <div className="h-2 overflow-hidden rounded-full bg-white/10">
               <div
-                className="h-full bg-[var(--brand)]"
+                className={"h-full bg-[var(--brand)] " + (sessionStatus === "Active" ? "progress-striped progress-animate" : "") }
                 style={{ width: `${summary.pct}%` }}
               />
             </div>
-
             {/* Current activity row */}
             {current && (
               <div className="mt-3 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="inline-block h-2 w-2 rounded-full bg-[var(--brand)]" />
                   <span className="text-[var(--muted)]">Now:</span>
                   <span className="font-medium">{current.title}</span>
-                  <span className="rounded border border-white/10 px-2 py-0.5 text-[var(--muted)]">
-                    {current.status}
-                  </span>
+                  <span className="rounded border border-white/10 px-2 py-0.5 text-[var(--muted)]">{current.status}</span>
                 </div>
-
                 {(current.status === "Active" || current.status === "Voting") && current.ends_at ? (
                   <div className="flex items-center gap-2 text-[var(--muted)]">
                     <span className="timer-pill timer-brand" aria-live="polite"><IconTimer size={12} /> <Timer endsAt={current.ends_at} /></span>
@@ -568,12 +606,16 @@ export default function ActivitiesManager({
                   const groupList =
                     groups.length > 0 ? groups : [];
 
-                  return (
-                    <div
-                      key={a.id}
-                      className={`rounded-2xl border p-3 ${tone}`}
-                    >
-                      <div className="flex items-center justify-between">
+                   const expired = a.ends_at ? (new Date(a.ends_at).getTime() - nowTs) <= 0 : false;
+                   return (
+                     <div
+                       key={a.id}
+                       className={`rounded-2xl border p-3 ${tone}`}
+                     >
+                       {status === 'Active' ? (
+                         <div className="absolute -ml-3 mt-[-12px] mb-[-12px] inset-y-0 left-0 w-[3px] rounded-l-xl bg-gradient-to-b from-[var(--brand)] to-transparent" aria-hidden="true" />
+                       ) : null}
+                       <div className="flex items-center justify-between">
                         {/* left block */}
                         <div>
                           <div className="flex items-center gap-2 font-medium">
@@ -591,16 +633,20 @@ export default function ActivitiesManager({
                           </div>
 
                           <div className="text-xs flex items-center gap-2">
-                            <span className={`px-2 py-0.5 rounded-full border ${
-                              status === 'Active' ? 'status-chip-active border-green-400/30 text-green-200 bg-green-500/10' :
-                              status === 'Voting' ? 'border-amber-400/30 text-amber-200 bg-amber-500/10' :
-                              status === 'Inactive' ? 'border-white/20 text-[var(--muted)]' : 'border-rose-400/30 text-rose-200 bg-rose-500/10'
-                            }`}>
-                              {status}
-                            </span>
-                            {(a.status === 'Active' || a.status === 'Voting') && a.ends_at ? (
-                              <span className="timer-pill timer-brand"><IconTimer size={12} /> <Timer endsAt={a.ends_at} /></span>
-                            ) : null}
+                            {status === 'Active' && a.ends_at ? (
+                              expired ? (
+                                <span className="timer-pill timer-red"><IconTimer size={12} /> Time's up</span>
+                              ) : (
+                                <span className="timer-pill timer-brand"><IconTimer size={12} /> <Timer endsAt={a.ends_at} /></span>
+                              )
+                            ) : (
+                              <span className={`px-2 py-0.5 rounded-full border ${
+                                status === 'Voting' ? 'border-amber-400/30 text-amber-200 bg-amber-500/10' :
+                                status === 'Inactive' ? 'border-white/20 text-[var(--muted)]' : 'border-rose-400/30 text-rose-200 bg-rose-500/10'
+                              }`}>
+                                {status}
+                              </span>
+                            )}
                           </div>
 
                           {(a.type === "brainstorm" ||
@@ -626,7 +672,7 @@ export default function ActivitiesManager({
                                       </div>
                                       <div className="h-1 overflow-hidden rounded-full bg-white/10">
                                         <div
-                                          className="h-full bg-[var(--brand)]"
+                                          className={"h-full bg-[var(--brand)] " + (sessionStatus === "Active" ? "progress-striped progress-animate" : "") }
                                           style={{
                                             width: `${Math.min(
                                               100,
@@ -747,7 +793,7 @@ export default function ActivitiesManager({
                             >
                               Actions{" "}
                               <span className="ml-1">
-                                ▾
+                                ?
                               </span>
                             </Button>
 
@@ -899,7 +945,7 @@ export default function ActivitiesManager({
                                 );
                               }}
                             >
-                              ↑
+                              ?
                             </button>
                             <button
                               className="rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-xs hover:bg-white/10"
@@ -912,7 +958,7 @@ export default function ActivitiesManager({
                                 );
                               }}
                             >
-                              ↓
+                              ?
                             </button>
                           </div>
                         </div>
@@ -1250,3 +1296,4 @@ export default function ActivitiesManager({
     </>
   );
 }
+

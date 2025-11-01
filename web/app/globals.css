@@ -135,6 +135,26 @@ button:active{ transform: translateY(1px) scale(.98); }
 }
 .animate-active-pulse { animation: active-pulse 150ms ease-out both; }
 
+/* Progress bar subtle stripes (used when running) */
+@keyframes progress-stripes {
+  from { background-position: 0 0; }
+  to   { background-position: 20px 0; }
+}
+.progress-striped {
+  background-image: linear-gradient(
+    45deg,
+    rgba(255,255,255,.18) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255,255,255,.18) 50%,
+    rgba(255,255,255,.18) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 20px 20px;
+}
+.progress-animate { animation: progress-stripes 1s linear infinite; }
+
 /* Timer pill colors */
 .timer-pill { border-radius: 9999px; padding: 2px 8px; font-size: 12px; line-height: 1; display: inline-flex; align-items: center; gap: 6px; }
 .timer-brand { color: #e9ddff; background: rgba(168,111,255,.18); border: 1px solid rgba(168,111,255,.35); }
