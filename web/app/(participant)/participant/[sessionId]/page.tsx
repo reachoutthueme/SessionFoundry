@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Button from "@/components/ui/Button";
@@ -173,10 +173,7 @@ export default function ParticipantPage() {
 
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6 relative">
-      {/* Light/Dark toggle for participants */}
-      <div className="absolute right-3 top-3 sm:right-4 sm:top-4 z-50">
-        <ThemeToggle />
-      </div>
+      {/* Theme toggle is shown inside the header card */}
       {/* Header / Hero */}
       {!selected && (
         <div className="relative overflow-hidden rounded-[var(--radius)] border border-white/10 bg-gradient-to-r from-[var(--panel-2)]/90 to-[var(--panel)]/90">
@@ -245,7 +242,7 @@ export default function ParticipantPage() {
                             <div className="flex items-center gap-2 shrink-0">
                               <span className={`text-xs px-2 py-1 rounded-full border ${isActive ? 'border-green-400/30 text-green-200 bg-green-500/10' : isClosed ? 'border-white/20 text-[var(--muted)]' : 'border-white/20 text-[var(--muted)]'}`}>{isActive ? 'Active' : isClosed ? 'Closed' : 'Inactive'}</span>
                               {isActive && a.ends_at ? (
-                                <span className={`timer-pill ${timerPillClass(a.ends_at)}`}>â± <Timer endsAt={a.ends_at} /></span>
+                                <span className={`timer-pill ${timerPillClass(a.ends_at)}`}><IconTimer size={12} /> <Timer endsAt={a.ends_at} /></span>
                               ) : null}
                             </div>
                           </div>
@@ -265,11 +262,11 @@ export default function ParticipantPage() {
                                 aria-expanded={!!expanded[a.id]}
                                 onClick={() => setExpanded(prev => ({ ...prev, [a.id]: !prev[a.id] }))}
                               >
-                                {expanded[a.id] ? 'Hide details ▴' : 'Show details ▾'}
+                                {expanded[a.id] ? 'Hide details' : 'Show details'}
                               </button>
                             </div>
-                                
-                          <div className="mt-3 flex items-center justify-between">
+                          ) : null}
+                           <div className="mt-3 flex items-center justify-between">
                             {isActive ? (
                               <>
                                 <Button onClick={() => setSelected(a)} className="px-4">Open activity</Button>
@@ -554,6 +551,8 @@ function GroupJoinScreen({
     </div>
   );
 }
+
+
 
 
 
