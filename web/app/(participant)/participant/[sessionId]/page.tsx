@@ -9,6 +9,8 @@ import Timer from "@/components/ui/Timer";
 import { IconBrain, IconList, IconTimer, IconVote, IconLock } from "@/components/ui/Icons";
 import { getActivityDisplayName } from "@/lib/activities/registry";
 import OverallLeaderboard from "@/components/session/OverallLeaderboard";
+import { useMemo, useRef } from "react";
+import Modal from "@/components/ui/Modal";
 
 type Activity = { id: string; type: "brainstorm"|"stocktake"|"assignment"; status: string; title?: string; instructions?: string; description?: string; ends_at?: string|null; config?: any };
 type Part = { id: string; display_name?: string|null; group_id?: string|null };
@@ -23,6 +25,16 @@ export default function ParticipantPage() {
   const [completed, setCompleted] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<Activity | null>(null);
   const [showOverall, setShowOverall] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [createBusy, setCreateBusy] = useState(false);
+  const [focusIdx, setFocusIdx] = useState(0);
+  const cardRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const [editNameOpen, setEditNameOpen] = useState(false);
+  const [editName, setEditName] = useState("");
+  const sessionName = useMemo(() => {
+    try { return localStorage.getItem(`sf_last_session_name_${sessionId}`) || "Session"; } catch { return "Session"; }
+  }, [sessionId]);
 
   async function load() {
     function safeJson(r: Response) {
@@ -31,9 +43,9 @@ export default function ParticipantPage() {
     try {
       const [pR, gR, aR, pplR] = await Promise.all([
         fetch(`/api/participant?session_id=${sessionId}`),
-        fetch(`/api/groups?session_id=${sessionId}`),
+        fetch(`/api/public/groups?session_id=${sessionId}`),
         fetch(`/api/activities?session_id=${sessionId}`, { cache: "no-store" }),
-        fetch(`/api/participants?session_id=${sessionId}`, { cache: "no-store" }),
+        fetch(`/api/public/participants?session_id=${sessionId}`, { cache: "no-store" }),
       ]);
       const [pj, gj, aj, pplj] = await Promise.all([ safeJson(pR), safeJson(gR), safeJson(aR), safeJson(pplR) ]);
       setParticipant(pj?.participant ?? null);
@@ -51,6 +63,13 @@ export default function ParticipantPage() {
   }
 
   useEffect(() => { load(); }, [sessionId]);
+  // Light polling to reflect live joins/leaves while choosing a group
+  useEffect(() => {
+    const needs = !participant || !participant.group_id;
+    if (!needs) return;
+    const t = setInterval(() => { void load(); }, 3000);
+    return () => clearInterval(t);
+  }, [participant]);
 
   async function join(group_id: string) {
     const r = await fetch("/api/groups/join", {
@@ -65,6 +84,19 @@ export default function ParticipantPage() {
   }
 
   const needsGroup = !participant || !participant.group_id;
+  if (needsGroup) {
+    return (
+      <GroupJoinScreen
+        sessionId={sessionId as string}
+        participant={participant}
+        groups={groups}
+        participants={participants}
+        onJoin={join}
+        reload={load}
+        setParticipant={setParticipant}
+      />
+    );
+  }
   if (needsGroup) {
     return (
       <div className="max-w-md mx-auto p-6">
@@ -207,6 +239,197 @@ export default function ParticipantPage() {
           )}
         </aside>
       </div>
+    </div>
+  );
+}
+
+function GroupJoinScreen({
+  sessionId,
+  participant,
+  groups,
+  participants,
+  onJoin,
+  reload,
+  setParticipant,
+}: {
+  sessionId: string;
+  participant: any;
+  groups: any[];
+  participants: Part[];
+  onJoin: (gid: string) => Promise<void> | void;
+  reload: () => Promise<void> | void;
+  setParticipant: (p: any) => void;
+}) {
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [createBusy, setCreateBusy] = useState(false);
+  const [focusIdx, setFocusIdx] = useState(0);
+  const cardRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const [editNameOpen, setEditNameOpen] = useState(false);
+  const [editName, setEditName] = useState("");
+  const sessionName = useMemo(() => {
+    try { return localStorage.getItem(`sf_last_session_name_${sessionId}`) || "Session"; } catch { return "Session"; }
+  }, [sessionId]);
+
+  useEffect(() => {
+    const needs = !participant || !participant.group_id;
+    if (!needs) return;
+    const t = setInterval(() => { void reload(); }, 3000);
+    return () => clearInterval(t);
+  }, [participant, reload]);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (!groups?.length) return;
+      const cols = 2;
+      if (e.key === "ArrowRight") { e.preventDefault(); setFocusIdx(i => Math.min(groups.length - 1, i + 1)); }
+      if (e.key === "ArrowLeft")  { e.preventDefault(); setFocusIdx(i => Math.max(0, i - 1)); }
+      if (e.key === "ArrowDown")  { e.preventDefault(); setFocusIdx(i => Math.min(groups.length - 1, i + cols)); }
+      if (e.key === "ArrowUp")    { e.preventDefault(); setFocusIdx(i => Math.max(0, i - cols)); }
+      if (e.key === "Enter")      { const g = groups[focusIdx]; if (g) void onJoin(g.id); }
+      if (e.key.toLowerCase() === "n") setCreateOpen(true);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [groups, focusIdx, onJoin]);
+
+  useEffect(() => {
+    const el = cardRefs.current[focusIdx];
+    if (el) el.focus();
+  }, [focusIdx, groups]);
+
+  function membersFor(gid: string) {
+    return participants.filter(p => p.group_id === gid);
+  }
+  function initials(name?: string | null) {
+    const s = (name || "").trim();
+    if (!s) return "?";
+    const parts = s.split(/\s+/);
+    return (parts[0]?.[0] || "").toUpperCase() + (parts[1]?.[0] || "").toUpperCase();
+  }
+
+  async function createGroup() {
+    const t = newGroupName.trim();
+    if (!t) return;
+    setCreateBusy(true);
+    try {
+      const r = await fetch(`/api/groups`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: String(sessionId), name: t }) });
+      const j = await r.json().catch(()=>({} as any));
+      if (!r.ok) { alert(j.error || 'Failed to create group'); return; }
+      setNewGroupName("");
+      setCreateOpen(false);
+      await reload();
+      if (j?.group?.id) await onJoin(j.group.id);
+    } finally { setCreateBusy(false); }
+  }
+
+  async function saveName() {
+    const clean = editName.trim();
+    const r = await fetch(`/api/participant?session_id=${sessionId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ display_name: clean || null }) });
+    const j = await r.json().catch(()=>({} as any));
+    if (!r.ok) { alert(j.error || 'Failed to update name'); return; }
+    try { if (clean) localStorage.setItem('sf_display_name', clean); } catch {}
+    setParticipant(j.participant || null);
+    setEditNameOpen(false);
+  }
+
+  return (
+    <div className="min-h-dvh grid place-items-center p-6">
+      <div className="w-full max-w-xl sm:max-w-2xl animate-fade-up">
+        <div className="mb-3 text-center text-xs uppercase tracking-wide text-[var(--muted)]">Step 2 of 3 — Join a group</div>
+        <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,.35)] p-6">
+          <div className="text-center mb-4">
+            <div className="text-sm text-[var(--muted)]">{sessionName} • Host</div>
+            <div className="mt-1 text-2xl font-semibold">Pick a group to join</div>
+            <div className="mt-1 text-sm text-[var(--muted)]">You’ll collaborate with teammates in this group.</div>
+            <div className="mt-2 text-xs text-[var(--muted)]">
+              {participant?.display_name ? (
+                <>
+                  Signed in as <span className="opacity-90">{participant.display_name}</span>.{' '}
+                  <button className="underline hover:opacity-80" onClick={() => { setEditName(participant.display_name || ""); setEditNameOpen(true); }}>Not you?</button>
+                </>
+              ) : (
+                <button className="underline hover:opacity-80" onClick={() => { setEditName(""); setEditNameOpen(true); }}>Add your name</button>
+              )}
+            </div>
+          </div>
+
+          {groups.length === 0 ? (
+            <div className="text-sm text-[var(--muted)] text-center py-6">Waiting for facilitator to create a group.</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {groups.map((g, idx) => {
+                const members = membersFor(g.id);
+                const stateLabel = members.length === 0 ? 'New' : 'In progress';
+                return (
+                  <div key={g.id} className="rounded-xl bg-white/4 border border-white/10 hover:bg-white/[.06] transition-colors">
+                    <div className="p-4 flex flex-col gap-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">{g.name}</div>
+                          <div className="mt-1 text-xs text-[var(--muted)] animate-fade-up" key={members.length}>{members.length} {members.length === 1 ? 'person' : 'people'}</div>
+                        </div>
+                        <div className="text-[10px] px-2 py-0.5 rounded-full border border-white/20 text-[var(--muted)]">{stateLabel}</div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                          {members.slice(0,5).map((m) => (
+                          <div key={m.id} className="-ml-2 first:ml-0 w-6 h-6 rounded-full bg-white/10 border border-white/20 grid place-items-center text-[10px] font-semibold ring-1 ring-white/20 animate-avatar-pop" title={m.display_name || `#${m.id.slice(0,6)}`}>{initials(m.display_name || '')}</div>
+                        ))}
+                        {members.length > 5 && (
+                          <div className="-ml-2 w-6 h-6 rounded-full bg-white/10 border border-white/20 grid place-items-center text-[10px]">+{members.length - 5}</div>
+                        )}
+                      </div>
+                      <div>
+                        <button
+                          ref={el => (cardRefs.current[idx] = el)}
+                          onClick={() => onJoin(g.id)}
+                          className="w-full inline-flex items-center justify-center h-9 px-3 rounded-md bg-[var(--brand)] text-[var(--btn-on-brand)] focus:outline-none focus:ring-2 focus:ring-brand"
+                          tabIndex={idx === focusIdx ? 0 : -1}
+                        >
+                          Join
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-xs text-[var(--muted)]">Press N to create a new group</div>
+            <Button variant="outline" onClick={() => setCreateOpen(true)}>Create group</Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Create group modal */}
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Create a group">
+        <div className="space-y-3">
+          <div>
+            <label className="block text-sm mb-1">Group name</label>
+            <input value={newGroupName} onChange={e=>setNewGroupName(e.target.value)} className="w-full h-10 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none" placeholder="e.g., Team Fox" />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setCreateOpen(false)}>Cancel</Button>
+            <Button onClick={createGroup} disabled={!newGroupName.trim() || createBusy}>{createBusy ? 'Creating…' : 'Create'}</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit name modal */}
+      <Modal open={editNameOpen} onClose={() => setEditNameOpen(false)} title="Update your name">
+        <div className="space-y-3">
+          <div>
+            <label className="block text-sm mb-1">Display name</label>
+            <input value={editName} onChange={e=>setEditName(e.target.value)} className="w-full h-10 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none" placeholder="Your name" />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setEditNameOpen(false)}>Cancel</Button>
+            <Button onClick={saveName}>Save</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

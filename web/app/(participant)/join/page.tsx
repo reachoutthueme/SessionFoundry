@@ -67,7 +67,14 @@ function JoinForm() {
 
       // Prefer client-side navigation
       const sessionId = j?.session?.id as string | undefined;
-      if (sessionId) router.push(`/participant/${sessionId}`);
+      if (sessionId) {
+        // Save lightweight session context for participant views
+        try {
+          if (j?.session?.name) localStorage.setItem(`sf_last_session_name_${sessionId}`, String(j.session.name));
+          if (j?.session?.join_code) localStorage.setItem(`sf_last_join_code_${sessionId}`, String(j.session.join_code));
+        } catch {}
+        router.push(`/participant/${sessionId}`);
+      }
       else setErr("Unexpected response. Please try again.");
     } catch {
       setErr("Network error. Please check your connection and try again.");
@@ -164,4 +171,3 @@ export default function JoinPage() {
     </Suspense>
   );
 }
-

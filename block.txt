@@ -1,0 +1,23 @@
+  const needsGroup = !participant || !participant.group_id;
+  if (needsGroup) {
+    return (
+      <div className="max-w-md mx-auto p-6">
+        <Card>
+          <CardHeader title="Welcome" subtitle="Pick your group to start" />
+          <CardBody>
+            <div className="space-y-2">
+              {groups.length === 0 ? (
+                <div className="text-sm text-[var(--muted)]">Waiting for facilitator to create a group…</div>
+              ) : groups.map(g => (
+                <div key={g.id} className="flex items-center justify-between p-2 rounded bg-white/5 border border-white/10">
+                  <div>{g.name}</div>
+                  <Button size="sm" onClick={()=>join(g.id)}>Join</Button>
+                </div>
+              ))}
+              <CreateGroupInline sessionId={sessionId as string} onCreated={(gid)=>join(gid)} />
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }

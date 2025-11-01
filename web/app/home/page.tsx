@@ -85,10 +85,10 @@ export default function HomeLandingPage() {
                   Sign in
                 </Link>
               </div>
-              <div className="mt-2 text-xs text-[var(--muted)]">No credit card - 2 min setup</div>
+              {/* helper line removed per request */}
 
               {/* Guided path */}
-              <div className="mt-6 flex items-center justify-center gap-3 text-sm text-[var(--muted)]">
+              <div className="mt-10 flex items-center justify-center gap-3 text-sm text-[var(--muted)]">
                 <Step icon={<IconPresentation className="text-[var(--brand)]" aria-hidden />} label="Create session" />
                 <IconChevronRight className="opacity-60" aria-hidden />
                 <Step icon={<IconVote className="text-[var(--brand)]" aria-hidden />} label="Participants join with a code" />

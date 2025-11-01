@@ -121,6 +121,13 @@ button:active{ transform: translateY(1px) scale(.98); }
 }
 .animate-fade-up { animation: fade-up 160ms ease-out both; }
 
+/* Avatar stack subtle pop (100–150ms) */
+@keyframes avatar-pop {
+  from { opacity: 0; transform: scale(.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.animate-avatar-pop { animation: avatar-pop 120ms ease-out both; }
+
 @keyframes slide-in {
   from { opacity: 0; transform: translateY(40px); }
   to   { opacity: 1; transform: translateY(0); }
