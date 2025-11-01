@@ -52,7 +52,7 @@ export async function POST(req: Request) {
   if (!actRow || (actRow as any).session_id !== session_id) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if ((actRow as any).status !== 'Active') return NextResponse.json({ error: 'Activity not active' }, { status: 403 });
 
-  const hooks = getServerHooks('stocktake') as any;
+  const hooks = getServerHooks('stocktake');
   if (!hooks || !hooks.saveResponse) return NextResponse.json({ error: 'Not supported' }, { status: 400 });
   const saved = await hooks.saveResponse({ activity_id, initiative_id, choice, participant_id });
   if ('error' in saved) return NextResponse.json({ error: saved.error }, { status: 500 });

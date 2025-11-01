@@ -223,3 +223,5 @@ function Scatter({ points }: { points: { id: string; label: string; avg: number;
   );
 }
 
+
+

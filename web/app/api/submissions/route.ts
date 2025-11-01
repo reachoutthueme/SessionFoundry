@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabaseAdmin } from "@/app/lib/supabaseAdmin";
 import { getUserFromRequest, getParticipantInSession, getSessionStatus, userOwnsActivity, userOwnsSession } from "@/app/api/_util/auth";
+import { getServerHooks } from "@/lib/activities/server";
 
 // GET supports activity_id or resolves latest Active/Voting brainstorm activity by session_id
 export async function GET(req: Request) {
@@ -150,8 +151,7 @@ export async function POST(req: Request) {
   if (aStatus !== 'Active') {
     return NextResponse.json({ error: 'Activity not active' }, { status: 403 });
   }
-  const { getServerHooks } = await import("@/lib/activities/server");
-  const hooks = getServerHooks(type) as any;
+  const hooks = getServerHooks(type);
   if (!hooks || !hooks.saveSubmission || !hooks.canSubmit) {
     return NextResponse.json({ error: 'Submissions not supported' }, { status: 400 });
   }
