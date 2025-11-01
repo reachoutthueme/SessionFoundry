@@ -133,6 +133,16 @@ export default function ParticipantPage() {
     return () => clearInterval(t);
   }, [participant]);
 
+  // Live region for activity announcements (must be declared before any early returns)
+  const liveRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!active) return;
+    try {
+      const title = active.title || getActivityDisplayName(active.type);
+      if (liveRef.current) liveRef.current.textContent = `${title} is now active.`;
+    } catch {}
+  }, [active?.id]);
+
   async function join(group_id: string) {
     const r = await fetch("/api/groups/join", {
       method: "POST",
@@ -160,15 +170,6 @@ export default function ParticipantPage() {
       />
     );
   }
-  // Live region for activity announcements
-  const liveRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!active) return;
-    try {
-      const title = active.title || getActivityDisplayName(active.type);
-      if (liveRef.current) liveRef.current.textContent = `${title} is now active.`;
-    } catch {}
-  }, [active?.id]);
 
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6 relative">
