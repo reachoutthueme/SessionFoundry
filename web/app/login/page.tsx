@@ -155,7 +155,14 @@ export default function LoginPage() {
         <Card>
           <CardHeader title={title} subtitle={subtitle} />
           <CardBody>
-            <div className="space-y-3">
+            <form
+              className="space-y-3"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (mode === "signin") signIn();
+                else signUp();
+              }}
+            >
               {/* Email */}
               <div className="space-y-1">
                 <label htmlFor="email" className="sr-only">
@@ -235,7 +242,7 @@ export default function LoginPage() {
               {/* Action row */}
               {mode === "signin" ? (
                 <div className="flex flex-col gap-2 sm:flex-row">
-                  <Button onClick={signIn} disabled={loading}>
+                  <Button type="submit" disabled={loading}>
                     Sign in
                   </Button>
                   <Button
@@ -249,7 +256,7 @@ export default function LoginPage() {
               ) : (
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Button
-                    onClick={signUp}
+                    type="submit"
                     disabled={
                       loading ||
                       password !== confirm ||
@@ -273,7 +280,7 @@ export default function LoginPage() {
                 Free plan: 1 session, no exports. Pro: unlimited +
                 exports.
               </div>
-            </div>
+            </form>
           </CardBody>
         </Card>
       </div>

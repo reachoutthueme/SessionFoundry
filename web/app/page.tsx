@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
@@ -13,6 +13,8 @@ export default function RootJoinPage() {
   const [name, setName] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
+
+  const displayRef = useRef<HTMLInputElement | null>(null);
 
   async function submit() {
     // reset old error
@@ -92,7 +94,10 @@ export default function RootJoinPage() {
             Join a workshop
           </h2>
 
-          <div className="space-y-3">
+          <form
+            className="space-y-3"
+            onSubmit={(e) => { e.preventDefault(); submit(); }}
+          >
             <div>
               <label
                 htmlFor="join-code"
@@ -106,6 +111,12 @@ export default function RootJoinPage() {
                 onChange={(e) =>
                   setCode(e.target.value.toUpperCase())
                 }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    displayRef.current?.focus();
+                  }
+                }}
                 placeholder="Enter code (e.g., F7KM)"
                 className="h-10 w-full rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none focus:ring-[var(--ring)]"
                 disabled={joining}
@@ -117,15 +128,16 @@ export default function RootJoinPage() {
                 htmlFor="display-name"
                 className="mb-1 block text-sm"
               >
-                Your name (optional)
+                Your display name
               </label>
               <input
                 id="display-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="How should we show your name?"
+                placeholder="How should we display your name?"
                 className="h-10 w-full rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none focus:ring-[var(--ring)]"
                 disabled={joining}
+                ref={displayRef}
               />
             </div>
 
@@ -137,14 +149,14 @@ export default function RootJoinPage() {
 
             <div className="pt-1">
               <Button
-                onClick={submit}
+                type="submit"
                 className="w-full"
                 disabled={joining}
               >
                 {joining ? "Joining..." : "Join"}
               </Button>
             </div>
-          </div>
+          </form>
         </div>
 
         <div className="mt-3 text-center">

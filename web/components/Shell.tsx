@@ -291,22 +291,29 @@ export default function Shell({ children }: PropsWithChildren) {
                   onClick={() => setPoliciesOpen((o) => !o)}
                   aria-expanded={policiesOpen}
                 >
+                  {!collapsed && (
+                    <span className={`inline-block transition-transform duration-150 ${policiesOpen ? 'rotate-90' : ''}`} aria-hidden>
+                      <IconChevronRight />
+                    </span>
+                  )}
                   <IconShield />
                   {!collapsed && <span>Policies</span>}
                 </button>
-                {!collapsed && policiesOpen && (
-                  <div className="mt-1 ml-9 space-y-1">
+                {!collapsed && (
+                  <div className={`mt-1 ml-6 pl-3 space-y-1 border-l border-white/10 ${policiesOpen ? '' : 'hidden'}`}>
                     <button
-                      className="w-full text-left text-sm rounded-md border border-transparent px-3 py-2 hover:border-white/10 hover:bg-white/5"
+                      className="w-full flex items-center gap-2 text-left text-sm rounded-md border border-transparent px-3 py-2 hover:border-white/10 hover:bg-white/5"
                       onClick={() => setShowPrivacy(true)}
                     >
-                      Privacy Policy
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40" aria-hidden />
+                      <span>Privacy Policy</span>
                     </button>
                     <button
-                      className="w-full text-left text-sm rounded-md border border-transparent px-3 py-2 hover:border-white/10 hover:bg-white/5"
+                      className="w-full flex items-center gap-2 text-left text-sm rounded-md border border-transparent px-3 py-2 hover:border-white/10 hover:bg-white/5"
                       onClick={() => setShowTerms(true)}
                     >
-                      Terms & Conditions
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40" aria-hidden />
+                      <span>Terms & Conditions</span>
                     </button>
                   </div>
                 )}
