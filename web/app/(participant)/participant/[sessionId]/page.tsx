@@ -225,6 +225,119 @@ export default function ParticipantPage() {
             </div>
           </div>
 
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function GroupJoinScreen({
+  sessionId,
+  participant,
+  groups,
+  participants,
+  onJoin,
+  reload,
+  setParticipant,
+  onConfirm,
+}: {
+  sessionId: string;
+  participant: any;
+  groups: any[];
+  participants: Part[];
+  onJoin: (gid: string) => Promise<void> | void;
+  reload: () => Promise<void> | void;
+  setParticipant: (p: any) => void;
+  onConfirm: () => void;
+}) {
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [createBusy, setCreateBusy] = useState(false);
+  const [editNameOpen, setEditNameOpen] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [focusIdx, setFocusIdx] = useState(0);
+  const cardRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const sessionName = useMemo(() => {
+    try { return localStorage.getItem(`sf_last_session_name_${sessionId}`) || "Session"; } catch { return "Session"; }
+  }, [sessionId]);
+
+  useEffect(() => {
+    const needs = !participant || !participant.group_id;
+    if (!needs) return;
+    const t = setInterval(() => { void reload(); }, 3000);
+    return () => clearInterval(t);
+  }, [participant, reload]);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (!groups?.length) return;
+      const cols = 2;
+      if (e.key === "ArrowRight") { e.preventDefault(); setFocusIdx(i => Math.min(groups.length - 1, i + 1)); }
+      if (e.key === "ArrowLeft")  { e.preventDefault(); setFocusIdx(i => Math.max(0, i - 1)); }
+      if (e.key === "ArrowDown")  { e.preventDefault(); setFocusIdx(i => Math.min(groups.length - 1, i + cols)); }
+      if (e.key === "ArrowUp")    { e.preventDefault(); setFocusIdx(i => Math.max(0, i - cols)); }
+      // Do not bind Enter to avoid accidental joins
+      if (e.key.toLowerCase() === "n") setCreateOpen(true);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [groups]);
+
+  useEffect(() => {
+    const el = cardRefs.current[focusIdx];
+    if (el) el.focus();
+  }, [focusIdx, groups]);
+
+  function membersFor(gid: string) {
+    return participants.filter(p => p.group_id === gid);
+  }
+
+  async function createGroup() {
+    const t = newGroupName.trim();
+    if (!t) return;
+    setCreateBusy(true);
+    try {
+      const r = await fetch(`/api/groups`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: String(sessionId), name: t }) });
+      const j = await r.json().catch(()=>({} as any));
+      if (!r.ok) { alert(j.error || 'Failed to create group'); return; }
+      setNewGroupName("");
+      setCreateOpen(false);
+      await reload();
+      if (j?.group?.id) { await onJoin(j.group.id); onConfirm(); }
+    } finally { setCreateBusy(false); }
+  }
+
+  async function saveName() {
+    const clean = editName.trim();
+    const r = await fetch(`/api/participant?session_id=${sessionId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ display_name: clean || null }) });
+    const j = await r.json().catch(()=>({} as any));
+    if (!r.ok) { alert(j.error || 'Failed to update name'); return; }
+    try { if (clean) localStorage.setItem('sf_display_name', clean); } catch {}
+    setParticipant(j.participant || null);
+    setEditNameOpen(false);
+  }
+
+  return (
+    <div className="min-h-dvh grid place-items-center p-6">
+      <div className="w-full max-w-xl sm:max-w-2xl animate-fade-up">
+        <div className="mb-3 text-center text-xs uppercase tracking-wide text-[var(--muted)]">Step 2 of 3 - Join a group</div>
+        <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,.35)] p-6">
+          <div className="text-center mb-4">
+            <div className="text-sm text-[var(--muted)]">{sessionName}</div>
+            <div className="mt-1 text-2xl font-semibold">Pick a group to join</div>
+            <div className="mt-1 text-sm text-[var(--muted)]">You'll collaborate with teammates in this group.</div>
+            <div className="mt-2 text-xs text-[var(--muted)]">
+              {participant?.display_name ? (
+                <>
+                  Your display name: <span className="opacity-90">{participant.display_name}</span>.{' '}
+                  <button className="underline hover:opacity-80" onClick={() => { setEditName(participant.display_name || ""); setEditNameOpen(true); }}>Edit</button>
+                </>
+              ) : (
+                <button className="underline hover:opacity-80" onClick={() => { setEditName(""); setEditNameOpen(true); }}>Add your name</button>
+              )}
+            </div>
+          </div>
+
           {groups.length === 0 ? (
             <div className="text-sm text-[var(--muted)] text-center py-6">Waiting for facilitator to create a group.</div>
           ) : (
@@ -243,8 +356,8 @@ export default function ParticipantPage() {
                         <div className="text-[10px] px-2 py-0.5 rounded-full border border-white/20 text-[var(--muted)]">{stateLabel}</div>
                       </div>
                       <div className="flex items-center gap-1">
-                          {members.slice(0,5).map((m) => (
-                          <div key={m.id} className="-ml-2 first:ml-0 w-6 h-6 rounded-full bg-white/10 border border-white/20 grid place-items-center text-[10px] font-semibold ring-1 ring-white/20 animate-avatar-pop" title={m.display_name || `#${m.id.slice(0,6)}`}>{initials(m.display_name || '')}</div>
+                        {members.slice(0,5).map((m) => (
+                          <div key={m.id} className="-ml-2 first:ml-0 w-6 h-6 rounded-full bg-white/10 border border-white/20 grid place-items-center text-[10px] font-semibold ring-1 ring-white/20 animate-avatar-pop" title={m.display_name || `#${m.id.slice(0,6)}`}>{(m.display_name || '?').slice(0,1).toUpperCase()}</div>
                         ))}
                         {members.length > 5 && (
                           <div className="-ml-2 w-6 h-6 rounded-full bg-white/10 border border-white/20 grid place-items-center text-[10px]">+{members.length - 5}</div>
@@ -279,7 +392,6 @@ export default function ParticipantPage() {
         </div>
       </div>
 
-      {/* Create group modal */}
       <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Create a group">
         <div className="space-y-3">
           <div>
@@ -293,7 +405,6 @@ export default function ParticipantPage() {
         </div>
       </Modal>
 
-      {/* Edit name modal */}
       <Modal open={editNameOpen} onClose={() => setEditNameOpen(false)} title="Update your name">
         <div className="space-y-3">
           <div>
