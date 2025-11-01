@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { supabaseAdmin } from "../../../../lib/supabaseAdmin";
 import { getUserFromRequest, userOwnsActivity } from "@/app/api/_util/auth";
@@ -6,7 +6,7 @@ import { getUserFromRequest, userOwnsActivity } from "@/app/api/_util/auth";
 const ParamsSchema = z.object({ id: z.string().uuid("Invalid id") });
 
 export async function DELETE(
-  req: Request,
+  req: NextRequest,
   ctx: { params: Promise<{ id: string }> }
 ) {
   // Validate route param

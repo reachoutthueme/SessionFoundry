@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getUserFromRequest, userOwnsActivity } from "@/app/api/_util/auth";
 import { getActivityMeta, getServerHooks } from "@/lib/activities/server";
@@ -6,10 +6,11 @@ import { getActivityMeta, getServerHooks } from "@/lib/activities/server";
 const IdSchema = z.string().min(1).max(128);
 
 export async function GET(
-  req: Request,
-  ctx: { params: { id: string } }
+  req: NextRequest,
+  ctx: { params: Promise<{ id: string }> }
 ) {
-  const parse = IdSchema.safeParse(ctx.params?.id);
+  const { id } = await ctx.params;
+  const parse = IdSchema.safeParse(id);
   if (!parse.success) {
     return NextResponse.json({ error: "Invalid activity id" }, { status: 400 });
   }

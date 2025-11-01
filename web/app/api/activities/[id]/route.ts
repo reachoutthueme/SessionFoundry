@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { getUserFromRequest, userOwnsActivity } from "@/app/api/_util/auth";
 import { validateConfig } from "@/lib/activities/schemas";
 
-// Route params typing (no Promise)
-type Ctx = { params: { id: string } };
+// Route params typing (Next.js v16 async params)
+type Ctx = { params: Promise<{ id: string }> };
 
 const PatchSchema = z.object({
   title: z.string().trim().max(300).optional(),
@@ -27,8 +27,8 @@ function noStore<T>(payload: T, init?: number | ResponseInit) {
   return res;
 }
 
-export async function PATCH(req: Request, ctx: Ctx) {
-  const activityId = ctx.params?.id || "";
+export async function PATCH(req: NextRequest, ctx: Ctx) {
+  const { id: activityId } = await ctx.params;
   if (!activityId) return noStore({ error: "Invalid activity id" }, { status: 400 });
 
   // Auth

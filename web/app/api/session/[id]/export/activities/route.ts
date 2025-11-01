@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../../../lib/supabaseAdmin";
 import { getUserFromRequest } from "@/app/api/_util/auth";
 
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const session_id = params.id;
+  const { id: session_id } = await params;
 
   const user = await getUserFromRequest(req);
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { getUserFromRequest } from "@/app/api/_util/auth";
 
@@ -22,7 +22,7 @@ function validateName(n: unknown): string | null {
   return t;
 }
 
-export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
 
   const user = await getUserFromRequest(req);
@@ -50,7 +50,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   return res;
 }
 
-export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   const user = await getUserFromRequest(req);
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
