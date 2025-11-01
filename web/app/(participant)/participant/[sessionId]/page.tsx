@@ -6,7 +6,7 @@ import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { getParticipantPanel } from "@/lib/activities/components";
 import Timer from "@/components/ui/Timer";
-import { IconBrain, IconList, IconTimer, IconVote, IconLock } from "@/components/ui/Icons";
+import { IconBrain, IconList, IconTimer, IconVote, IconLock, IconChevronRight } from "@/components/ui/Icons";
 import { getActivityDisplayName } from "@/lib/activities/registry";
 import OverallLeaderboard from "@/components/session/OverallLeaderboard";
 import { useMemo, useRef } from "react";
@@ -36,13 +36,6 @@ export default function ParticipantPage() {
   const [editNameOpen, setEditNameOpen] = useState(false);
   const [editName, setEditName] = useState("");
   const groupRef = useRef<HTMLDivElement | null>(null);
-  const [ready, setReady] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem(`sf_ready_${sessionId}`) === '1';
-    } catch {
-      return false;
-    }
-  });
   const sessionName = useMemo(() => {
     try { return localStorage.getItem(`sf_last_session_name_${sessionId}`) || "Session"; } catch { return "Session"; }
   }, [sessionId]);
@@ -247,7 +240,7 @@ export default function ParticipantPage() {
                             </div>
                           </div>
                           <div className="mt-1 text-[11px] uppercase tracking-wide text-[var(--muted)]">
-                            {short ? (<span>Outcome: <span className="normal-case not-italic">{short}{outcomeLine.length>70 ? ' More' : ''}</span></span>) : <span>&nbsp;</span>}
+                            {short ? (<span>Outcome: <span className="normal-case not-italic">{short}</span></span>) : <span>&nbsp;</span>}
                           </div>
                           {(a.instructions || a.description) ? (
                             <div className="mt-1">
@@ -258,11 +251,12 @@ export default function ParticipantPage() {
                                 </div>
                               ) : null}
                               <button
-                                className="mt-1 text-[11px] uppercase tracking-wide inline-flex items-center gap-1 text-[var(--muted)] hover:underline"
+                                className="mt-1 text-[11px] uppercase tracking-wide inline-flex items-center gap-1 text-[var(--brand)] hover:opacity-90 focus:outline-none focus:ring-[var(--ring)]"
                                 aria-expanded={!!expanded[a.id]}
                                 onClick={() => setExpanded(prev => ({ ...prev, [a.id]: !prev[a.id] }))}
                               >
-                                {expanded[a.id] ? 'Hide details' : 'Show details'}
+                                <span className="relative z-[1]">{expanded[a.id] ? 'Hide details' : 'Show details'}</span>
+                                <IconChevronRight size={12} className={`transition-transform ${expanded[a.id] ? 'rotate-90' : ''}`} />
                               </button>
                             </div>
                           ) : null}
@@ -326,13 +320,7 @@ export default function ParticipantPage() {
                   </div>
                 ))}
               </div>
-              <div className="mt-3 flex items-center justify-between">
-                <div className="text-xs text-[var(--muted)]">{participants.filter(p=>p.group_id===participant.group_id).length} members</div>
-                <label className="text-xs inline-flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={ready} onChange={(e)=>{ setReady(e.target.checked); try { localStorage.setItem(`sf_ready_${sessionId}`, e.target.checked ? '1':'0'); } catch {} }} />
-                  Ready
-                </label>
-              </div>
+              <div className="mt-3 text-xs text-[var(--muted)]">{participants.filter(p=>p.group_id===participant.group_id).length} members</div>
               <div className="mt-2 text-xs text-[var(--muted)]">
                 {participant?.display_name ? (
                   <>
@@ -551,6 +539,7 @@ function GroupJoinScreen({
     </div>
   );
 }
+
 
 
 

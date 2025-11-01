@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Button from "@/components/ui/Button";
 import { IconSettings } from "@/components/ui/Icons";
+import { IconTimer } from "@/components/ui/Icons";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { getActivityDisplayName } from "@/lib/activities/registry";
 import Modal from "@/components/ui/Modal";
@@ -409,11 +410,54 @@ export default function ActivitiesManager({
               <span
                 className={`inline-block h-2 w-2 rounded-full ${statusColor} animate-pulse`}
               />
-              <span>Status: {statusLabel}</span>
+              <span>{statusLabel}</span>
             </div>
           }
         />
         <CardBody>
+          {/* Sticky control bar */}
+          <div className="sticky top-0 z-10 -mx-3 -mt-2 mb-4 px-3 pt-2 backdrop-blur-sm">
+            <div className="rounded-md border border-white/12 bg-white/6 px-3 py-2 flex flex-wrap items-center gap-3">
+              <div className="min-w-0 text-xs flex items-center gap-2">
+                <span className="opacity-70">Now:</span>
+                <span className="font-medium truncate max-w-[40ch]">{current ? (current.title || getActivityDisplayName(current.type)) : 'Nothing live'}</span>
+                {current?.ends_at ? (
+                  <span className="timer-pill timer-brand" aria-live="polite"><IconTimer size={12} /> <Timer endsAt={current.ends_at} /></span>
+                ) : null}
+              </div>
+              <div className="flex items-center gap-2 ml-auto">
+                {current ? (
+                  current.status === 'Active' ? (
+                    <Button size="sm" variant="outline" onClick={() => setStatus(current.id, 'Voting')}>Pause</Button>
+                  ) : (
+                    <Button size="sm" onClick={() => setStatus(current.id, 'Active')}>Start</Button>
+                  )
+                ) : null}
+                <div className="relative">
+                  <details className="group">
+                    <summary className="list-none">
+                      <Button size="sm" variant="outline">+ time</Button>
+                    </summary>
+                    <div className="absolute right-0 mt-1 rounded-md border border-white/12 bg-[var(--panel)] shadow-lg overflow-hidden">
+                      {[1,3,5].map(m => (
+                        <button key={m} className="block w-full text-left px-3 py-1.5 text-sm hover:bg-white/5" onClick={() => current && extendTimer(current.id, m)}>+{m} min</button>
+                      ))}
+                    </div>
+                  </details>
+                </div>
+                <Button size="sm" variant="outline" onClick={async () => {
+                  const idx = current ? sorted.findIndex(x => x.id === current.id) : -1;
+                  const next = sorted.slice(Math.max(idx+1,0)).find(x => x.status === 'Draft' || x.status === 'Inactive' || x.status === 'Voting');
+                  if (current) await setStatus(current.id, 'Closed');
+                  if (next) await setStatus(next.id, 'Active');
+                }}>Next</Button>
+                {current ? (
+                  <Button size="sm" variant="outline" onClick={() => setStatus(current.id, 'Closed')}>End</Button>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
           {/* Header row: count + add */}
           <div className="mb-3 flex items-center justify-between">
             <div className="text-sm text-[var(--muted)]">
@@ -426,13 +470,9 @@ export default function ActivitiesManager({
           <div className="mb-6 rounded-lg border border-white/15 bg-white/7 p-4 shadow-[0_8px_30px_rgba(0,0,0,.12)]">
             {/* Progress bar */}
             <div className="mb-2 flex items-center justify-between">
-              <div className="text-sm">Progress</div>
-              <div className="text-xs text-[var(--muted)]">
-                {summary.closed}/{summary.total} closed ({summary.pct}
-                %)
-              </div>
+              <div className="text-sm">{summary.closed}/{summary.total} completed • {summary.pct}%</div>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-white/10">
+            <div className="h-1 overflow-hidden rounded-full bg-white/10">
               <div
                 className="h-full bg-[var(--brand)]"
                 style={{ width: `${summary.pct}%` }}
@@ -451,52 +491,11 @@ export default function ActivitiesManager({
                   </span>
                 </div>
 
-                {(current.status === "Active" ||
-                  current.status === "Voting") && (
+                {(current.status === "Active" || current.status === "Voting") && current.ends_at ? (
                   <div className="flex items-center gap-2 text-[var(--muted)]">
-                    {current.ends_at ? (
-                      <>
-                        <span>Time left</span>
-                        <Timer endsAt={current.ends_at} />
-                        {current.status === "Active" && (
-                          <span className="ml-2 inline-flex gap-1">
-                            <button
-                              className="rounded border border-white/15 bg-white/5 px-2 py-0.5 text-xs hover:bg-white/10"
-                              onClick={() =>
-                                extendTimer(current.id, 1)
-                              }
-                            >
-                              +1m
-                            </button>
-                            <button
-                              className="rounded border border-white/15 bg-white/5 px-2 py-0.5 text-xs hover:bg-white/10"
-                              onClick={() =>
-                                extendTimer(current.id, 3)
-                              }
-                            >
-                              +3m
-                            </button>
-                            <button
-                              className="rounded border border-white/15 bg-white/5 px-2 py-0.5 text-xs hover:bg-white/10"
-                              onClick={() =>
-                                extendTimer(current.id, 5)
-                              }
-                            >
-                              +5m
-                            </button>
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <span className="inline-flex items-center gap-1">
-                          <span className="inline-block h-2 w-2 rounded-full bg-[var(--brand)] animate-pulse" />
-                          Live
-                        </span>
-                      </>
-                    )}
+                    <span className="timer-pill timer-brand" aria-live="polite"><IconTimer size={12} /> <Timer endsAt={current.ends_at} /></span>
                   </div>
-                )}
+                ) : null}
               </div>
             )}
 
@@ -556,9 +555,9 @@ export default function ActivitiesManager({
                     status === "Inactive"
                       ? "border-white/10 bg-white/5"
                       : status === "Active"
-                      ? "border-green-400/30 bg-green-500/5"
+                      ? "border-[var(--brand)] bg-white/6 ring-1 ring-[var(--brand)]/50"
                       : status === "Voting"
-                      ? "border-blue-400/30 bg-blue-500/5"
+                      ? "border-amber-400/30 bg-amber-500/5"
                       : "border-white/20 bg-white/5"; // Closed
 
                   const cc = counts[a.id] || {
@@ -574,7 +573,7 @@ export default function ActivitiesManager({
                   return (
                     <div
                       key={a.id}
-                      className={`rounded-md border p-3 ${tone}`}
+                      className={`rounded-2xl border p-3 ${tone}`}
                     >
                       <div className="flex items-center justify-between">
                         {/* left block */}
@@ -593,61 +592,17 @@ export default function ActivitiesManager({
                             )}
                           </div>
 
-                          <div className="text-xs text-[var(--muted)]">
-                            Status: {status}{" "}
-                            {(a.status === "Active" ||
-                              a.status === "Voting") && (
-                              a.ends_at ? (
-                                <span className="ml-2 inline-flex items-center gap-2">
-                                  <Timer
-                                    endsAt={a.ends_at}
-                                  />
-                                  {a.status ===
-                                    "Active" && (
-                                    <span className="inline-flex gap-1">
-                                      <button
-                                        className="rounded border border-white/15 bg-white/5 px-1.5 py-0.5 text-xs hover:bg-white/10"
-                                        onClick={() =>
-                                          extendTimer(
-                                            a.id,
-                                            1
-                                          )
-                                        }
-                                      >
-                                        +1m
-                                      </button>
-                                      <button
-                                        className="rounded border border-white/15 bg-white/5 px-1.5 py-0.5 text-xs hover:bg-white/10"
-                                        onClick={() =>
-                                          extendTimer(
-                                            a.id,
-                                            3
-                                          )
-                                        }
-                                      >
-                                        +3m
-                                      </button>
-                                      <button
-                                        className="rounded border border-white/15 bg-white/5 px-1.5 py-0.5 text-xs hover:bg-white/10"
-                                        onClick={() =>
-                                          extendTimer(
-                                            a.id,
-                                            5
-                                          )
-                                        }
-                                      >
-                                        +5m
-                                      </button>
-                                    </span>
-                                  )}
-                                </span>
-                              ) : (
-                                <span className="ml-2 inline-flex items-center gap-1">
-                                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--brand)] animate-pulse" />
-                                  Live
-                                </span>
-                              )
-                            )}
+                          <div className="text-xs flex items-center gap-2">
+                            <span className={`px-2 py-0.5 rounded-full border ${
+                              status === 'Active' ? 'status-chip-active border-green-400/30 text-green-200 bg-green-500/10' :
+                              status === 'Voting' ? 'border-amber-400/30 text-amber-200 bg-amber-500/10' :
+                              status === 'Inactive' ? 'border-white/20 text-[var(--muted)]' : 'border-rose-400/30 text-rose-200 bg-rose-500/10'
+                            }`}>
+                              {status}
+                            </span>
+                            {(a.status === 'Active' || a.status === 'Voting') && a.ends_at ? (
+                              <span className="timer-pill timer-brand"><IconTimer size={12} /> <Timer endsAt={a.ends_at} /></span>
+                            ) : null}
                           </div>
 
                           {(a.type === "brainstorm" ||
@@ -664,17 +619,14 @@ export default function ActivitiesManager({
                                   {max > 0 && (
                                     <div className="mb-2">
                                       <div className="flex items-center justify-between">
-                                        <span className="text-[var(--muted)]">
-                                          Overall
-                                          progress
-                                        </span>
+                                        <span className="text-[var(--muted)]">Submissions</span>
                                         <span className="text-[var(--muted)]">
                                           {cc.total}/
                                           {max *
                                             groupList.length}
                                         </span>
                                       </div>
-                                      <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                                      <div className="h-1 overflow-hidden rounded-full bg-white/10">
                                         <div
                                           className="h-full bg-[var(--brand)]"
                                           style={{

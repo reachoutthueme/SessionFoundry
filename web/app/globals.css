@@ -179,3 +179,5 @@ button:active{ transform: translateY(1px) scale(.98); }
 .logo-light { display: none; }
 [data-theme="light"] .logo-light { display: block; }
 [data-theme="light"] .logo-dark { display: none; }
+[data-theme=light] .timer-pill .times-up { font-weight: 600; }
+.timer-pill .times-up { font-weight: 600; }

@@ -9,10 +9,10 @@ export default function Timer({ endsAt }: { endsAt: string }) {
   }, []);
   const rem = useMemo(() => new Date(endsAt).getTime() - now, [endsAt, now]);
   if (Number.isNaN(rem)) return null;
-  if (rem <= 0) return <span className="text-red-300">Time's up</span>;
+  if (rem <= 0) return <span className="times-up">Time's up</span>;
   const s = Math.floor(rem / 1000);
   const mm = Math.floor(s / 60).toString().padStart(2, '0');
   const ss = (s % 60).toString().padStart(2, '0');
-  return <span className="text-xs text-[var(--muted)]">{mm}:{ss} remaining</span>;
+  // Inherit color from parent (e.g., timer-pill); keep compact text.
+  return <span>{mm}:{ss}</span>;
 }
-
