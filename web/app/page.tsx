@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
 import pkg from "@/package.json";
+import Modal from "@/components/ui/Modal";
 
 export default function RootJoinPage() {
   const router = useRouter();
@@ -13,6 +14,8 @@ export default function RootJoinPage() {
   const [name, setName] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   const displayRef = useRef<HTMLInputElement | null>(null);
 
@@ -173,10 +176,48 @@ export default function RootJoinPage() {
 
       {/* footer links (pinned bottom) */}
       <footer className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 text-center text-sm text-[var(--muted)]">
-        <Link href="/terms" className="hover:underline">Terms</Link>
+        <button type="button" className="hover:underline" onClick={() => setShowTerms(true)}>Terms</button>
         <span className="mx-2">|</span>
-        <Link href="/privacy" className="hover:underline">Privacy</Link>
+        <button type="button" className="hover:underline" onClick={() => setShowPrivacy(true)}>Privacy</button>
       </footer>
+
+      {/* Policy modals (match app chrome) */}
+      <Modal
+        open={showPrivacy}
+        onClose={() => setShowPrivacy(false)}
+        title="Privacy Policy"
+        size="lg"
+        footer={
+          <button
+            className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10"
+            onClick={() => setShowPrivacy(false)}
+          >
+            Close
+          </button>
+        }
+      >
+        <div className="w-full h-[70vh]">
+          <iframe src="/privacy" className="w-full h-full rounded" />
+        </div>
+      </Modal>
+      <Modal
+        open={showTerms}
+        onClose={() => setShowTerms(false)}
+        title="Terms & Conditions"
+        size="lg"
+        footer={
+          <button
+            className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10"
+            onClick={() => setShowTerms(false)}
+          >
+            Close
+          </button>
+        }
+      >
+        <div className="w-full h-[70vh]">
+          <iframe src="/terms" className="w-full h-full rounded" />
+        </div>
+      </Modal>
     </div>
   );
 }
