@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
@@ -10,7 +10,9 @@ import Modal from "@/components/ui/Modal";
 export default function RootJoinPage() {
   const router = useRouter();
 
-  const [code, setCode] = useState("");
+  // Segmented join code (4 boxes)
+  const [codeSegs, setCodeSegs] = useState<string[]>(["", "", "", ""]);
+  const code = useMemo(() => codeSegs.join("").toUpperCase(), [codeSegs]);
   const [name, setName] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
@@ -18,6 +20,25 @@ export default function RootJoinPage() {
   const [showTerms, setShowTerms] = useState(false);
 
   const displayRef = useRef<HTMLInputElement | null>(null);
+  const codeRefs = [
+    useRef<HTMLInputElement | null>(null),
+    useRef<HTMLInputElement | null>(null),
+    useRef<HTMLInputElement | null>(null),
+    useRef<HTMLInputElement | null>(null),
+  ];
+
+  // Prefill display name from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("sf_display_name");
+      if (saved) setName(saved);
+    } catch {}
+  }, []);
+  useEffect(() => {
+    try {
+      if (name) localStorage.setItem("sf_display_name", name);
+    } catch {}
+  }, [name]);
 
   async function submit() {
     // reset old error
@@ -26,8 +47,8 @@ export default function RootJoinPage() {
     const cleanCode = code.trim().toUpperCase();
     const cleanName = name.trim();
 
-    if (!cleanCode) {
-      setErr("Please enter a join code.");
+    if (cleanCode.length !== 4) {
+      setErr("That code doesn’t look right.");
       return;
     }
 
@@ -69,12 +90,35 @@ export default function RootJoinPage() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col p-6">
-      {/* Version badge */}
-      <div className="fixed right-3 bottom-3 z-50">
-        <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-[var(--muted)]">
-          v{(pkg as any)?.version || "dev"}
-        </span>
+    <div className="relative min-h-dvh flex flex-col p-6">
+      {/* Background layers */}
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        {/* subtle grid */}
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,.6) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.6) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
+          }}
+        />
+        {/* soft radial vignette behind card */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(600px 380px at 50% 55%, rgba(155,107,255,.14), transparent 60%)",
+          }}
+        />
+        {/* gentle brand gradient sweep */}
+        <div
+          className="absolute -inset-16 opacity-20 animate-gradient-drift"
+          style={{
+            background:
+              "linear-gradient(120deg, rgba(155,107,255,.25), rgba(90,168,255,.18), rgba(99,62,214,.22))",
+            filter: "blur(40px)",
+          }}
+        />
       </div>
       {/* spacer above heading */}
       <div className="flex-1" />
@@ -83,47 +127,84 @@ export default function RootJoinPage() {
       <div className="mb-2 text-center">
         <h1 className="whitespace-nowrap text-3xl font-semibold tracking-tight text-white md:text-5xl">
           <span className="text-white">Session</span>
-          <span className="text-[var(--brand)]">Foundry</span>
+          <span className="text-[var(--brand)] drop-shadow-[0_0_24px_rgba(155,107,255,.35)]">Foundry</span>
         </h1>
+        <div className="mt-2 text-[15px] text-[var(--muted)]">
+          Real-time workshops, structured outcomes.
+        </div>
       </div>
 
       {/* spacer between heading and card */}
       <div className="flex-1" />
 
+      {/* Headline above card */}
+      <div className="text-center mb-2 text-[17px] text-[var(--ink-dim,rgba(255,255,255,.72))]">
+        Join a workshop
+      </div>
+
       {/* join card */}
-      <div className="w-full max-w-md self-center">
-        <div className="rounded-[var(--radius)] border border-white/15 bg-white/10 p-6 text-left shadow-lg backdrop-blur-md">
-          <h2 className="mb-4 text-lg font-semibold">
-            Join a workshop
-          </h2>
+      <div className="w-full max-w-md self-center animate-fade-up">
+        <div className="rounded-[var(--radius)] border border-white/10 bg-white/5 p-6 text-left shadow-2xl backdrop-blur-md">
 
           <form
             className="space-y-3"
             onSubmit={(e) => { e.preventDefault(); submit(); }}
           >
             <div>
-              <label
-                htmlFor="join-code"
-                className="mb-1 block text-sm"
-              >
-                Join code
-              </label>
-              <input
-                id="join-code"
-                value={code}
-                onChange={(e) =>
-                  setCode(e.target.value.toUpperCase())
-                }
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    displayRef.current?.focus();
-                  }
-                }}
-                placeholder="Enter code (e.g., F7KM)"
-                className="h-10 w-full rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none focus:ring-[var(--ring)]"
-                disabled={joining}
-              />
+              <label className="mb-1 block text-sm">Join code</label>
+              <div className="grid grid-cols-4 gap-2" aria-describedby={err ? "code-error" : undefined}>
+                {codeSegs.map((val, idx) => (
+                  <input
+                    key={idx}
+                    ref={codeRefs[idx]}
+                    inputMode="text"
+                    autoComplete="one-time-code"
+                    aria-label={`Code character ${idx + 1}`}
+                    aria-invalid={!!err && code.length !== 4}
+                    maxLength={1}
+                    value={val}
+                    onChange={(e) => {
+                      const ch = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+                      setErr(null);
+                      setCodeSegs((prev) => {
+                        const next = [...prev];
+                        next[idx] = ch.slice(-1) || "";
+                        return next;
+                      });
+                      if (ch) {
+                        const nextEl = codeRefs[idx + 1]?.current;
+                        nextEl?.focus();
+                        nextEl?.select?.();
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Backspace" && !codeSegs[idx]) {
+                        const prevEl = codeRefs[idx - 1]?.current;
+                        prevEl?.focus();
+                        prevEl?.select?.();
+                      }
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        displayRef.current?.focus();
+                      }
+                    }}
+                    onPaste={(e) => {
+                      const text = e.clipboardData.getData("text").toUpperCase().replace(/[^A-Z0-9]/g, "");
+                      if (text && text.length >= 1) {
+                        e.preventDefault();
+                        const chars = text.slice(0, 4).split("");
+                        setCodeSegs((prev) => prev.map((_, i) => chars[i] || ""));
+                        // focus last filled or name input
+                        const last = Math.min(chars.length, 4) - 1;
+                        if (last >= 0 && last < 3) codeRefs[last + 1]?.current?.focus();
+                        else displayRef.current?.focus();
+                      }
+                    }}
+                    className="h-10 w-full text-center rounded-md border border-white/10 bg-[var(--panel)] outline-none focus:ring-[var(--ring)] text-lg tracking-widest [font-variant-numeric:tabular-nums]"
+                    disabled={joining}
+                  />
+                ))}
+              </div>
             </div>
 
             <div>
@@ -133,19 +214,24 @@ export default function RootJoinPage() {
               >
                 Your display name
               </label>
-              <input
-                id="display-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="How should we display your name?"
-                className="h-10 w-full rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none focus:ring-[var(--ring)]"
-                disabled={joining}
-                ref={displayRef}
-              />
+              <div className="flex items-center gap-2">
+                <div className="grid place-items-center h-9 w-9 rounded-full bg-white/10 border border-white/10 text-sm">
+                  {name.trim() ? name.trim().split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()).join("") : "?"}
+                </div>
+                <input
+                  id="display-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="How should we display your name?"
+                  className="h-10 flex-1 rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none focus:ring-[var(--ring)]"
+                  disabled={joining}
+                  ref={displayRef}
+                />
+              </div>
             </div>
 
             {err && (
-              <div className="text-sm text-red-300">
+              <div id="code-error" aria-live="polite" className="text-sm text-red-300">
                 {err}
               </div>
             )}
@@ -153,10 +239,10 @@ export default function RootJoinPage() {
             <div className="pt-1">
               <Button
                 type="submit"
-                className="w-full"
-                disabled={joining}
+                className={`w-full ${joining ? 'opacity-80' : ''}`}
+                disabled={joining || code.length !== 4 || name.trim().length === 0}
               >
-                {joining ? "Joining..." : "Join"}
+                {joining ? "Joining…" : "Join"}
               </Button>
             </div>
           </form>
@@ -168,6 +254,7 @@ export default function RootJoinPage() {
               Create workshop
             </Button>
           </Link>
+          <div className="mt-1 text-xs text-[var(--muted)]">Facilitators only</div>
         </div>
       </div>
 
@@ -177,8 +264,10 @@ export default function RootJoinPage() {
       {/* footer links (pinned bottom) */}
       <footer className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 text-center text-sm text-[var(--muted)]">
         <button type="button" className="hover:underline" onClick={() => setShowTerms(true)}>Terms</button>
-        <span className="mx-2">|</span>
+        <span className="mx-2">•</span>
         <button type="button" className="hover:underline" onClick={() => setShowPrivacy(true)}>Privacy</button>
+        <span className="mx-2">•</span>
+        <span>v{(pkg as any)?.version || "dev"}</span>
       </footer>
 
       {/* Policy modals (match app chrome) */}
@@ -218,6 +307,17 @@ export default function RootJoinPage() {
           <iframe src="/terms" className="w-full h-full rounded" />
         </div>
       </Modal>
+
+      {/* Page-local animations */}
+      <style jsx>{`
+        @keyframes fade-up { from { opacity: 0; transform: translateY(6px) scale(.995); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .animate-fade-up { animation: fade-up 120ms ease-out both; }
+        @keyframes gradient-drift { 0%{ transform: translate3d(0,0,0) } 100%{ transform: translate3d(0,-1%,0) } }
+        .animate-gradient-drift { animation: gradient-drift 8s ease-in-out infinite alternate; }
+        @media (prefers-reduced-motion: reduce) {
+          .animate-fade-up, .animate-gradient-drift { animation: none !important; }
+        }
+      `}</style>
     </div>
   );
 }
