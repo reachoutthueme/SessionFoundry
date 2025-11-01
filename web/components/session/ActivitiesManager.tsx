@@ -445,12 +445,22 @@ export default function ActivitiesManager({
                     </div>
                   </details>
                 </div>
-                <Button size="sm" variant="outline" onClick={async () => {
-                  const idx = current ? sorted.findIndex(x => x.id === current.id) : -1;
-                  const next = sorted.slice(Math.max(idx+1,0)).find(x => x.status === 'Draft' || x.status === 'Inactive' || x.status === 'Voting');
-                  if (current) await setStatus(current.id, 'Closed');
-                  if (next) await setStatus(next.id, 'Active');
-                }}>Next</Button>
+<Button
+  size="sm"
+  variant="outline"
+  onClick={async () => {
+    const idx = current ? sorted.findIndex(x => x.id === current.id) : -1;
+    // FIX: don't compare against 'Inactive' (not part of Activity["status"])
+    const next = sorted
+      .slice(Math.max(idx + 1, 0))
+      .find(x => x.status === 'Draft' || x.status === 'Voting');
+
+    if (current) await setStatus(current.id, 'Closed');
+    if (next) await setStatus(next.id, 'Active');
+  }}
+>
+  Next
+</Button>
                 {current ? (
                   <Button size="sm" variant="outline" onClick={() => setStatus(current.id, 'Closed')}>End</Button>
                 ) : null}
