@@ -34,9 +34,33 @@ export default function ParticipantPage() {
   const cardRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [editNameOpen, setEditNameOpen] = useState(false);
   const [editName, setEditName] = useState("");
+  const groupRef = useRef<HTMLDivElement | null>(null);
   const sessionName = useMemo(() => {
     try { return localStorage.getItem(`sf_last_session_name_${sessionId}`) || "Session"; } catch { return "Session"; }
   }, [sessionId]);
+  const groupName = useMemo(() => {
+    try {
+      const gid = (participant as any)?.group_id as string | undefined;
+      if (!gid) return null;
+      const g = (groups as any[]).find((x:any) => x.id === gid);
+      return g?.name || null;
+    } catch { return null; }
+  }, [participant, groups]);
+  // Timer pill color ramp helper
+  const [nowTs, setNowTs] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active?.ends_at) return;
+    const t = setInterval(() => setNowTs(Date.now()), 10000);
+    return () => clearInterval(t);
+  }, [active?.ends_at]);
+  function timerPillClass(endsAt?: string | null) {
+    if (!endsAt) return "timer-brand";
+    const ms = new Date(endsAt).getTime() - nowTs;
+    const mins = ms / 60000;
+    if (mins <= 2) return "timer-red";
+    if (mins <= 5) return "timer-amber";
+    return "timer-brand";
+  }
 
   async function load() {
     function safeJson(r: Response) {
@@ -65,6 +89,27 @@ export default function ParticipantPage() {
   }
 
   useEffect(() => { load(); }, [sessionId]);
+  // Shortcuts: Enter opens active, '?' help, 'g' focuses group
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (selected) return;
+      if (e.key === 'Enter' && (active && (active.status === 'Active' || active.status === 'Voting'))) {
+        e.preventDefault();
+        setSelected(active);
+      }
+      if (e.key === '?') {
+        e.preventDefault();
+        alert('Shortcuts:\nEnter: Open active activity\nG: Focus your group card');
+      }
+      if (e.key.toLowerCase() === 'g') {
+        e.preventDefault();
+        const el = groupRef.current;
+        if (el) el.focus();
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [active, selected]);
   useEffect(() => {
     // If user has already confirmed their group choice on this device, skip the chooser
     try {
@@ -145,7 +190,7 @@ export default function ParticipantPage() {
                 <span className="font-medium">{active ? (active.title || getActivityDisplayName(active.type)) : 'Nothing active'}</span>
               </div>
               {active?.ends_at ? (
-                <span className="timer-pill timer-brand" aria-live="polite">⏱ <Timer endsAt={active.ends_at} /></span>
+                <span className={`timer-pill ${timerPillClass(active.ends_at)}`} aria-live="polite">⏱ <Timer endsAt={active.ends_at} /></span>
               ) : null}
               {groupName ? (<div className="truncate"><span className="opacity-70">Group:</span> {groupName}</div>) : null}
               <button className="underline hover:opacity-80 text-left" onClick={()=>setShowOverall(s=>!s)}>
@@ -194,7 +239,7 @@ export default function ParticipantPage() {
                             <div className="flex items-center gap-2 shrink-0">
                               <span className={`text-xs px-2 py-1 rounded-full border ${isActive ? 'border-green-400/30 text-green-200 bg-green-500/10' : isClosed ? 'border-white/20 text-[var(--muted)]' : 'border-white/20 text-[var(--muted)]'}`}>{isActive ? 'Active' : isClosed ? 'Closed' : 'Inactive'}</span>
                               {isActive && a.ends_at ? (
-                                <span className="timer-pill timer-brand">⏱ <Timer endsAt={a.ends_at} /></span>
+                                <span className={`timer-pill ${timerPillClass(a.ends_at)}`}>⏱ <Timer endsAt={a.ends_at} /></span>
                               ) : null}
                             </div>
                           </div>
@@ -252,19 +297,33 @@ export default function ParticipantPage() {
         {/* Sidebar */}
         <aside className="space-y-4">
           {!needsGroup && participant?.group_id && (
-            <div className="rounded-[var(--radius)] border border-white/10 bg-white/5 p-4">
-              <div className="text-sm font-medium">You'll collaborate with teammates in this group.</div>
-            <div className="mt-2 text-xs text-[var(--muted)]">
-              {participant?.display_name ? (
-                <>
-                  Your display name: <span className="opacity-90">{participant.display_name}</span>.{' '}
-                  <button className="underline hover:opacity-80" onClick={() => { setEditName(participant.display_name || ""); setEditNameOpen(true); }}>Edit</button>
-                </>
-              ) : (
-                <button className="underline hover:opacity-80" onClick={() => { setEditName(""); setEditNameOpen(true); }}>Add your name</button>
-              )}
+            <div ref={groupRef} tabIndex={-1} className="rounded-[var(--radius)] border border-white/10 bg-white/5 p-4 focus:outline-none focus:ring-[var(--ring)]">
+              <div className="text-sm font-medium">Your group</div>
+              <div className="mt-2 flex items-center gap-2">
+                {participants.filter(p=>p.group_id===participant.group_id).slice(0,5).map(m=> (
+                  <div key={m.id} className="w-6 h-6 rounded-full bg-white/10 border border-white/20 grid place-items-center text-[10px] font-semibold ring-1 ring-white/20" title={m.display_name || `#${m.id.slice(0,6)}`}>
+                    {(m.display_name || '?').slice(0,1).toUpperCase()}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 flex items-center justify-between">
+                <div className="text-xs text-[var(--muted)]">{participants.filter(p=>p.group_id===participant.group_id).length} members</div>
+                <label className="text-xs inline-flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={ready} onChange={(e)=>{ setReady(e.target.checked); try { localStorage.setItem(`sf_ready_${sessionId}`, e.target.checked ? '1':'0'); } catch {} }} />
+                  Ready
+                </label>
+              </div>
+              <div className="mt-2 text-xs text-[var(--muted)]">
+                {participant?.display_name ? (
+                  <>
+                    Your display name: <span className="opacity-90">{participant.display_name}</span>.{' '}
+                    <button className="underline hover:opacity-80" onClick={() => { setEditName(participant.display_name || ""); setEditNameOpen(true); }}>Edit</button>
+                  </>
+                ) : (
+                  <button className="underline hover:opacity-80" onClick={() => { setEditName(""); setEditNameOpen(true); }}>Add your name</button>
+                )}
+              </div>
             </div>
-          </div>
           )}
         </aside>
       </div>
@@ -301,6 +360,14 @@ function GroupJoinScreen({
   const sessionName = useMemo(() => {
     try { return localStorage.getItem(`sf_last_session_name_${sessionId}`) || "Session"; } catch { return "Session"; }
   }, [sessionId]);
+  const groupName = useMemo(() => {
+    try {
+      const gid = (participant as any)?.group_id as string | undefined;
+      if (!gid) return null;
+      const g = (groups as any[]).find((x:any) => x.id === gid);
+      return g?.name || null;
+    } catch { return null; }
+  }, [participant, groups]);
   const groupName = useMemo(() => {
     try {
       const gid = (participant as any)?.group_id as string | undefined;
@@ -469,6 +536,12 @@ function GroupJoinScreen({
     </div>
   );
 }
+
+
+
+
+
+
 
 
 
