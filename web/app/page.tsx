@@ -171,8 +171,8 @@ export default function RootJoinPage() {
       {/* spacer below card */}
       <div className="flex-[2]" />
 
-      {/* footer links */}
-      <footer className="pb-6 text-center text-sm text-[var(--muted)]">
+      {/* footer links (pinned bottom) */}
+      <footer className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 text-center text-sm text-[var(--muted)]">
         <Link href="/terms" className="hover:underline">Terms</Link>
         <span className="mx-2">|</span>
         <Link href="/privacy" className="hover:underline">Privacy</Link>
