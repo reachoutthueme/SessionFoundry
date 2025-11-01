@@ -60,6 +60,7 @@ export async function GET(req: Request) {
 
   // Authorization: facilitator owner OR participant of this session
   let facilitatorCanViewAll = false;
+  let participant: Awaited<ReturnType<typeof getParticipantInSession>> | null = null;
   {
     const user = await getUserFromRequest(req).catch(() => null);
     if (user && sid) {
@@ -67,7 +68,7 @@ export async function GET(req: Request) {
     }
   }
   if (!facilitatorCanViewAll) {
-    const participant = await getParticipantInSession(req, sid);
+    participant = await getParticipantInSession(req, sid);
     if (!participant) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -93,7 +94,21 @@ export async function GET(req: Request) {
     }
   }
 
-  if (!facilitatorCanViewAll || groupOnly) {
+  // Determine current activity status for filtering rules
+  let activityStatus: string | null = null;
+  {
+    const { data: a0 } = await supabaseAdmin
+      .from("activities")
+      .select("status")
+      .eq("id", resolvedActivity)
+      .maybeSingle();
+    activityStatus = (a0 as any)?.status ?? null;
+  }
+
+  if (
+    groupOnly ||
+    (!facilitatorCanViewAll && !(participant && activityStatus === "Voting"))
+  ) {
     // Find this participant's group via cookie
     const pid = sid ? getCookie(req, `sf_pid_${sid}`) : undefined;
     let currentGroup: string | null = null;

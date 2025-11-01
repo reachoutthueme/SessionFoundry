@@ -2,7 +2,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
-import { getUserFromRequest, userOwnsSession } from "@/app/api/_util/auth";
+import {
+  getUserFromRequest,
+  userOwnsSession,
+  getParticipantInSession,
+} from "@/app/api/_util/auth";
 import { validateConfig } from "@/lib/activities/schemas";
 
 // ---------- Schemas ----------
@@ -46,11 +50,19 @@ export async function GET(req: Request) {
 
   const { session_id, limit, offset } = parse.data;
 
+  // Allow either facilitator-owner OR a participant (via session-bound cookie)
+  let allowed = false;
   const user = await getUserFromRequest(req);
-  if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
-
-  const owns = await userOwnsSession(user.id, session_id);
-  if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (user) {
+    allowed = await userOwnsSession(user.id, session_id);
+  }
+  if (!allowed) {
+    const participant = await getParticipantInSession(req as any, session_id);
+    allowed = !!participant; // participant in session can list activities
+  }
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   // Build base query
   let q = supabaseAdmin
