@@ -1,58 +1,143 @@
+// app/api/activities/route.ts
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
 import { getUserFromRequest, userOwnsSession } from "@/app/api/_util/auth";
 import { validateConfig } from "@/lib/activities/schemas";
 
+// ---------- Schemas ----------
+const GetQuerySchema = z.object({
+  session_id: z.string().min(1, "session_id required"),
+  limit: z
+    .string()
+    .optional()
+    .transform(v => (v ? Math.min(Math.max(parseInt(v, 10) || 0, 1), 500) : undefined)),
+  offset: z
+    .string()
+    .optional()
+    .transform(v => (v ? Math.max(parseInt(v, 10) || 0, 0) : undefined)),
+});
+
+const PostBodySchema = z.object({
+  session_id: z.string().min(1),
+  type: z.enum(["brainstorm", "stocktake", "assignment"]),
+  title: z.string().trim().min(1).max(120),
+  instructions: z.string().trim().max(4000).optional().default(""),
+  description: z.string().trim().max(4000).optional().default(""),
+  config: z.unknown().optional().default({}),
+  order_index: z.number().int().min(0).optional(),
+});
+
+// ---------- GET: list activities ----------
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const sessionId = url.searchParams.get("session_id");
-  if (!sessionId) return NextResponse.json({ activities: [] });
+  const parse = GetQuerySchema.safeParse({
+    session_id: url.searchParams.get("session_id") ?? "",
+    limit: url.searchParams.get("limit") ?? undefined,
+    offset: url.searchParams.get("offset") ?? undefined,
+  });
 
-  const user = await getUserFromRequest(req);
-  if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
-  const owns = await userOwnsSession(user.id, sessionId);
-  if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-  const { data, error } = await supabaseAdmin
-    .from("activities")
-    .select("id,session_id,type,title,instructions,description,config,order_index,status,starts_at,ends_at,created_at")
-    .eq("session_id", sessionId)
-    .order("order_index", { ascending: true })
-    .order("created_at", { ascending: true });
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ activities: data ?? [] });
-}
-
-export async function POST(req: Request) {
-  const user = await getUserFromRequest(req);
-  if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
-  const body = await req.json().catch(() => ({}));
-  const session_id = (body?.session_id ?? "").toString();
-  const type = (body?.type ?? "").toString();
-  const title = (body?.title ?? "").toString().trim();
-  const instructions = (body?.instructions ?? "").toString();
-  const description = (body?.description ?? "").toString();
-  const config = body?.config ?? {};
-  const order_index = Number.isFinite(body?.order_index) ? Number(body.order_index) : 0;
-
-  if (!session_id || !title || (type !== "brainstorm" && type !== "stocktake" && type !== "assignment")) {
-    return NextResponse.json({ error: "session_id, title, and valid type required" }, { status: 400 });
+  if (!parse.success) {
+    return NextResponse.json(
+      { error: parse.error.issues.map(i => i.message).join(", ") },
+      { status: 400 }
+    );
   }
 
-  const cfg = body?.config ?? {};
-  const v = validateConfig(type, cfg);
-  if (!v.ok) return NextResponse.json({ error: v.error || "Invalid config" }, { status: 400 });
+  const { session_id, limit, offset } = parse.data;
+
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
 
   const owns = await userOwnsSession(user.id, session_id);
   if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  const dataToInsert: any = { session_id, type, title, instructions, description, config: v.value, order_index };
+
+  // Build base query
+  let q = supabaseAdmin
+    .from("activities")
+    .select(
+      "id,session_id,type,title,instructions,description,config,order_index,status,starts_at,ends_at,created_at"
+    )
+    .eq("session_id", session_id)
+    .order("order_index", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (typeof limit === "number") q = q.limit(limit);
+  if (typeof offset === "number") q = q.range(offset, offset + (limit ?? 50) - 1);
+
+  const { data, error } = await q;
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const res = NextResponse.json({ activities: data ?? [] });
+  // private caching for brief client reuse + SWR on client if desired
+  res.headers.set("Cache-Control", "private, max-age=10, stale-while-revalidate=60");
+  return res;
+}
+
+// ---------- POST: create activity ----------
+export async function POST(req: Request) {
+  // Parse & validate
+  const raw = await req.json().catch(() => ({}));
+  const parsed = PostBodySchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues.map(i => `${i.path.join(".")}: ${i.message}`).join("; ") },
+      { status: 400 }
+    );
+  }
+  const { session_id, type, title, instructions, description, config, order_index } = parsed.data;
+
+  // Auth
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+
+  const owns = await userOwnsSession(user.id, session_id);
+  if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // Validate type-specific config
+  const v = validateConfig(type, config ?? {});
+  if (!v.ok) return NextResponse.json({ error: v.error || "Invalid config" }, { status: 400 });
+
+  // Determine order_index (if not provided, place at end)
+  let finalOrder = order_index ?? 0;
+  if (order_index == null) {
+    const { data: maxRow, error: maxErr } = await supabaseAdmin
+      .from("activities")
+      .select("order_index")
+      .eq("session_id", session_id)
+      .order("order_index", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!maxErr && maxRow && typeof (maxRow as any).order_index === "number") {
+      finalOrder = (maxRow as any).order_index + 1;
+    } else {
+      finalOrder = 0;
+    }
+    // Note: to eliminate race conditions, add a UNIQUE constraint on (session_id, order_index)
+    // and retry on conflict, or use a server-side RPC that selects+inserts atomically.
+  }
+
+  const toInsert = {
+    session_id,
+    type,
+    title,
+    instructions,
+    description,
+    config: v.value,
+    order_index: finalOrder,
+    status: "Draft" as const, // default on create
+  };
+
   const { data, error } = await supabaseAdmin
     .from("activities")
-    .insert(dataToInsert)
-    .select("id,session_id,type,title,instructions,description,config,order_index,status,starts_at,ends_at,created_at")
+    .insert(toInsert)
+    .select(
+      "id,session_id,type,title,instructions,description,config,order_index,status,starts_at,ends_at,created_at"
+    )
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
   return NextResponse.json({ activity: data }, { status: 201 });
 }

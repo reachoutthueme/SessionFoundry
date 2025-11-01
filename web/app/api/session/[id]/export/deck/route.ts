@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../../../lib/supabaseAdmin";
 import { getUserFromRequest } from "@/app/api/_util/auth";
 
@@ -15,7 +15,7 @@ type SessionRow = {
 type ActivityRow = {
   id: string;
   session_id: string;
-  type: string;
+  type: "brainstorm" | "stocktake" | "assignment" | string;
   title: string | null;
   instructions: string | null;
   description: string | null;
@@ -49,10 +49,8 @@ type VoteRow = {
   created_at: string;
 };
 
-// For aggregated vote info
 type VoteEntry = { value: number };
 
-// For aggregated submission summary per activity
 type SubmissionSummary = {
   id: string;
   text: string;
@@ -64,11 +62,10 @@ type SubmissionSummary = {
 };
 
 export async function GET(
-  req: NextRequest,
-  ctx: { params: Promise<{ id: string }> }
+  req: Request,
+  { params }: { params: { id: string } }
 ) {
-  // params is a Promise in this Next.js version, so we await it
-  const { id: session_id } = await ctx.params;
+  const session_id = params.id;
 
   // auth / plan check
   const user = await getUserFromRequest(req);
@@ -76,31 +73,23 @@ export async function GET(
     return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   }
   if (user.plan !== "pro") {
-    return NextResponse.json({ error: "Pro plan required for exports" }, { status: 402 });
+    return NextResponse.json({ error: "Pro plan required for exports" }, { status: 403 });
   }
 
   // verify facilitator owns this session
   const { data: sessCheck, error: se0 } = await supabaseAdmin
     .from("sessions")
-    .select("id,facilitator_user_id")
+    .select("id,facilitator_user_id,name,status,join_code,created_at")
     .eq("id", session_id)
-    .maybeSingle<Pick<SessionRow, "id" | "facilitator_user_id">>();
+    .maybeSingle<Pick<SessionRow, "id" | "facilitator_user_id" | "name" | "status" | "join_code" | "created_at">>();
 
-  if (se0) {
-    return NextResponse.json({ error: se0.message }, { status: 500 });
-  }
+  if (se0) return NextResponse.json({ error: se0.message }, { status: 500 });
   if (!sessCheck || sessCheck.facilitator_user_id !== user.id) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   // pull core data in parallel
-  const [sessionRes, actsRes, partsRes] = await Promise.all([
-    supabaseAdmin
-      .from("sessions")
-      .select("id,name,status,join_code,created_at")
-      .eq("id", session_id)
-      .maybeSingle<SessionRow>(),
-
+  const [actsRes, partsRes] = await Promise.all([
     supabaseAdmin
       .from("activities")
       .select(
@@ -108,6 +97,7 @@ export async function GET(
       )
       .eq("session_id", session_id)
       .order("order_index", { ascending: true })
+      .order("created_at", { ascending: true })
       .returns<ActivityRow[]>(),
 
     supabaseAdmin
@@ -117,9 +107,6 @@ export async function GET(
       .returns<ParticipantRow[]>(),
   ]);
 
-  if (sessionRes.error) {
-    return NextResponse.json({ error: sessionRes.error.message }, { status: 500 });
-  }
   if (actsRes.error) {
     return NextResponse.json({ error: actsRes.error.message }, { status: 500 });
   }
@@ -129,12 +116,10 @@ export async function GET(
 
   const activities: ActivityRow[] = actsRes.data ?? [];
   const participantsRows: ParticipantRow[] = partsRes.data ?? [];
-  const sessionData: SessionRow | null = sessionRes.data ?? null;
 
   // get submissions + votes for all activities in this session
   const actIds = activities.map((a) => a.id);
 
-  // fallback if no activities -> empty arrays
   const [subsRes, votesRes] = await Promise.all([
     actIds.length
       ? supabaseAdmin
@@ -153,12 +138,8 @@ export async function GET(
       : Promise.resolve({ data: [] as VoteRow[], error: null }),
   ]);
 
-  if (subsRes.error) {
-    return NextResponse.json({ error: subsRes.error.message }, { status: 500 });
-  }
-  if (votesRes.error) {
-    return NextResponse.json({ error: votesRes.error.message }, { status: 500 });
-  }
+  if (subsRes.error) return NextResponse.json({ error: subsRes.error.message }, { status: 500 });
+  if (votesRes.error) return NextResponse.json({ error: votesRes.error.message }, { status: 500 });
 
   const submissions: SubmissionRow[] = subsRes.data ?? [];
   const votes: VoteRow[] = votesRes.data ?? [];
@@ -173,9 +154,9 @@ export async function GET(
   const votesBySubmission = new Map<string, VoteEntry[]>();
   votes.forEach((v: VoteRow) => {
     const sid = v.submission_id;
-    const existing = votesBySubmission.get(sid) || [];
-    existing.push({ value: Number(v.value || 0) });
-    votesBySubmission.set(sid, existing);
+    const arr = votesBySubmission.get(sid) || [];
+    arr.push({ value: Number(v.value || 0) });
+    votesBySubmission.set(sid, arr);
   });
 
   // group submissions by activity, with stats
@@ -187,14 +168,12 @@ export async function GET(
     const scoreList = votesBySubmission.get(sid) || [];
 
     const n = scoreList.length;
-    const total = scoreList.reduce(
-      (acc: number, curr: VoteEntry) => acc + Number(curr.value || 0),
-      0
-    );
+    const total = scoreList.reduce((acc, curr) => acc + Number(curr.value || 0), 0);
     const avg = n ? total / n : 0;
 
-    const participant_name =
-      s.participant_id ? participantsById.get(s.participant_id) || "" : "";
+    const participant_name = s.participant_id
+      ? participantsById.get(s.participant_id) || ""
+      : "";
 
     const summaryRow: SubmissionSummary = {
       id: sid,
@@ -211,43 +190,43 @@ export async function GET(
     byActivity.set(activityId, arr);
   });
 
-  // build markdown export
-  const s = sessionData;
+  // --- Build Markdown export ---
+  const s = sessCheck;
   const lines: string[] = [];
 
-  lines.push(`# ${mdEscape(s?.name || "Session")}`);
+  const maskedJoin = maskJoinCode(s.join_code);
+
+  lines.push(`# ${mdEscape(s.name || "Session")}`);
   lines.push("");
-  lines.push(`- Session ID: ${s?.id ?? ""}`);
-  lines.push(`- Status: ${s?.status ?? ""}`);
-  lines.push(`- Join code: ${s?.join_code ?? ""}`);
-  lines.push(`- Exported: ${new Date().toISOString()}`);
+  lines.push(`- **Session ID:** ${mdEscape(s.id)}`);
+  lines.push(`- **Status:** ${mdEscape(s.status || "")}`);
+  lines.push(`- **Join code:** ${mdEscape(maskedJoin)}`);
+  lines.push(`- **Created:** ${new Date(s.created_at).toISOString()}`);
+  lines.push(`- **Exported:** ${new Date().toISOString()}`);
+  lines.push(`- **Participants:** ${participantsRows.length}`);
+  lines.push(`- **Activities:** ${activities.length}`);
   lines.push("");
   lines.push("---");
   lines.push("");
   lines.push("## Activities Overview");
+  lines.push("");
 
   activities.forEach((A) => {
     const title =
-      A.title ||
-      (A.type === "brainstorm" ? "Standard" : "Stocktake");
-    lines.push(
-      `- ${mdEscape(title)} — ${A.type} — ${A.status}`
-    );
+      A.title || (A.type === "brainstorm" ? "Standard" : A.type === "stocktake" ? "Process stocktake" : "Assignment");
+    lines.push(`- ${mdEscape(title)} — ${A.type} — ${A.status}`);
   });
-
-  lines.push("");
 
   for (const A of activities) {
     const title =
-      A.title ||
-      (A.type === "brainstorm" ? "Standard" : "Stocktake");
+      A.title || (A.type === "brainstorm" ? "Standard" : A.type === "stocktake" ? "Process stocktake" : "Assignment");
 
     lines.push("");
     lines.push("---");
     lines.push("");
     lines.push(`## ${mdEscape(title)}`);
-    lines.push(`Type: ${A.type}  `);
-    lines.push(`Status: ${A.status}`);
+    lines.push(`**Type:** ${A.type}  `);
+    lines.push(`**Status:** ${A.status}`);
 
     if (A.instructions) {
       lines.push("");
@@ -260,55 +239,72 @@ export async function GET(
     }
 
     if (A.type === "brainstorm") {
-      // sort submissions for this activity by total score desc
       const rowsForActivity: SubmissionSummary[] = (byActivity.get(A.id) || []).sort(
         (x, y) => y.total - x.total
       );
 
       if (rowsForActivity.length === 0) {
         lines.push("");
-        lines.push("No submissions.");
-        continue;
+        lines.push("_No submissions._");
+      } else {
+        lines.push("");
+        lines.push("| # | Submission | By | Votes | Avg | Total |");
+        lines.push("|---:|---|---|---:|---:|---:|");
+
+        rowsForActivity.forEach((r, idx) => {
+          const by =
+            r.participant_name ||
+            (r.participant_id ? `#${String(r.participant_id).slice(0, 6)}` : "") ||
+            "—";
+
+          lines.push(
+            `| ${idx + 1} | ${mdEscape(r.text)} | ${mdEscape(by)} | ${r.n} | ${
+              r.n ? r.avg.toFixed(2) : ""
+            } | ${r.total} |`
+          );
+        });
       }
-
-      lines.push("");
-      lines.push("| # | Submission | By | Votes | Avg | Total |");
-      lines.push("|---:|---|---|---:|---:|---:|");
-
-      rowsForActivity.forEach((r, idx) => {
-        const by =
-          r.participant_name ||
-          (r.participant_id
-            ? `#${(r.participant_id as string).slice(0, 6)}`
-            : "") ||
-          "—";
-
-        lines.push(
-          `| ${idx + 1} | ${mdEscape(r.text)} | ${mdEscape(by)} | ${r.n} | ${
-            r.n ? r.avg.toFixed(2) : ""
-          } | ${r.total} |`
-        );
-      });
-    } else {
-      // e.g. stocktake or other activity types
+    } else if (A.type === "stocktake") {
       lines.push("");
       lines.push("_(Stocktake activity summary)_");
+      // If later you wire up aggregateResults for stocktake:
+      // - Fetch and render counts/order like your vibrant results panel.
+    } else {
+      lines.push("");
+      lines.push("_(Assignment activity)_");
+      // Optionally render assignment prompts per group from A.config if desired.
     }
   }
 
   const md = lines.join("\n") + "\n";
 
-  return new NextResponse(md, {
+  const filename = `deck_${sanitizeForFilename(s.name || "session")}_${sanitizeForFilename(s.id)}.md`;
+
+  const res = new NextResponse(md, {
     status: 200,
     headers: {
       "Content-Type": "text/markdown; charset=utf-8",
-      "Content-Disposition": `attachment; filename="deck_${session_id}.md"`,
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Cache-Control": "no-store",
     },
   });
+
+  return res;
 }
 
 // escape pipes/markdown control chars so table formatting doesn't break
 function mdEscape(v: string): string {
   if (!v) return "";
   return v.replace(/[|*_`\\]/g, (m) => `\\${m}`);
+}
+
+function sanitizeForFilename(s: string): string {
+  return s.replace(/[\\\/:*?"<>|]+/g, "_").slice(0, 80).trim() || "export";
+}
+
+function maskJoinCode(code: string): string {
+  const c = (code || "").toString();
+  if (c.length <= 2) return "**";
+  const tail = c.slice(-2);
+  return `${"*".repeat(Math.max(2, c.length - 2))}${tail}`;
 }

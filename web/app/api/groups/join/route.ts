@@ -1,37 +1,92 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { getParticipantInSession, getSessionStatus } from "@/app/api/_util/auth";
 
+const BodySchema = z.object({
+  session_id: z.string().min(1, "session_id required"),
+  group_id: z.string().min(1, "group_id required"),
+});
+
+function noStore(res: NextResponse) {
+  res.headers.set("Cache-Control", "no-store");
+  return res;
+}
+
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => ({}));
-  const session_id = (body?.session_id ?? "").toString();
-  const group_id = (body?.group_id ?? "").toString();
-  if (!session_id || !group_id) return NextResponse.json({ error: "session_id and group_id required" }, { status: 400 });
+  try {
+    // Content type guard
+    if (!req.headers.get("content-type")?.includes("application/json")) {
+      return noStore(NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 }));
+    }
 
-  // Require participant cookie; do not allow overriding participant_id in body
-  const participant = await getParticipantInSession(req, session_id);
-  if (!participant) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Parse & validate
+    const body = await req.json().catch(() => ({}));
+    const parsed = BodySchema.safeParse(body);
+    if (!parsed.success) {
+      const msg = parsed.error.issues?.[0]?.message ?? "Invalid request";
+      return noStore(NextResponse.json({ error: msg }, { status: 400 }));
+    }
+    const { session_id, group_id } = parsed.data;
 
-  // Ensure participant belongs to session
-  const { data: part, error: pe } = await supabaseAdmin
-    .from("participants")
-    .select("id, session_id, display_name, group_id")
-    .eq("id", participant.id)
-    .maybeSingle();
-  if (pe) return NextResponse.json({ error: pe.message }, { status: 500 });
-  if (!part || part.session_id !== session_id) {
-    return NextResponse.json({ error: "participant/session mismatch" }, { status: 400 });
+    // Participant must be from the same session (derived from cookie)
+    const participant = await getParticipantInSession(req, session_id);
+    if (!participant) {
+      return noStore(NextResponse.json({ error: "Forbidden" }, { status: 403 }));
+    }
+
+    // Revalidate participant row
+    const { data: part, error: pe } = await supabaseAdmin
+      .from("participants")
+      .select("id, session_id, display_name, group_id")
+      .eq("id", participant.id)
+      .maybeSingle();
+
+    if (pe) {
+      console.error("participants fetch error", pe);
+      return noStore(NextResponse.json({ error: "Failed to fetch participant" }, { status: 500 }));
+    }
+    if (!part || part.session_id !== session_id) {
+      return noStore(NextResponse.json({ error: "participant/session mismatch" }, { status: 400 }));
+    }
+
+    // Session must be Active (or adjust to allow 'Draft' if you want pre-assignment)
+    const sStatus = await getSessionStatus(session_id);
+    if (sStatus !== "Active") {
+      return noStore(NextResponse.json({ error: "Session not accepting group changes" }, { status: 409 }));
+    }
+
+    // Ensure group exists AND belongs to this session
+    const { data: grp, error: ge } = await supabaseAdmin
+      .from("groups")
+      .select("id, session_id")
+      .eq("id", group_id)
+      .maybeSingle();
+
+    if (ge) {
+      console.error("groups fetch error", ge);
+      return noStore(NextResponse.json({ error: "Failed to validate group" }, { status: 500 }));
+    }
+    if (!grp || grp.session_id !== session_id) {
+      return noStore(NextResponse.json({ error: "Invalid group for this session" }, { status: 400 }));
+    }
+
+    // Update participant -> group
+    const { data, error } = await supabaseAdmin
+      .from("participants")
+      .update({ group_id })
+      .eq("id", participant.id)
+      .select("id, session_id, display_name, group_id")
+      .single();
+
+    if (error) {
+      console.error("participants update error", error);
+      return noStore(NextResponse.json({ error: "Failed to update participant" }, { status: 500 }));
+    }
+
+    return noStore(NextResponse.json({ participant: data }, { status: 200 }));
+  } catch (e) {
+    console.error("POST /participants/group unhandled", e);
+    return noStore(NextResponse.json({ error: "Server error" }, { status: 500 }));
   }
-
-  const sStatus = await getSessionStatus(session_id);
-  if (sStatus !== 'Active') return NextResponse.json({ error: "Session not accepting group changes" }, { status: 403 });
-
-  const { data, error } = await supabaseAdmin
-    .from("participants")
-    .update({ group_id })
-    .eq("id", participant.id)
-    .select("id, session_id, display_name, group_id")
-    .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ participant: data });
 }
