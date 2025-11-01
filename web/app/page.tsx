@@ -247,7 +247,7 @@ export default function RootJoinPage() {
         </div>
 
         <div className="mt-3 text-center">
-          <Link href="/home">
+          <Link href="/login">
             <Button variant="outline">
               Create workshop
             </Button>

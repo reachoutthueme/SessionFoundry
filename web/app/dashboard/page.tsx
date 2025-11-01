@@ -82,6 +82,8 @@ export default function Page() {
     const sessions = data?.sessions ?? [];
     const total = sessions.length;
     const active = sessions.filter((s) => s.status === "Active").length;
+    const completed = sessions.filter((s) => s.status === "Completed").length;
+    const inactive = sessions.filter((s) => s.status === "Inactive" || s.status === "Draft").length;
 
     const brainstorm = data?.stats.brainstorm ?? 0;
     const stocktake = data?.stats.stocktake ?? 0;
@@ -92,6 +94,8 @@ export default function Page() {
       participants: data?.stats.participants ?? 0,
       brainstorm,
       stocktake,
+      completed,
+      inactive,
     };
   }, [data]);
 
@@ -139,9 +143,6 @@ export default function Page() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => router.push("/sessions")}>
-              View Sessions
-            </Button>
             <Button onClick={() => router.push("/sessions?new=1")}>
               New Session
             </Button>
@@ -154,12 +155,10 @@ export default function Page() {
         <KPI title="Sessions" value={String(stats.total)} />
         <KPI title="Active now" value={String(stats.active)} />
         <KPI title="Participants" value={String(stats.participants)} />
-        <Donut
-          title="Activities"
-          a={stats.brainstorm}
-          b={stats.stocktake}
-          aLabel="Brainstorm"
-          bLabel="Stocktake"
+        <StatusBreakdown
+          active={stats.active}
+          completed={stats.completed}
+          inactive={stats.inactive}
         />
       </div>
 
@@ -251,70 +250,22 @@ function KPI({ title, value }: { title: string; value: string }) {
   );
 }
 
-function Donut({
-  title,
-  a,
-  b,
-  aLabel,
-  bLabel,
-}: {
-  title: string;
-  a: number;
-  b: number;
-  aLabel: string;
-  bLabel: string;
-}) {
-  const total = a + b || 1;
-  const pa = (a / total) * 100;
-  const pb = (b / total) * 100;
-  const r = 28;
-  const c = 2 * Math.PI * r;
-  const sa = (pa / 100) * c;
-  const sb = (pb / 100) * c;
-
+function StatusBreakdown({ active, completed, inactive }: { active: number; completed: number; inactive: number }) {
+  const total = Math.max(active + completed + inactive, 1);
+  const w = (n: number) => `${Math.round((n / total) * 100)}%`;
   return (
     <Card>
       <CardBody className="p-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-sm text-[var(--muted)]">{title}</div>
-            <div className="mt-2 text-xs text-[var(--muted)]">
-              {aLabel}: {a} • {bLabel}: {b}
-            </div>
-          </div>
-          <svg
-            width="80"
-            height="80"
-            viewBox="0 0 80 80"
-            role="img"
-            aria-label={`${a} ${aLabel}, ${b} ${bLabel}`}
-          >
-            <g transform="translate(40,40)">
-              <circle
-                r={r}
-                fill="none"
-                stroke="currentColor"
-                strokeOpacity="0.15"
-                strokeWidth="10"
-              />
-              <circle
-                r={r}
-                fill="none"
-                stroke="#a86fff"
-                strokeWidth="10"
-                strokeDasharray={`${sa} ${c}`}
-                transform="rotate(-90)"
-              />
-              <circle
-                r={r}
-                fill="none"
-                stroke="#5aa8ff"
-                strokeWidth="10"
-                strokeDasharray={`${sb} ${c}`}
-                transform={`rotate(${pa * 3.6 - 90})`}
-              />
-            </g>
-          </svg>
+        <div className="text-sm text-[var(--muted)]">Sessions by status</div>
+        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
+          <div className="h-full bg-green-500/40" style={{ width: w(active) }} />
+          <div className="-mt-2 h-2 bg-rose-500/40" style={{ width: w(completed) }} />
+          <div className="-mt-2 h-2 bg-white/20" style={{ width: w(inactive) }} />
+        </div>
+        <div className="mt-2 flex items-center gap-2 text-xs text-[var(--muted)]">
+          <span className="inline-flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-green-400/80" />Active: {active}</span>
+          <span className="inline-flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-rose-400/80" />Completed: {completed}</span>
+          <span className="inline-flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-white/50" />Inactive: {inactive}</span>
         </div>
       </CardBody>
     </Card>

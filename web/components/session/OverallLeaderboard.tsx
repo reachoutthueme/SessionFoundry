@@ -18,7 +18,7 @@ export default function OverallLeaderboard({
 
   async function load(initial = false) {
     try {
-      const r = await fetch(`/api/leaderboard?session_id=${sessionId}`, {
+      const r = await fetch(`/api/public/leaderboard?session_id=${sessionId}`, {
         cache: "no-store",
       });
 
@@ -98,13 +98,7 @@ export default function OverallLeaderboard({
           >
             <div className="flex items-center gap-3">
               <span className="w-8 text-center font-semibold">
-                {idx === 0
-                  ? "🥇"
-                  : idx === 1
-                  ? "🥈"
-                  : idx === 2
-                  ? "🥉"
-                  : idx + 1}
+                {idx + 1}
               </span>
               <span className="font-medium">
                 {r.group_name}
@@ -141,3 +135,4 @@ export default function OverallLeaderboard({
     </Card>
   );
 }
+

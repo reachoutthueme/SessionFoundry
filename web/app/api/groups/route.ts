@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
-import { getUserFromRequest, userOwnsSession } from "@/app/api/_util/auth";
+import { getUserFromRequest, userOwnsSession, getParticipantInSession } from "@/app/api/_util/auth";
 import { z } from "zod";
 
 /** GET /api/groups?session_id=...&limit=&cursor= */
@@ -56,7 +56,7 @@ export async function GET(req: Request) {
 /** POST /api/groups  { session_id, name } */
 const BodySchema = z.object({
   session_id: z.string().min(1, "session_id required"),
-  // Do all string constraints while it’s still a ZodString, then normalize
+  // Do all string constraints while itÃ¢â‚¬â„¢s still a ZodString, then normalize
   name: z
     .string()
     .trim()
@@ -67,9 +67,6 @@ const BodySchema = z.object({
 
 export async function POST(req: Request) {
   try {
-    const user = await getUserFromRequest(req);
-    if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
-
     if (req.headers.get("content-type")?.includes("application/json") !== true) {
       return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
     }
@@ -81,12 +78,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: msg }, { status: 400 });
     }
 
-    // ✅ Type-safe here (not unknown)
     const { session_id, name } = parsed.data;
 
-    const owns = await userOwnsSession(user.id, session_id);
-    if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
+    const user = await getUserFromRequest(req);
+    if (user) {
+      const owns = await userOwnsSession(user.id, session_id);
+      if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    } else {
+      const part = await getParticipantInSession(req as any, session_id);
+      if (!part) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const { data, error } = await supabaseAdmin
       .from("groups")
       .insert({ session_id, name })

@@ -9,6 +9,7 @@ import Timer from "@/components/ui/Timer";
 import { IconBrain, IconList, IconTimer, IconVote, IconLock, IconChevronRight } from "@/components/ui/Icons";
 import { getActivityDisplayName } from "@/lib/activities/registry";
 import OverallLeaderboard from "@/components/session/OverallLeaderboard";
+import ActivityLeaderboard from "@/components/session/ActivityLeaderboard";
 import { useMemo, useRef } from "react";
 import Modal from "@/components/ui/Modal";
 
@@ -24,6 +25,7 @@ export default function ParticipantPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [completed, setCompleted] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<Activity | null>(null);
+  const [showActLb, setShowActLb] = useState(false);
   const [showOverall, setShowOverall] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   // Require explicit confirmation on arriving at participant view
@@ -289,8 +291,17 @@ export default function ParticipantPage() {
                   {selected.instructions && (<div className="text-sm text-[var(--muted)] mt-0.5">{selected.instructions}</div>)}
                   {selected.ends_at && (<div className="mt-1"><Timer endsAt={selected.ends_at} /></div>)}
                 </div>
-                <Button size="sm" variant="outline" className="px-4 shrink-0 self-start sm:self-auto" onClick={() => setSelected(null)}>Back to activities</Button>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" className="px-4" onClick={() => setShowActLb(s=>!s)}>{showActLb ? 'Hide leaderboard' : 'View leaderboard'}</Button>
+                  <Button size="sm" variant="outline" className="px-4 shrink-0 self-start sm:self-auto" onClick={() => { setShowActLb(false); setSelected(null); }}>Back to activities</Button>
+                </div>
               </div>
+
+              {showActLb && (
+                <div className="animate-fade-up">
+                  <ActivityLeaderboard activityId={selected.id} />
+                </div>
+              )}
 
               {(() => {
                 const Panel = getParticipantPanel(selected.type);
@@ -463,7 +474,6 @@ function GroupJoinScreen({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {groups.map((g, idx) => {
                 const members = membersFor(g.id);
-                const stateLabel = members.length === 0 ? 'New' : 'In progress';
                 return (
                   <div key={g.id} className="rounded-xl bg-white/4 border border-white/10 hover:bg-white/[.06] transition-colors">
                     <div className="p-4 flex flex-col gap-3">
@@ -472,7 +482,6 @@ function GroupJoinScreen({
                           <div className="font-medium truncate">{g.name}</div>
                           <div className="mt-1 text-xs text-[var(--muted)] animate-fade-up" key={members.length}>{members.length} {members.length === 1 ? 'person' : 'people'}</div>
                         </div>
-                        <div className="text-[10px] px-2 py-0.5 rounded-full border border-white/20 text-[var(--muted)]">{stateLabel}</div>
                       </div>
                       <div className="flex items-center gap-1">
                         {members.slice(0,5).map((m) => (

@@ -31,7 +31,6 @@ function JoinForm() {
     setErr(null);
     setLoading(true);
 
-    // sanitize
     const cleanCode = code.trim().toUpperCase();
     const cleanName = name.trim();
 
@@ -46,7 +45,6 @@ function JoinForm() {
         }),
       });
 
-      // Parse-safe JSON
       const text = await r.text();
       const j = text ? JSON.parse(text) : {};
 
@@ -60,22 +58,20 @@ function JoinForm() {
         return;
       }
 
-      // Remember name for next time (non-sensitive)
       try {
         if (cleanName) localStorage.setItem("sf_display_name", cleanName);
       } catch {}
 
-      // Prefer client-side navigation
       const sessionId = j?.session?.id as string | undefined;
       if (sessionId) {
-        // Save lightweight session context for participant views
         try {
           if (j?.session?.name) localStorage.setItem(`sf_last_session_name_${sessionId}`, String(j.session.name));
           if (j?.session?.join_code) localStorage.setItem(`sf_last_join_code_${sessionId}`, String(j.session.join_code));
         } catch {}
         router.push(`/participant/${sessionId}`);
+      } else {
+        setErr("Unexpected response. Please try again.");
       }
-      else setErr("Unexpected response. Please try again.");
     } catch {
       setErr("Network error. Please check your connection and try again.");
     } finally {
@@ -110,11 +106,11 @@ function JoinForm() {
                 id="join-code"
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="Enter code (e.g., F7KM)"
+                placeholder="Enter join code (e.g., F7KM)"
                 inputMode="text"
                 autoComplete="one-time-code"
                 maxLength={8}
-                className="w-full h-10 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none focus:ring-[var(--ring)]"
+                className="w-full h-10 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none focus:ring-[var(--ring)] placeholder:opacity-70"
                 aria-invalid={!codeIsValid && code.length > 0}
               />
               <div className="mt-1 text-xs text-[var(--muted)]">
@@ -137,11 +133,7 @@ function JoinForm() {
             </div>
 
             {err && (
-              <div
-                className="text-sm text-red-300"
-                role="alert"
-                aria-live="polite"
-              >
+              <div className="text-sm text-red-300" role="alert" aria-live="polite">
                 {err}
               </div>
             )}
@@ -153,7 +145,7 @@ function JoinForm() {
                 className="w-full"
                 disabled={!codeIsValid || loading}
               >
-                {loading ? "Joining." : "Join"}
+                {loading ? "Joining..." : "Join"}
               </Button>
             </div>
           </div>
@@ -171,3 +163,4 @@ export default function JoinPage() {
     </Suspense>
   );
 }
+
