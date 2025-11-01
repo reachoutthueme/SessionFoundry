@@ -224,7 +224,7 @@ export default function ParticipantPage() {
               )}
             </div>
           </div>
-
+          )}
         </aside>
       </div>
     </div>
