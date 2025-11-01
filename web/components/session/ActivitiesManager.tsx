@@ -319,21 +319,21 @@ export default function ActivitiesManager({
     if (!act) return;
     if (act.status !== "Active") return; // only allow while Active
 
-    const prev = act.ends_at
-      ? new Date(act.ends_at).getTime()
-      : Date.now();
-    const base = Number.isFinite(prev)
-      ? Math.max(prev, Date.now())
-      : Date.now();
+    const prev = act.ends_at ? new Date(act.ends_at).getTime() : Date.now();
+    const base = Number.isFinite(prev) ? Math.max(prev, Date.now()) : Date.now();
     const next = new Date(base + minutes * 60_000).toISOString();
+
+    // Server currently only accepts starts_at/ends_at when status is Active in the same PATCH.
+    // Include status and the existing starts_at to satisfy that constraint.
+    const startsAt = act.starts_at || new Date().toISOString();
 
     try {
       const r = await fetch(`/api/activities/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ends_at: next }),
+        body: JSON.stringify({ status: "Active", starts_at: startsAt, ends_at: next }),
       });
-      const j = await r.json();
+      const j = await r.json().catch(() => ({} as any));
 
       if (!r.ok) {
         toast(j.error || "Failed to extend timer", "error");
@@ -431,7 +431,7 @@ export default function ActivitiesManager({
                     <Button size="sm" onClick={() => setStatus(current.id, 'Active')}>Start</Button>
                   ) : null
                 ) : null}
-                <div className="relative">
+                <div className={`relative ${!current || current.status !== 'Active' ? 'opacity-60 pointer-events-none' : ''}`}>
                   <details className="group">
                     <summary className="list-none">
                       <Button size="sm" variant="outline">+ time</Button>
