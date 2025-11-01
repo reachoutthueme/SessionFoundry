@@ -107,6 +107,15 @@ export default function ParticipantPage() {
       />
     );
   }
+  // Live region for activity announcements
+  const liveRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!active) return;
+    try {
+      const title = active.title || getActivityDisplayName(active.type);
+      if (liveRef.current) liveRef.current.textContent = `${title} is now active.`;
+    } catch {}
+  }, [active?.id]);
 
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6 relative">
@@ -128,6 +137,22 @@ export default function ParticipantPage() {
               <div />
             </div>
             {/* leaderboard toggle moved below */}
+          </div>
+          <div className="sticky top-0 z-10 bg-white/2 backdrop-blur-sm border-t border-white/10">
+            <div className="px-5 py-2 text-xs flex flex-wrap items-center gap-3">
+              <div className="min-w-0">
+                <span className="opacity-70">Now:</span>{' '}
+                <span className="font-medium">{active ? (active.title || getActivityDisplayName(active.type)) : 'Nothing active'}</span>
+              </div>
+              {active?.ends_at ? (
+                <span className="timer-pill timer-brand" aria-live="polite">⏱ <Timer endsAt={active.ends_at} /></span>
+              ) : null}
+              {groupName ? (<div className="truncate"><span className="opacity-70">Group:</span> {groupName}</div>) : null}
+              <button className="underline hover:opacity-80 text-left" onClick={()=>setShowOverall(s=>!s)}>
+                {showOverall ? 'Hide leaderboard' : 'View leaderboard'}
+              </button>
+              <div className="sr-only" aria-live="polite" ref={liveRef} />
+            </div>
           </div>
         </div>
       )}
@@ -151,31 +176,47 @@ export default function ParticipantPage() {
               {activities.length === 0 ? (
                 <Card><CardBody><div className="text-sm text-[var(--muted)]">No activities yet.</div></CardBody></Card>
               ) : (
-                <div className="space-y-2">
-                  {activities.map((a) => (
-                    <div key={a.id} className="p-3 rounded-md bg-white/5 border border-white/10 cursor-pointer" onClick={()=>setSelected(a)}>
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="font-medium flex items-start gap-2 min-w-0">
-                          {a.type==='brainstorm' ? <IconBrain size={20} className="text-[var(--brand)] shrink-0" /> : <IconList size={20} className="text-[var(--brand)] shrink-0" />}
-                          <span className="truncate">{a.title || getActivityDisplayName(a.type)}</span>
-                        </div>
-                        <div className={`text-xs px-2 py-1 rounded-full border flex items-center gap-1 ${a.status==='Active'||a.status==='Voting' ? 'border-green-400/30 text-green-200 bg-green-500/10' : 'border-white/20 text-[var(--muted)]'}`}>
-                          {a.status==='Closed' ? (<IconLock size={14} />) : a.status==='Voting' ? (<IconVote size={14} />) : a.status==='Active' ? (<IconTimer size={14} />) : null}
-                          <span>{a.status==='Draft' ? 'Inactive' : a.status}</span>
+                <div className="space-y-3">
+                  {activities.map((a) => {
+                    const isActive = a.status === 'Active' || a.status === 'Voting';
+                    const isClosed = a.status === 'Closed';
+                    const title = a.title || getActivityDisplayName(a.type);
+                    const outcomeLine = a.instructions || a.description || '';
+                    const short = outcomeLine.length > 0 ? (outcomeLine.length > 70 ? outcomeLine.slice(0,70) + '…' : outcomeLine) : '';
+                    return (
+                      <div key={a.id} className={`rounded-2xl border ${isActive ? 'bg-white/6 border-white/20 shadow-[0_0_0_4px_rgba(123,77,242,.15)] animate-active-pulse' : 'bg-white/4 border-white/10 hover:bg-white/[.06]'}`}>
+                        <div className="p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex items-start gap-2">
+                              {a.type==='brainstorm' ? <IconBrain size={20} className="text-[var(--brand)] shrink-0" /> : <IconList size={20} className="text-[var(--brand)] shrink-0" />}
+                              <div className={`font-semibold leading-tight truncate`}>{title}</div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className={`text-xs px-2 py-1 rounded-full border ${isActive ? 'border-green-400/30 text-green-200 bg-green-500/10' : isClosed ? 'border-white/20 text-[var(--muted)]' : 'border-white/20 text-[var(--muted)]'}`}>{isActive ? 'Active' : isClosed ? 'Closed' : 'Inactive'}</span>
+                              {isActive && a.ends_at ? (
+                                <span className="timer-pill timer-brand">⏱ <Timer endsAt={a.ends_at} /></span>
+                              ) : null}
+                            </div>
+                          </div>
+                          <div className="mt-1 text-[11px] uppercase tracking-wide text-[var(--muted)]">
+                            {short ? (<span>Outcome: <span className="normal-case not-italic">{short}{outcomeLine.length>70 ? ' More' : ''}</span></span>) : <span>&nbsp;</span>}
+                          </div>
+                          <div className="mt-3 flex items-center justify-between">
+                            {isActive ? (
+                              <>
+                                <Button onClick={() => setSelected(a)} className="px-4">Open activity</Button>
+                                <div className="text-[11px] text-[var(--muted)]">1 idea per line • Undo supported</div>
+                              </>
+                            ) : isClosed ? (
+                              <button className="text-sm underline opacity-80 hover:opacity-100" onClick={() => setSelected(a)}>View results</button>
+                            ) : (
+                              <Button variant="outline" disabled>Not started</Button>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      <div className="mt-1 text-xs text-[var(--muted)]/80 flex-1 overflow-auto scroll-soft">
-                        {completed[a.id] && (
-                          <div className="inline-block mr-2 px-2 py-0.5 rounded-full border border-blue-400/30 text-blue-200 bg-blue-500/10">Completed</div>
-                        )}
-                        {a.instructions && <div className="text-sm text-[var(--muted)]">{a.instructions}</div>}
-                        {a.description && <div className="mt-1">{a.description}</div>}
-                      </div>
-                      {a.ends_at && (a.status==='Active' || a.status==='Voting') && (
-                        <div className="mt-2"><Timer endsAt={a.ends_at} /></div>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -260,6 +301,14 @@ function GroupJoinScreen({
   const sessionName = useMemo(() => {
     try { return localStorage.getItem(`sf_last_session_name_${sessionId}`) || "Session"; } catch { return "Session"; }
   }, [sessionId]);
+  const groupName = useMemo(() => {
+    try {
+      const gid = (participant as any)?.group_id as string | undefined;
+      if (!gid) return null;
+      const g = (groups as any[]).find((x:any) => x.id === gid);
+      return g?.name || null;
+    } catch { return null; }
+  }, [participant, groups]);
 
   useEffect(() => {
     const needs = !participant || !participant.group_id;
