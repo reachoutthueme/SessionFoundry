@@ -36,6 +36,13 @@ export default function ParticipantPage() {
   const [editNameOpen, setEditNameOpen] = useState(false);
   const [editName, setEditName] = useState("");
   const groupRef = useRef<HTMLDivElement | null>(null);
+  const [ready, setReady] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(`sf_ready_${sessionId}`) === '1';
+    } catch {
+      return false;
+    }
+  });
   const sessionName = useMemo(() => {
     try { return localStorage.getItem(`sf_last_session_name_${sessionId}`) || "Session"; } catch { return "Session"; }
   }, [sessionId]);
@@ -178,7 +185,7 @@ export default function ParticipantPage() {
               <div>
                 <div className="text-xs uppercase tracking-wider text-[var(--muted)]">Participant</div>
                 <h1 className="text-xl font-semibold mt-1">Welcome{participant?.display_name ? `, ${participant.display_name}` : ''}</h1>
-                <div className="mt-1 text-sm text-[var(--muted)]">Jump into the active activities below and help your team climb the leaderboard.</div>
+                <div className="mt-1">Jump into the active activities below and help your team climb the leaderboard.</div>
               </div>
               <div />
             </div>
@@ -248,7 +255,7 @@ export default function ParticipantPage() {
                             {short ? (<span>Outcome: <span className="normal-case not-italic">{short}{outcomeLine.length>70 ? ' More' : ''}</span></span>) : <span>&nbsp;</span>}
                           </div>
                           {(a.instructions || a.description) ? (
-                            <div className="mt-1 text-sm text-[var(--muted)]">
+                            <div className="mt-1">
                               {expanded[a.id] ? (
                                 <div>
                                   {a.instructions ? (<div>{a.instructions}</div>) : null}
@@ -256,11 +263,11 @@ export default function ParticipantPage() {
                                 </div>
                               ) : null}
                               <button
-                                className="mt-1 text-xs underline hover:opacity-80"
+                                className="mt-1 text-[11px] uppercase tracking-wide inline-flex items-center gap-1 text-[var(--muted)] hover:underline"
                                 aria-expanded={!!expanded[a.id]}
                                 onClick={() => setExpanded(prev => ({ ...prev, [a.id]: !prev[a.id] }))}
                               >
-                                {expanded[a.id] ? 'Hide details' : 'Show details'}
+                                {expanded[a.id] ? 'Hide details ▴' : 'Show details ▾'}
                               </button>
                             </div>
                           ) : null}
@@ -451,7 +458,7 @@ function GroupJoinScreen({
           <div className="text-center mb-4">
             <div className="text-sm text-[var(--muted)]">{sessionName}</div>
             <div className="mt-1 text-2xl font-semibold">Pick a group to join</div>
-            <div className="mt-1 text-sm text-[var(--muted)]">You'll collaborate with teammates in this group.</div>
+            <div className="mt-1">You'll collaborate with teammates in this group.</div>
             <div className="mt-2 text-xs text-[var(--muted)]">
               {participant?.display_name ? (
                 <>
@@ -546,6 +553,7 @@ function GroupJoinScreen({
     </div>
   );
 }
+
 
 
 
