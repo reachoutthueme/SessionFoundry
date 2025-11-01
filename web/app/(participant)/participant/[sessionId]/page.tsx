@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Button from "@/components/ui/Button";
@@ -38,14 +38,7 @@ export default function ParticipantPage() {
   const sessionName = useMemo(() => {
     try { return localStorage.getItem(`sf_last_session_name_${sessionId}`) || "Session"; } catch { return "Session"; }
   }, [sessionId]);
-  const groupName = useMemo(() => {
-    try {
-      const gid = (participant as any)?.group_id as string | undefined;
-      if (!gid) return null;
-      const g = (groups as any[]).find((x:any) => x.id === gid);
-      return g?.name || null;
-    } catch { return null; }
-  }, [participant, groups]);
+  // groupName already defined above; remove duplicate
   // Timer pill color ramp helper
   const [nowTs, setNowTs] = useState(() => Date.now());
   useEffect(() => {
@@ -227,7 +220,7 @@ export default function ParticipantPage() {
                     const isClosed = a.status === 'Closed';
                     const title = a.title || getActivityDisplayName(a.type);
                     const outcomeLine = a.instructions || a.description || '';
-                    const short = outcomeLine.length > 0 ? (outcomeLine.length > 70 ? outcomeLine.slice(0,70) + '…' : outcomeLine) : '';
+                    const short = outcomeLine.length > 0 ? (outcomeLine.length > 70 ? outcomeLine.slice(0,70) + '�' : outcomeLine) : '';
                     return (
                       <div key={a.id} className={`rounded-2xl border ${isActive ? 'bg-white/6 border-white/20 shadow-[0_0_0_4px_rgba(123,77,242,.15)] animate-active-pulse' : 'bg-white/4 border-white/10 hover:bg-white/[.06]'}`}>
                         <div className="p-4">
@@ -250,7 +243,7 @@ export default function ParticipantPage() {
                             {isActive ? (
                               <>
                                 <Button onClick={() => setSelected(a)} className="px-4">Open activity</Button>
-                                <div className="text-[11px] text-[var(--muted)]">1 idea per line • Undo supported</div>
+                                <div className="text-[11px] text-[var(--muted)]">1 idea per line � Undo supported</div>
                               </>
                             ) : isClosed ? (
                               <button className="text-sm underline opacity-80 hover:opacity-100" onClick={() => setSelected(a)}>View results</button>
@@ -536,6 +529,7 @@ function GroupJoinScreen({
     </div>
   );
 }
+
 
 
 
