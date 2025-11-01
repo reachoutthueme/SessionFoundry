@@ -285,15 +285,43 @@ export default function ParticipantPage() {
 
           {selected ? (
             <div className="space-y-3">
-              <div className="p-3 rounded-md bg-white/5 border border-white/10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <div className="font-medium">{selected.title || getActivityDisplayName(selected.type)}</div>
-                  {selected.instructions && (<div className="text-sm text-[var(--muted)] mt-0.5">{selected.instructions}</div>)}
-                  {selected.ends_at && (<div className="mt-1"><Timer endsAt={selected.ends_at} /></div>)}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline" className="px-4" onClick={() => setShowActLb(s=>!s)}>{showActLb ? 'Hide leaderboard' : 'View leaderboard'}</Button>
-                  <Button size="sm" variant="outline" className="px-4 shrink-0 self-start sm:self-auto" onClick={() => { setShowActLb(false); setSelected(null); }}>Back to activities</Button>
+              <div className="p-3 rounded-md bg-white/5 border border-white/10">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="font-medium">{selected.title || getActivityDisplayName(selected.type)}</div>
+                    {selected.instructions && (
+                      <div className="text-sm text-[var(--muted)] mt-0.5">{selected.instructions}</div>
+                    )}
+                    {selected.ends_at && (
+                      <div className="mt-1 flex items-center gap-2 text-xs">
+                        <span className="opacity-70">Time left:</span>
+                        <span className={`timer-pill ${selected.ends_at ? timerPillClass(selected.ends_at) : ''}`}>
+                          <Timer endsAt={selected.ends_at} />
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex w-full sm:w-auto flex-wrap items-center gap-2 justify-start sm:justify-end">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="px-4"
+                      onClick={() => {
+                        setShowActLb(false);
+                        setSelected(null);
+                      }}
+                    >
+                      Back to activities
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="px-4"
+                      onClick={() => setShowActLb((s) => !s)}
+                    >
+                      {showActLb ? "Hide leaderboard" : "View leaderboard"}
+                    </Button>
+                  </div>
                 </div>
               </div>
 
