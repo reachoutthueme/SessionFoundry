@@ -53,9 +53,9 @@ export default function BrainstormResults({ subs }: { subs: Sub[] }) {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [ideaQuery, setIdeaQuery] = useState("");
   const [authorQuery, setAuthorQuery] = useState("");
-  const [minAvg, setMinAvg] = useState<string]("");
-  const [maxStdev, setMaxStdev] = useState<string]("");
-  const [minN, setMinN] = useState<string]("");
+  const [minAvg, setMinAvg] = useState("");
+  const [maxStdev, setMaxStdev] = useState("");
+  const [minN, setMinN] = useState("");
 
   function getSortValue(s: Sub) {
     const consensusVal = 1 / (1 + ((s.stdev ?? 0) as number));
@@ -99,7 +99,7 @@ export default function BrainstormResults({ subs }: { subs: Sub[] }) {
 
   function sortIndicator(k: typeof sortKey) {
     if (sortKey !== k) return null;
-    return <span className="ml-1 opacity-70">{sortDir === "asc" ? "↑" : "↓"}</span>;
+    return <span className="ml-1 opacity-70">{sortDir === "asc" ? "\u2191" : "\u2193"}</span>;
   }
 
   return (
@@ -127,23 +127,21 @@ export default function BrainstormResults({ subs }: { subs: Sub[] }) {
               <th className="px-3 py-2 text-right cursor-pointer" onClick={() => onHeaderClick("consensus")}>
                 Consensus{sortIndicator("consensus")}
               </th>
-              <th className="px-3 py-2 text-left cursor-pointer" onClick={() => onHeaderClick("author")}>
-                Author{sortIndicator("author")}
-              </th>
+              <th className="px-3 py-2 text-left">Author</th>
             </tr>
-            <tr className="text-xs">
+            <tr className="border-t border-white/10">
               <th />
               <th className="px-3 py-1">
                 <input placeholder="Filter idea" value={ideaQuery} onChange={(e) => setIdeaQuery(e.target.value)} className="w-full rounded-md border border-white/10 bg-white/5 px-2 py-1 outline-none" />
               </th>
               <th className="px-3 py-1 text-right">
-                <input placeholder=">= avg" value={minAvg} onChange={(e) => setMinAvg(e.target.value)} className="w-24 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-right outline-none" />
+                <input placeholder="Min avg" value={minAvg} onChange={(e) => setMinAvg(e.target.value)} className="w-20 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-right outline-none" />
               </th>
               <th className="px-3 py-1 text-right">
-                <input placeholder="<= stdev" value={maxStdev} onChange={(e) => setMaxStdev(e.target.value)} className="w-24 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-right outline-none" />
+                <input placeholder="Max stdev" value={maxStdev} onChange={(e) => setMaxStdev(e.target.value)} className="w-20 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-right outline-none" />
               </th>
               <th className="px-3 py-1 text-right">
-                <input placeholder=">= N" value={minN} onChange={(e) => setMinN(e.target.value)} className="w-20 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-right outline-none" />
+                <input placeholder="Min N" value={minN} onChange={(e) => setMinN(e.target.value)} className="w-20 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-right outline-none" />
               </th>
               <th />
               <th className="px-3 py-1">
@@ -222,6 +220,4 @@ function Scatter({ points }: { points: { id: string; label: string; avg: number;
     </Card>
   );
 }
-
-
 
