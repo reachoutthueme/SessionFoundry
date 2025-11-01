@@ -21,7 +21,7 @@ export async function POST(req: Request) {
       .from("activities")
       .select("id,type,status,created_at")
       .eq("session_id", session_id)
-      .eq("type", "brainstorm")
+      .in("type", ["brainstorm","assignment"] as any)
       .in("status", ["Active", "Voting"] as any)
       .order("created_at", { ascending: false })
       .limit(1);
@@ -42,6 +42,13 @@ export async function POST(req: Request) {
   // session must be Active for voting
   const sStatus = await getSessionStatus(session_id);
   if (sStatus !== 'Active') return NextResponse.json({ error: "Session not accepting votes" }, { status: 403 });
+
+  // ensure activity allows voting and is in Voting status
+  const cfgRes = await supabaseAdmin.from('activities').select('config,status').eq('id', activity_id).maybeSingle();
+  const votingEnabled = !!(cfgRes.data as any)?.config?.voting_enabled;
+  if (!votingEnabled) return NextResponse.json({ error: 'Voting disabled for this activity' }, { status: 400 });
+  const aStatus = (cfgRes.data as any)?.status as string | undefined;
+  if (aStatus !== 'Voting') return NextResponse.json({ error: 'Activity not in voting stage' }, { status: 403 });
 
   const { data, error } = await supabaseAdmin
     .from("votes")

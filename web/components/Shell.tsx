@@ -349,7 +349,7 @@ export default function Shell({ children }: PropsWithChildren) {
         }
       >
         <div className="w-full h-[70vh]">
-          <iframe src="/privacy?embed=1" className="w-full h-full rounded" />
+          <iframe src="/privacy" className="w-full h-full rounded" />
         </div>
       </Modal>
       <Modal
@@ -367,7 +367,7 @@ export default function Shell({ children }: PropsWithChildren) {
         }
       >
         <div className="w-full h-[70vh]">
-          <iframe src="/terms?embed=1" className="w-full h-full rounded" />
+          <iframe src="/terms" className="w-full h-full rounded" />
         </div>
       </Modal>
     </div>

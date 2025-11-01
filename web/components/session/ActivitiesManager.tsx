@@ -4,10 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Button from "@/components/ui/Button";
 import { IconSettings } from "@/components/ui/Icons";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
+import { getActivityDisplayName } from "@/lib/activities/registry";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import StocktakeInitiativesManager from "@/components/session/StocktakeInitiativesManager";
 import Timer from "@/components/ui/Timer";
+import FacilitatorConfig from "@/components/activities/facilitator";
+import { validateConfig } from "@/lib/activities/schemas";
 
 type Activity = {
   id: string;
@@ -49,22 +52,16 @@ export default function ActivitiesManager({
   const [title, setTitle] = useState("");
   const [instructions, setInstructions] = useState("");
   const [description, setDescription] = useState("");
-  const [votingEnabled, setVotingEnabled] = useState(true);
-  const [maxSubs, setMaxSubs] = useState<number>(5);
-  const [timeLimit, setTimeLimit] = useState<number>(300);
-  const [pointsBudget, setPointsBudget] = useState<number>(100);
-  const [itemsList, setItemsList] = useState<string>("");
+  // Centralized draft config for the Add modal
+  const [configDraft, setConfigDraft] = useState<any>({});
 
   // Edit modal state
   const [editId, setEditId] = useState<string | null>(null);
   const [eTitle, setETitle] = useState("");
   const [eInstructions, setEInstructions] = useState("");
   const [eDescription, setEDescription] = useState("");
-  const [eVotingEnabled, setEVotingEnabled] = useState(true);
-  const [eMaxSubs, setEMaxSubs] = useState<number>(5);
-  const [eTimeLimit, setETimeLimit] = useState<number>(300);
-  const [ePointsBudget, setEPointsBudget] = useState<number>(100);
-  const [itemsListEdit, setItemsListEdit] = useState<string>(""); // not currently saved, but reserved if needed
+  // Centralized draft config for the Edit modal
+  const [eConfigDraft, setEConfigDraft] = useState<any>({});
 
   // Stocktake modal state
   const [manageId, setManageId] = useState<string | null>(null);
@@ -208,29 +205,13 @@ export default function ActivitiesManager({
     const cleanTitle = title.trim();
     if (!cleanTitle) return;
 
-    const config =
-      type === "brainstorm"
-        ? {
-            voting_enabled: !!votingEnabled,
-            max_submissions: maxSubs,
-            time_limit_sec: timeLimit,
-            points_budget: pointsBudget,
-          }
-        : type === "assignment"
-        ? {
-            voting_enabled: !!votingEnabled,
-            max_submissions: maxSubs,
-            time_limit_sec: timeLimit,
-            points_budget: pointsBudget,
-            prompts: itemsList
-              .split("\n")
-              .map((s) => s.trim())
-              .filter(Boolean),
-          }
-        : {
-            // stocktake
-            time_limit_sec: timeLimit,
-          };
+    // Centralized config draft based on selected type
+    const config = configDraft || {};
+    const v = validateConfig(type, config);
+    if (!v.ok) {
+      toast(v.error || "Invalid settings", "error");
+      return;
+    }
 
     try {
       const r = await fetch("/api/activities", {
@@ -242,7 +223,7 @@ export default function ActivitiesManager({
           title: cleanTitle,
           instructions,
           description,
-          config,
+          config: v.value,
         }),
       });
       const j = await r.json();
@@ -257,13 +238,39 @@ export default function ActivitiesManager({
       setTitle("");
       setInstructions("");
       setDescription("");
-      setItemsList("");
+      setConfigDraft({});
       await load();
     } catch (err) {
       console.error("[ActivitiesManager] create() failed:", err);
       toast("Failed to create activity", "error");
     }
   }
+
+  // Initialize defaults for configDraft when opening the Add modal or switching type
+  useEffect(() => {
+    if (!open) return;
+    if (type === "brainstorm") {
+      setConfigDraft((prev: any) => ({
+        voting_enabled: prev?.voting_enabled ?? true,
+        max_submissions: prev?.max_submissions ?? 5,
+        time_limit_sec: prev?.time_limit_sec ?? 300,
+        points_budget: prev?.points_budget ?? 100,
+      }));
+    } else if (type === "assignment") {
+      setConfigDraft((prev: any) => ({
+        voting_enabled: prev?.voting_enabled ?? true,
+        max_submissions: prev?.max_submissions ?? 5,
+        time_limit_sec: prev?.time_limit_sec ?? 300,
+        points_budget: prev?.points_budget ?? 100,
+        prompts: Array.isArray(prev?.prompts) ? prev.prompts : [],
+      }));
+    } else {
+      // stocktake
+      setConfigDraft((prev: any) => ({
+        time_limit_sec: prev?.time_limit_sec ?? 300,
+      }));
+    }
+  }, [open, type]);
 
   // update status / timer
   async function setStatus(id: string, status: Activity["status"]) {
@@ -518,7 +525,7 @@ export default function ActivitiesManager({
                         <span className="mr-1 opacity-70">
                           {i + 1}.
                         </span>
-                        {a.title}
+                        {a.title || getActivityDisplayName(a.type)}
                       </div>
                     );
                   })}
@@ -573,7 +580,7 @@ export default function ActivitiesManager({
                         {/* left block */}
                         <div>
                           <div className="flex items-center gap-2 font-medium">
-                            {a.title}
+                            {a.title || getActivityDisplayName(a.type)}
                             <span className="ml-1 text-xs text-[var(--muted)]">
                               [{a.type === "brainstorm"
                                 ? "standard"
@@ -917,51 +924,11 @@ export default function ActivitiesManager({
                             title="Edit settings"
                             onClick={() => {
                               setEditId(a.id);
-                              setETitle(
-                                a.title || ""
-                              );
-                              setEInstructions(
-                                a.instructions ||
-                                  ""
-                              );
-                              setEDescription(
-                                a.description ||
-                                  ""
-                              );
-                              const cfg =
-                                a.config || {};
-                              setEVotingEnabled(
-                                !!cfg.voting_enabled
-                              );
-                              setEMaxSubs(
-                                Number(
-                                  cfg.max_submissions ||
-                                    5
-                                )
-                              );
-                              setETimeLimit(
-                                Number(
-                                  cfg.time_limit_sec ||
-                                    300
-                                )
-                              );
-                              setEPointsBudget(
-                                Number(
-                                  cfg.points_budget ||
-                                    100
-                                )
-                              );
-                              setItemsListEdit(
-                                Array.isArray(
-                                  cfg.prompts
-                                )
-                                  ? (
-                                      cfg.prompts as string[]
-                                    ).join(
-                                      "\n"
-                                    )
-                                  : ""
-                              );
+                              setETitle(a.title || "");
+                              setEInstructions(a.instructions || "");
+                              setEDescription(a.description || "");
+                              const cfg = a.config || {};
+                              setEConfigDraft({ ...cfg });
                             }}
                           >
                             <IconSettings
@@ -1133,121 +1100,12 @@ export default function ActivitiesManager({
                 />
               </div>
 
-              {(type === "brainstorm" ||
-                type === "assignment") && (
-                <div className="space-y-3">
-                  {/* voting toggle */}
-                  <div className="flex items-center gap-3">
-                    <label className="w-28 text-sm">
-                      Voting
-                    </label>
-                    <input
-                      type="checkbox"
-                      checked={votingEnabled}
-                      onChange={(e) =>
-                        setVotingEnabled(
-                          e.target.checked
-                        )
-                      }
-                      aria-label="Participants can vote"
-                    />
-                    <span className="text-sm text-[var(--muted)]">
-                      Participants can vote
-                    </span>
-                  </div>
-
-                  {/* Max submissions */}
-                  <div className="flex gap-3">
-                    <label className="w-28 pt-2 text-sm">
-                      Max submissions
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={50}
-                      value={maxSubs}
-                      onChange={(e) =>
-                        setMaxSubs(
-                          Number(
-                            e.target.value
-                          )
-                        )
-                      }
-                      className="h-10 w-28 rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
-                    />
-                  </div>
-
-                  {/* Points budget (only if voting is on) */}
-                  {votingEnabled && (
-                    <div className="flex gap-3">
-                      <label className="w-28 pt-2 text-sm">
-                        Points budget
-                      </label>
-                      <input
-                        type="number"
-                        min={1}
-                        value={pointsBudget}
-                        onChange={(e) =>
-                          setPointsBudget(
-                            Number(
-                              e.target.value
-                            )
-                          )
-                        }
-                        className="h-10 w-28 rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
-                      />
-                      <span className="text-sm text-[var(--muted)]">
-                        total points to
-                        distribute
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {type === "assignment" && (
-                <div className="space-y-3">
-                  <div className="flex gap-3">
-                    <label className="w-28 pt-2 text-sm">
-                      Prompts
-                    </label>
-                    <textarea
-                      value={itemsList}
-                      onChange={(e) =>
-                        setItemsList(
-                          e.target.value
-                        )
-                      }
-                      placeholder="One prompt per line"
-                      className="flex-1 min-h-24 rounded-md border border-white/10 bg-[var(--panel)] px-3 py-2 outline-none"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Duration */}
-              <div className="flex gap-3">
-                <label className="w-28 pt-2 text-sm">
-                  Time limit
-                </label>
-                <input
-                  type="number"
-                  min={30}
-                  step={30}
-                  value={timeLimit}
-                  onChange={(e) =>
-                    setTimeLimit(
-                      Number(
-                        e.target.value
-                      )
-                    )
-                  }
-                  className="h-10 w-36 rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
-                />
-                <span className="text-sm text-[var(--muted)]">
-                  seconds
-                </span>
-              </div>
+              {/* Per-type settings */}
+              <FacilitatorConfig
+                type={type}
+                draft={configDraft}
+                onChange={(fn) => setConfigDraft(fn)}
+              />
             </div>
           </Modal>
 
@@ -1278,27 +1136,13 @@ export default function ActivitiesManager({
                       description:
                         eDescription,
                     };
-
-                    if (a.type === "brainstorm") {
-                      patch.config = {
-                        ...(a.config || {}),
-                        voting_enabled:
-                          !!eVotingEnabled,
-                        max_submissions:
-                          eMaxSubs,
-                        time_limit_sec:
-                          eTimeLimit,
-                        points_budget:
-                          ePointsBudget,
-                      };
-                    } else {
-                      // stocktake / assignment both at least get time_limit_sec
-                      patch.config = {
-                        ...(a.config || {}),
-                        time_limit_sec:
-                          eTimeLimit,
-                      };
+                    // Use centralized edit draft config with schema validation
+                    const v2 = validateConfig(a.type, eConfigDraft || {});
+                    if (!v2.ok) {
+                      toast(v2.error || "Invalid settings", "error");
+                      return;
                     }
+                    patch.config = v2.value;
 
                     try {
                       const r = await fetch(
@@ -1418,112 +1262,13 @@ export default function ActivitiesManager({
                       />
                     </div>
 
-                    {/* brainstorm-specific settings */}
-                    {a.type ===
-                      "brainstorm" && (
-                      <div className="space-y-3">
-                        {/* Voting toggle */}
-                        <div className="flex items-center gap-3">
-                          <label className="w-28 text-sm">
-                            Voting
-                          </label>
-                          <input
-                            type="checkbox"
-                            checked={
-                              eVotingEnabled
-                            }
-                            onChange={(e) =>
-                              setEVotingEnabled(
-                                e.target
-                                  .checked
-                              )
-                            }
-                            aria-label="Participants can vote"
-                          />
-                          <span className="text-sm text-[var(--muted)]">
-                            Participants can
-                            vote
-                          </span>
-                        </div>
-
-                        {/* Max submissions */}
-                        <div className="flex gap-3">
-                          <label className="w-28 pt-2 text-sm">
-                            Max
-                            submissions
-                          </label>
-                          <input
-                            type="number"
-                            min={1}
-                            max={50}
-                            value={eMaxSubs}
-                            onChange={(e) =>
-                              setEMaxSubs(
-                                Number(
-                                  e.target
-                                    .value
-                                )
-                              )
-                            }
-                            className="h-10 w-28 rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
-                          />
-                        </div>
-
-                        {/* Points budget (edit mode) */}
-                        {eVotingEnabled && (
-                          <div className="flex gap-3">
-                            <label className="w-28 pt-2 text-sm">
-                              Points
-                              budget
-                            </label>
-                            <input
-                              type="number"
-                              min={1}
-                              value={
-                                ePointsBudget
-                              }
-                              onChange={(e) =>
-                                setEPointsBudget(
-                                  Number(
-                                    e.target
-                                      .value
-                                  )
-                                )
-                              }
-                              className="h-10 w-28 rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
-                            />
-                            <span className="text-sm text-[var(--muted)]">
-                              total points to
-                              distribute
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Time limit */}
-                    <div className="flex gap-3">
-                      <label className="w-28 pt-2 text-sm">
-                        Time limit
-                      </label>
-                      <input
-                        type="number"
-                        min={30}
-                        step={30}
-                        value={eTimeLimit}
-                        onChange={(e) =>
-                          setETimeLimit(
-                            Number(
-                              e.target.value
-                            )
-                          )
-                        }
-                        className="h-10 w-36 rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
-                      />
-                      <span className="text-sm text-[var(--muted)]">
-                        seconds
-                      </span>
-                    </div>
+                    {/* Per-type settings */}
+                    <FacilitatorConfig
+                      type={a.type}
+                      draft={eConfigDraft}
+                      onChange={(fn) => setEConfigDraft(fn)}
+                      onManageInitiatives={() => setManageId(a.id)}
+                    />
                   </div>
                 );
               })()

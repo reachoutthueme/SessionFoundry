@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { getUserFromRequest, userOwnsActivity } from "@/app/api/_util/auth";
+import { validateConfig } from "@/lib/activities/schemas";
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
@@ -29,6 +30,17 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
+  }
+
+  // Validate config if provided
+  if (patch.config) {
+    const { data: typeRow } = await supabaseAdmin.from('activities').select('type').eq('id', id).maybeSingle();
+    const t = (typeRow as any)?.type as string | undefined;
+    if (t) {
+      const v = validateConfig(t, patch.config);
+      if (!v.ok) return NextResponse.json({ error: v.error || 'Invalid config' }, { status: 400 });
+      patch.config = v.value;
+    }
   }
 
   // If activating an assignment activity, generate assignments to groups

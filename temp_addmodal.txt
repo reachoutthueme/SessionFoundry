@@ -1,0 +1,171 @@
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* "Add Activity" modal */}
+          <Modal
+            open={open}
+            onClose={() => setOpen(false)}
+            title="Add Activity"
+            footer={
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={create}
+                  disabled={!title.trim()}
+                >
+                  Create
+                </Button>
+              </>
+            }
+          >
+            <div className="space-y-3">
+              {/* Type */}
+              <div className="flex gap-3">
+                <label className="w-28 pt-2 text-sm">
+                  Type
+                </label>
+                <select
+                  value={type}
+                  onChange={(e) =>
+                    setType(e.target.value as any)
+                  }
+                  className="flex-1 h-10 rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
+                >
+                  <option value="brainstorm">
+                    Standard activity
+                  </option>
+                  <option value="stocktake">
+                    Process stocktake
+                  </option>
+                  <option value="assignment">
+                    Prompt assignment
+                  </option>
+                </select>
+              </div>
+
+              {/* Help text for type */}
+              <div className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs text-[var(--muted)]">
+                {type === "brainstorm" && (
+                  <div>
+                    Standard activity: capture one
+                    or more submissions per
+                    participant or group. Useful
+                    for many tasks (e.g., draft an
+                    outline, propose actions). You
+                    can enable voting to
+                    prioritize ideas.
+                  </div>
+                )}
+                {type === "stocktake" && (
+                  <div>
+                    Review predefined initiatives
+                    with Stop/Less/Same/More/Begin
+                    ratings. Manage the list via
+                    the Initiatives action on the
+                    activity.
+                  </div>
+                )}
+                {type === "assignment" && (
+                  <div>
+                    Distribute a list of prompts
+                    across groups so each group
+                    works on one. You can enable
+                    voting later to compare
+                    outputs.
+                  </div>
+                )}
+              </div>
+
+              {/* Title */}
+              <div className="flex gap-3">
+                <label className="w-28 pt-2 text-sm">
+                  Title
+                </label>
+                <input
+                  value={title}
+                  onChange={(e) =>
+                    setTitle(e.target.value)
+                  }
+                  className="flex-1 h-10 rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
+                />
+              </div>
+
+              {/* Instructions */}
+              <div className="flex gap-3">
+                <label className="w-28 pt-2 text-sm">
+                  Instructions
+                </label>
+                <textarea
+                  value={instructions}
+                  onChange={(e) =>
+                    setInstructions(
+                      e.target.value
+                    )
+                  }
+                  className="flex-1 min-h-20 rounded-md border border-white/10 bg-[var(--panel)] px-3 py-2 outline-none"
+                />
+              </div>
+
+              {/* Description */}
+              <div className="flex gap-3">
+                <label className="w-28 pt-2 text-sm">
+                  Description
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) =>
+                    setDescription(
+                      e.target.value
+                    )
+                  }
+                  className="flex-1 min-h-20 rounded-md border border-white/10 bg-[var(--panel)] px-3 py-2 outline-none"
+                />
+              </div>
+
+              {(type === "brainstorm" ||
+                type === "assignment") && (
+                <div className="space-y-3">
+                  {/* voting toggle */}
+                  <div className="flex items-center gap-3">
+                    <label className="w-28 text-sm">
+                      Voting
+                    </label>
+                    <input
+                      type="checkbox"
+                      checked={!!configDraft?.voting_enabled}
+                      onChange={(e) =>
+                        setConfigDraft((prev: any) => ({
+                          ...prev,
+                          voting_enabled: !!e.target.checked,
+                        }))
+                      }
+                      aria-label="Participants can vote"
+                    />
+                    <span className="text-sm text-[var(--muted)]">
+                      Participants can vote
+                    </span>
+                  </div>
+
+                  {/* Max submissions */}
+                  <div className="flex gap-3">
+                    <label className="w-28 pt-2 text-sm">
+                      Max submissions
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={50}
+                      value={Number(configDraft?.max_submissions ?? 5)}
+                      onChange={(e) =>
+                        setConfigDraft((prev: any) => ({
+                          ...prev,
+                          max_submissions: Number(e.target.value),
+                        }))
+                      }

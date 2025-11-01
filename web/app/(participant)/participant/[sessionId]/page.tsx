@@ -4,11 +4,10 @@ import { useParams } from "next/navigation";
 import Button from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import ThemeToggle from "@/components/ui/ThemeToggle";
-import IntakePanel from "@/components/session/IntakePanel";
-import VotingPanel from "@/components/session/VotingPanel.vibrant";
-import StocktakePanel from "@/components/session/StocktakePanel";
+import { getParticipantPanel } from "@/lib/activities/components";
 import Timer from "@/components/ui/Timer";
 import { IconBrain, IconList, IconTimer, IconVote, IconLock } from "@/components/ui/Icons";
+import { getActivityDisplayName } from "@/lib/activities/registry";
 import OverallLeaderboard from "@/components/session/OverallLeaderboard";
 
 type Activity = { id: string; type: "brainstorm"|"stocktake"|"assignment"; status: string; title?: string; instructions?: string; description?: string; ends_at?: string|null; config?: any };
@@ -92,7 +91,7 @@ export default function ParticipantPage() {
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6 relative">
       {/* Light/Dark toggle for participants */}
-      <div className="absolute right-3 top-3 sm:right-4 sm:top-4">
+      <div className="absolute right-3 top-3 sm:right-4 sm:top-4 z-50">
         <ThemeToggle />
       </div>
       {/* Header / Hero */}
@@ -138,7 +137,7 @@ export default function ParticipantPage() {
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div className="font-medium flex items-start gap-2 min-w-0">
                           {a.type==='brainstorm' ? <IconBrain size={20} className="text-[var(--brand)] shrink-0" /> : <IconList size={20} className="text-[var(--brand)] shrink-0" />}
-                          <span className="truncate">{a.title || (a.type==='brainstorm' ? 'Standard' : a.type)}</span>
+                          <span className="truncate">{a.title || getActivityDisplayName(a.type)}</span>
                         </div>
                         <div className={`text-xs px-2 py-1 rounded-full border flex items-center gap-1 ${a.status==='Active'||a.status==='Voting' ? 'border-green-400/30 text-green-200 bg-green-500/10' : 'border-white/20 text-[var(--muted)]'}`}>
                           {a.status==='Closed' ? (<IconLock size={14} />) : a.status==='Voting' ? (<IconVote size={14} />) : a.status==='Active' ? (<IconTimer size={14} />) : null}
@@ -166,24 +165,25 @@ export default function ParticipantPage() {
             <div className="space-y-3">
               <div className="p-3 rounded-md bg-white/5 border border-white/10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                  <div className="font-medium">{selected.title || (selected.type==='brainstorm' ? 'Standard' : selected.type)}</div>
+                  <div className="font-medium">{selected.title || getActivityDisplayName(selected.type)}</div>
                   {selected.instructions && (<div className="text-sm text-[var(--muted)] mt-0.5">{selected.instructions}</div>)}
                   {selected.ends_at && (<div className="mt-1"><Timer endsAt={selected.ends_at} /></div>)}
                 </div>
                 <Button size="sm" variant="outline" className="px-4 shrink-0 self-start sm:self-auto" onClick={() => setSelected(null)}>Back to activities</Button>
               </div>
 
-              {selected.type === "brainstorm" ? (
-                selected.status === "Voting" ? (
-                  <VotingPanel sessionId={sessionId as string} activityId={selected.id} />
-                ) : selected.status === "Active" ? (
-                  <IntakePanel sessionId={sessionId as string} activityId={selected.id} />
+              {(() => {
+                const Panel = getParticipantPanel(selected.type);
+                return Panel ? (
+                  <Panel
+                    sessionId={sessionId as string}
+                    activity={selected as any}
+                    onComplete={() => setCompleted(prev => ({ ...prev, [selected.id]: true }))}
+                  />
                 ) : (
-                  <Card><CardBody><div className="text-sm text-[var(--muted)]">This activity is not active.</div></CardBody></Card>
-                )
-              ) : (
-                <StocktakePanel sessionId={sessionId as string} activityId={selected.id} onComplete={() => setCompleted(prev => ({ ...prev, [selected.id]: true }))} />
-              )}
+                  <Card><CardBody><div className="text-sm text-[var(--muted)]">Unsupported activity type.</div></CardBody></Card>
+                );
+              })()}
             </div>
           ) : null}
         </div>

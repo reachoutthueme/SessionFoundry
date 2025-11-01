@@ -8,6 +8,30 @@ import { IconResults } from "@/components/ui/Icons";
 
 type Activity = { id: string; title?: string; type: string; status: string };
 
+type Vote = { voter_id: string; voter_name: string | null; value: number };
+
+type Sub = {
+  id: string;
+  text: string;
+  participant_name: string | null;
+  n: number;
+  avg: number | null;
+  stdev: number | null;
+  votes: Vote[];
+};
+
+type StocktakeOut = {
+  initiatives: {
+    id: string;
+    title: string;
+    counts: Record<"stop" | "less" | "same" | "more" | "begin", number>;
+    n: number;
+    avg: number;
+  }[];
+  overall: { n: number; avg: number };
+  order: Array<"stop" | "less" | "same" | "more" | "begin">;
+};
+
 export default function ResultsPanel({ sessionId }: { sessionId: string }) {
   const [activities, setActivities] = useState<Activity[]>([]);
 
@@ -196,6 +220,4 @@ export default function ResultsPanel({ sessionId }: { sessionId: string }) {
         )}
       </CardBody>
     </Card>
-  );
-}
 

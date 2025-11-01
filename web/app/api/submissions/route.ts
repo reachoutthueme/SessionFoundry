@@ -16,7 +16,7 @@ export async function GET(req: Request) {
       .from("activities")
       .select("id,type,status,created_at")
       .eq("session_id", sessionId)
-      .eq("type", "brainstorm")
+      .in("type", ["brainstorm","assignment"] as any)
       .in("status", ["Active", "Voting"] as any)
       .order("created_at", { ascending: false })
       .limit(1);
@@ -140,32 +140,24 @@ export async function POST(req: Request) {
   const sStatus = await getSessionStatus(session_id);
   if (sStatus !== 'Active') return NextResponse.json({ error: "Session not accepting submissions" }, { status: 403 });
 
-  // Enforce max submissions per activity (per group if present else per participant)
-  const { data: act } = await supabaseAdmin
-    .from("activities")
-    .select("config")
-    .eq("id", activity_id)
-    .maybeSingle();
-  const max = Number(act?.config?.max_submissions || 0);
-  if (max > 0) {
-    const base = supabaseAdmin
-      .from("submissions")
-      .select("id", { count: "exact", head: true })
-      .eq("activity_id", activity_id);
-    const { count } = group_id
-      ? await base.eq("group_id", group_id)
-      : await base.eq("participant_id", participant_id);
-    if ((count ?? 0) >= max) {
-      return NextResponse.json({ error: `Max submissions (${max}) reached` }, { status: 400 });
-    }
+  // Activity type-specific submission handling via server hooks
+  const metaRes = await supabaseAdmin.from('activities').select('type,status').eq('id', activity_id).maybeSingle();
+  const type = (metaRes.data as any)?.type as string | undefined;
+  const aStatus = (metaRes.data as any)?.status as string | undefined;
+  if (!type || (type !== 'brainstorm' && type !== 'assignment')) {
+    return NextResponse.json({ error: 'This activity does not accept text submissions' }, { status: 400 });
   }
-
-  const { data, error } = await supabaseAdmin
-    .from("submissions")
-    .insert({ activity_id, text, participant_id, group_id })
-    .select("id,text,created_at")
-    .single();
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ submission: data }, { status: 201 });
+  if (aStatus !== 'Active') {
+    return NextResponse.json({ error: 'Activity not active' }, { status: 403 });
+  }
+  const { getServerHooks } = await import("@/lib/activities/server");
+  const hooks = getServerHooks(type) as any;
+  if (!hooks || !hooks.saveSubmission || !hooks.canSubmit) {
+    return NextResponse.json({ error: 'Submissions not supported' }, { status: 400 });
+  }
+  const gate = await hooks.canSubmit({ session_id, activity_id, participant_id, group_id });
+  if (!gate.ok) return NextResponse.json({ error: gate.error || 'Not allowed' }, { status: 400 });
+  const saved = await hooks.saveSubmission({ activity_id, text, participant_id, group_id });
+  if ('error' in saved) return NextResponse.json({ error: saved.error }, { status: 500 });
+  return NextResponse.json({ submission: saved.submission }, { status: 201 });
 }

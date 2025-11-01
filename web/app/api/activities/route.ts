@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
 import { getUserFromRequest, userOwnsSession } from "@/app/api/_util/auth";
+import { validateConfig } from "@/lib/activities/schemas";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -40,10 +41,12 @@ export async function POST(req: Request) {
   }
 
   const cfg = body?.config ?? {};
+  const v = validateConfig(type, cfg);
+  if (!v.ok) return NextResponse.json({ error: v.error || "Invalid config" }, { status: 400 });
 
   const owns = await userOwnsSession(user.id, session_id);
   if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  const dataToInsert: any = { session_id, type, title, instructions, description, config: cfg, order_index };
+  const dataToInsert: any = { session_id, type, title, instructions, description, config: v.value, order_index };
   const { data, error } = await supabaseAdmin
     .from("activities")
     .insert(dataToInsert)
