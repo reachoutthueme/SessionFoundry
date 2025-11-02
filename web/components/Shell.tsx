@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, PropsWithChildren } from "react";
+import { useEffect, useState, useCallback, type PropsWithChildren, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -20,17 +20,79 @@ import ProTag from "@/components/ui/ProTag";
 import Logo from "@/components/ui/Logo";
 import LogoutButton from "@/components/ui/LogoutButton";
 
-function Section({
-  label,
-  children,
-  collapsed,
-}: PropsWithChildren<{ label: string; collapsed?: boolean }>) {
+// Types
+interface User {
+  id: string;
+  email?: string | null;
+  plan: "free" | "pro";
+}
+
+interface SectionProps {
+  label: string;
+  collapsed?: boolean;
+  children: ReactNode;
+}
+
+interface NavLinkProps {
+  href: string;
+  label: ReactNode;
+  icon?: ReactNode;
+  collapsed?: boolean;
+}
+
+// Constants
+const STORAGE_KEY = "sf_sidebar_collapsed";
+const RESTRICTED_PREFIXES = [
+  "/dashboard",
+  "/sessions",
+  "/templates",
+  "/settings",
+  "/session/",
+] as const;
+
+// Helper functions
+const isRestrictedRoute = (pathname: string): boolean => {
+  return RESTRICTED_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(prefix)
+  );
+};
+
+const isParticipantRoute = (pathname: string): boolean => {
+  return pathname.startsWith("/join") || pathname.startsWith("/participant");
+};
+
+const isPublicRoute = (pathname: string): boolean => {
+  const publicPaths = ["/", "/home", "/login", "/privacy", "/terms", "/policies"];
+  return publicPaths.some((path) => pathname === path || pathname.startsWith(path));
+};
+
+const getSidebarCollapsedState = (): boolean => {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem(STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
+
+const setSidebarCollapsedState = (collapsed: boolean): void => {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0");
+  } catch {
+    // Silently fail if localStorage is unavailable
+  }
+};
+
+// Sub-components
+function Section({ label, children, collapsed }: SectionProps) {
   return (
     <div className="mb-4">
       <div
-        className={`mb-2 px-2 text-[11px] uppercase tracking-wider text-[var(--muted)] ${
-          collapsed ? "invisible" : ""
+        className={`mb-2 px-2 text-[11px] uppercase tracking-wider text-[var(--muted)] transition-opacity ${
+          collapsed ? "opacity-0" : "opacity-100"
         }`}
+        aria-hidden={collapsed}
       >
         {label}
       </div>
@@ -39,121 +101,103 @@ function Section({
   );
 }
 
-function NavLink({
-  href,
-  label,
-  icon,
-  collapsed,
-}: {
-  href: string;
-  label: React.ReactNode;
-  icon?: React.ReactNode;
-  collapsed?: boolean;
-}) {
+function NavLink({ href, label, icon, collapsed }: NavLinkProps) {
+  const pathname = usePathname();
+  const isActive = pathname === href || pathname?.startsWith(`${href}/`);
+
   return (
     <Link
       href={href}
       title={typeof label === "string" ? label : undefined}
       className={`flex items-center ${
         collapsed ? "justify-center" : "gap-2"
-      } rounded-md border border-transparent px-3 py-2 hover:border-white/10 hover:bg-white/5`}
+      } rounded-md border px-3 py-2 transition-colors ${
+        isActive
+          ? "border-white/20 bg-white/10"
+          : "border-transparent hover:border-white/10 hover:bg-white/5"
+      }`}
+      aria-current={isActive ? "page" : undefined}
     >
-      {icon}
-      {!collapsed && <span>{label}</span>}
+      {icon && <span className="flex-shrink-0">{icon}</span>}
+      {!collapsed && <span className="truncate">{label}</span>}
     </Link>
   );
 }
 
+// Main component
 export default function Shell({ children }: PropsWithChildren) {
   const pathname = usePathname() || "/";
   const router = useRouter();
 
-  // participant / public surfaces shouldn't get the full chrome
-  const isParticipant =
-    pathname.startsWith("/join") || pathname.startsWith("/participant");
-  const isPublicHome =
-    pathname === "/" ||
-    pathname === "/home" ||
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/privacy") ||
-    pathname.startsWith("/terms") ||
-    pathname.startsWith("/policies");
-
-  // auth state
-  const [me, setMe] = useState<{
-    id: string;
-    email?: string | null;
-    plan: "free" | "pro";
-  } | null>(null);
+  // State
+  const [me, setMe] = useState<User | null>(null);
   const [meLoading, setMeLoading] = useState(true);
-  const [authCheckedPath, setAuthCheckedPath] = useState<string | null>(null);
   const [policiesOpen, setPoliciesOpen] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+  const [collapsed, setCollapsed] = useState(getSidebarCollapsedState);
 
-  // sidebar collapsed state (persisted)
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem("sf_sidebar_collapsed") === "1";
-    } catch {
-      return false;
-    }
-  });
+  // Route checks
+  const isParticipant = isParticipantRoute(pathname);
+  const isPublicHome = isPublicRoute(pathname);
+  const showFullChrome = !isParticipant && !isPublicHome;
 
-  // fetch current user/session
+  // Fetch user session
   useEffect(() => {
-    (async () => {
+    let isMounted = true;
+
+    const fetchSession = async () => {
       setMeLoading(true);
-      setAuthCheckedPath(null);
       try {
-        const r = await fetch("/api/auth/session", { cache: "no-store" });
-        if (r.ok) {
-          const j = await r.json();
-          setMe(j.user || null);
+        const response = await fetch("/api/auth/session", { 
+          cache: "no-store",
+          credentials: "include"
+        });
+        
+        if (!isMounted) return;
+
+        if (response.ok) {
+          const data = await response.json();
+          setMe(data.user || null);
         } else {
           setMe(null);
         }
-      } catch {
-        setMe(null);
+      } catch (error) {
+        console.error("Failed to fetch session:", error);
+        if (isMounted) setMe(null);
       } finally {
-        setMeLoading(false);
-        setAuthCheckedPath(pathname);
+        if (isMounted) setMeLoading(false);
       }
-    })();
+    };
+
+    fetchSession();
+
+    return () => {
+      isMounted = false;
+    };
   }, [pathname]);
 
-  // persist collapse preference
-  useEffect(() => {
-    try {
-      localStorage.setItem("sf_sidebar_collapsed", collapsed ? "1" : "0");
-    } catch {
-      /* ignore */
-    }
-  }, [collapsed]);
-
-  // prevent logged-out users from landing on facilitator-only routes
+  // Auth protection
   useEffect(() => {
     if (meLoading) return;
-    if (authCheckedPath !== pathname) return;
-
-    const restrictedPrefixes = [
-      "/dashboard",
-      "/sessions",
-      "/templates",
-      "/settings",
-      "/session/",
-    ];
-    const isRestricted = restrictedPrefixes.some(
-      (p) => pathname === p || pathname.startsWith(p)
-    );
-
-    if (!me && isRestricted) {
-      router.replace("/");
+    
+    if (!me && isRestrictedRoute(pathname)) {
+      router.replace("/login?redirect=" + encodeURIComponent(pathname));
     }
-  }, [me, meLoading, pathname, authCheckedPath, router]);
+  }, [me, meLoading, pathname, router]);
+
+  // Persist sidebar state
+  useEffect(() => {
+    setSidebarCollapsedState(collapsed);
+  }, [collapsed]);
+
+  // Toggle sidebar
+  const toggleSidebar = useCallback(() => {
+    setCollapsed((prev) => !prev);
+  }, []);
 
   // Strip chrome entirely on participant/public entry pages
-  if (isParticipant || isPublicHome) {
+  if (!showFullChrome) {
     return (
       <main className="min-h-dvh bg-[var(--bg)]">
         <div className={isPublicHome ? "" : "p-6"}>{children}</div>
@@ -161,7 +205,7 @@ export default function Shell({ children }: PropsWithChildren) {
     );
   }
 
-  // Sidebar width used in grid
+  // Sidebar width
   const sidebarWidth = collapsed ? "64px" : "240px";
 
   return (
@@ -175,40 +219,43 @@ export default function Shell({ children }: PropsWithChildren) {
       {/* HEADER */}
       <header className="col-[1_/_span_2] row-[1] border-b border-white/10 bg-[var(--panel-2)]">
         <div className="flex h-14 w-full items-center justify-between pl-3 pr-4 md:pr-6">
-          {/* LEFT SIDE: logo + brand + beta */}
+          {/* LEFT SIDE */}
           <div className="flex items-center gap-3">
             <Logo size={20} className="-top-0.5" />
 
             <Link
-              href="/"
-              className="font-semibold tracking-tight flex items-baseline gap-1"
+              href={me ? "/dashboard" : "/"}
+              className="font-semibold tracking-tight flex items-baseline gap-1 hover:opacity-80 transition-opacity"
             >
               <span className="text-[var(--text)]">Session</span>
               <span className="text-[var(--brand)]">Foundry</span>
             </Link>
 
-            <span className="text-xs text-[var(--muted)]">Beta</span>
+            <span className="text-xs text-[var(--muted)] select-none">Beta</span>
           </div>
 
-          {/* RIGHT SIDE: search + account/plan */}
+          {/* RIGHT SIDE */}
           <div className="flex items-center justify-end gap-2">
             <input
+              type="search"
               aria-label="Search"
               placeholder="Search"
-              className="h-8 w-56 rounded-md border border-white/10 bg-[var(--panel)] px-3 text-sm outline-none focus:ring-[var(--ring)]"
+              className="h-8 w-56 rounded-md border border-white/10 bg-[var(--panel)] px-3 text-sm outline-none focus:ring-1 focus:ring-[var(--ring)] transition-shadow"
             />
 
-            {me ? (
+            {meLoading ? (
+              <div className="h-8 w-20 animate-pulse rounded-md bg-white/5" />
+            ) : me ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-[var(--muted)]">
+                <span className="text-xs font-medium text-[var(--muted)] select-none">
                   {me.plan.toUpperCase()}
                 </span>
 
                 <Link
                   href="/pricing"
-                  className="rounded-md border border-white/10 px-2 py-1 text-sm hover:bg-white/5"
+                  className="rounded-md border border-white/10 px-3 py-1.5 text-sm transition-colors hover:bg-white/5"
                 >
-                  {me.plan === "free" ? "Become Pro" : "Manage plan"}
+                  {me.plan === "free" ? "Upgrade to Pro" : "Manage Plan"}
                 </Link>
 
                 <LogoutButton />
@@ -217,15 +264,15 @@ export default function Shell({ children }: PropsWithChildren) {
               <div className="flex items-center gap-2">
                 <Link
                   href="/login"
-                  className="rounded-md border border-white/10 px-2 py-1 text-sm hover:bg-white/5"
+                  className="rounded-md border border-white/10 px-3 py-1.5 text-sm transition-colors hover:bg-white/5"
                 >
-                  Sign in
+                  Sign In
                 </Link>
                 <Link
                   href="/login?mode=signup"
-                  className="rounded-md border border-white/10 px-2 py-1 text-sm hover:bg-white/5"
+                  className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm transition-colors hover:bg-white/10"
                 >
-                  Create account
+                  Create Account
                 </Link>
               </div>
             )}
@@ -247,9 +294,9 @@ export default function Shell({ children }: PropsWithChildren) {
                   icon={<IconDashboard />}
                 />
                 <button
-                  className="absolute top-1/2 z-10 h-8 w-8 -translate-y-1/2 grid place-items-center rounded-md border border-white/10 bg-[var(--panel-2)] hover:bg-white/5"
+                  className="absolute top-1/2 z-10 h-8 w-8 -translate-y-1/2 grid place-items-center rounded-md border border-white/10 bg-[var(--panel-2)] transition-colors hover:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"
                   style={{ right: -28 }}
-                  onClick={() => setCollapsed((c) => !c)}
+                  onClick={toggleSidebar}
                   aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
                   title={collapsed ? "Expand" : "Collapse"}
                 >
@@ -268,9 +315,10 @@ export default function Shell({ children }: PropsWithChildren) {
                 collapsed={collapsed}
                 href="/templates"
                 label={
-                  <>
-                    <span>Templates</span> {!collapsed && <ProTag />}
-                  </>
+                  <span className="flex items-center gap-2 w-full">
+                    <span>Templates</span>
+                    {!collapsed && <ProTag />}
+                  </span>
                 }
                 icon={<IconList />}
               />
@@ -284,35 +332,55 @@ export default function Shell({ children }: PropsWithChildren) {
                 label="Settings"
                 icon={<IconSettings />}
               />
+              
               {/* Policies accordion */}
               <div>
                 <button
-                  className={`w-full flex items-center ${collapsed ? 'justify-center' : 'gap-2'} rounded-md border border-transparent px-3 py-2 hover:border-white/10 hover:bg-white/5`}
-                  onClick={() => setPoliciesOpen((o) => !o)}
+                  className={`w-full flex items-center ${
+                    collapsed ? "justify-center" : "gap-2"
+                  } rounded-md border border-transparent px-3 py-2 transition-colors hover:border-white/10 hover:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]`}
+                  onClick={() => setPoliciesOpen((prev) => !prev)}
                   aria-expanded={policiesOpen}
+                  aria-label="Policies menu"
                 >
                   {!collapsed && (
-                    <span className={`inline-block transition-transform duration-150 ${policiesOpen ? 'rotate-90' : ''}`} aria-hidden>
+                    <span
+                      className={`inline-block transition-transform duration-200 ${
+                        policiesOpen ? "rotate-90" : ""
+                      }`}
+                      aria-hidden="true"
+                    >
                       <IconChevronRight />
                     </span>
                   )}
                   <IconShield />
                   {!collapsed && <span>Policies</span>}
                 </button>
+                
                 {!collapsed && (
-                  <div className={`mt-1 ml-6 pl-3 space-y-1 border-l border-white/10 ${policiesOpen ? '' : 'hidden'}`}>
+                  <div
+                    className={`mt-1 ml-6 pl-3 space-y-1 border-l border-white/10 overflow-hidden transition-all duration-200 ${
+                      policiesOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+                    }`}
+                  >
                     <button
-                      className="w-full flex items-center gap-2 text-left text-sm rounded-md border border-transparent px-3 py-2 hover:border-white/10 hover:bg-white/5"
+                      className="w-full flex items-center gap-2 text-left text-sm rounded-md border border-transparent px-3 py-2 transition-colors hover:border-white/10 hover:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"
                       onClick={() => setShowPrivacy(true)}
                     >
-                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40" aria-hidden />
+                      <span
+                        className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0"
+                        aria-hidden="true"
+                      />
                       <span>Privacy Policy</span>
                     </button>
                     <button
-                      className="w-full flex items-center gap-2 text-left text-sm rounded-md border border-transparent px-3 py-2 hover:border-white/10 hover:bg-white/5"
+                      className="w-full flex items-center gap-2 text-left text-sm rounded-md border border-transparent px-3 py-2 transition-colors hover:border-white/10 hover:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"
                       onClick={() => setShowTerms(true)}
                     >
-                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40" aria-hidden />
+                      <span
+                        className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0"
+                        aria-hidden="true"
+                      />
                       <span>Terms & Conditions</span>
                     </button>
                   </div>
@@ -321,20 +389,23 @@ export default function Shell({ children }: PropsWithChildren) {
             </Section>
 
             {/* THEME TOGGLE */}
-            <div className="flex flex-col items-center pt-2">
-              <div className="mb-1 text-xs text-[var(--muted)]">
-                Colormode:
-              </div>
-              <div>
+            {!collapsed && (
+              <div className="flex flex-col items-start pt-2 px-3">
+                <div className="mb-2 text-xs text-[var(--muted)]">Color Mode</div>
                 <ThemeToggle />
               </div>
-            </div>
+            )}
+            {collapsed && (
+              <div className="flex justify-center pt-2">
+                <ThemeToggle />
+              </div>
+            )}
           </nav>
         </div>
       </aside>
 
       {/* MAIN CONTENT */}
-      <main className="col-[2] row-[2] bg-[var(--bg)]">
+      <main className="col-[2] row-[2] bg-[var(--bg)] overflow-y-auto">
         <div className="mx-auto w-full max-w-screen-2xl px-4 py-6 md:px-6">
           {children}
         </div>
@@ -348,7 +419,7 @@ export default function Shell({ children }: PropsWithChildren) {
         size="lg"
         footer={
           <button
-            className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10"
+            className="rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm transition-colors hover:bg-white/10 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"
             onClick={() => setShowPrivacy(false)}
           >
             Close
@@ -356,9 +427,14 @@ export default function Shell({ children }: PropsWithChildren) {
         }
       >
         <div className="w-full h-[70vh]">
-          <iframe src="/privacy" className="w-full h-full rounded" />
+          <iframe
+            src="/privacy"
+            className="w-full h-full rounded border-0"
+            title="Privacy Policy"
+          />
         </div>
       </Modal>
+
       <Modal
         open={showTerms}
         onClose={() => setShowTerms(false)}
@@ -366,7 +442,7 @@ export default function Shell({ children }: PropsWithChildren) {
         size="lg"
         footer={
           <button
-            className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10"
+            className="rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm transition-colors hover:bg-white/10 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"
             onClick={() => setShowTerms(false)}
           >
             Close
@@ -374,7 +450,11 @@ export default function Shell({ children }: PropsWithChildren) {
         }
       >
         <div className="w-full h-[70vh]">
-          <iframe src="/terms" className="w-full h-full rounded" />
+          <iframe
+            src="/terms"
+            className="w-full h-full rounded border-0"
+            title="Terms & Conditions"
+          />
         </div>
       </Modal>
     </div>
