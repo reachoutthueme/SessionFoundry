@@ -395,17 +395,12 @@ export default function Shell({ children }: PropsWithChildren) {
             </Section>
 
             {/* THEME TOGGLE */}
-            {!collapsed && (
-              <div className="flex flex-col items-start pt-2 px-3">
-                <div className="mb-2 text-xs text-[var(--muted)]">Color Mode</div>
-                <ThemeToggle />
-              </div>
-            )}
-            {collapsed && (
-              <div className="flex justify-center pt-2">
-                <ThemeToggle />
-              </div>
-            )}
+            <div className={`pt-4 ${collapsed ? 'flex flex-col items-center' : 'px-3 flex flex-col items-center'}`}>
+              {!collapsed && (
+                <div className="mb-2 text-xs text-[var(--muted)] self-start">Color Mode</div>
+              )}
+              <ThemeToggle />
+            </div>
           </nav>
         </div>
       </aside>
