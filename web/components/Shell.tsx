@@ -62,8 +62,14 @@ const isParticipantRoute = (pathname: string): boolean => {
 };
 
 const isPublicRoute = (pathname: string): boolean => {
-  const publicPaths = ["/", "/home", "/login", "/privacy", "/terms", "/policies"];
-  return publicPaths.some((path) => pathname === path || pathname.startsWith(path));
+  return (
+    pathname === "/" ||
+    pathname === "/home" ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/privacy") ||
+    pathname.startsWith("/terms") ||
+    pathname.startsWith("/policies")
+  );
 };
 
 const getSidebarCollapsedState = (): boolean => {
