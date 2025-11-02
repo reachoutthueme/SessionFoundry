@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { Suspense, useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/app/lib/supabaseClient";
@@ -41,7 +41,8 @@ const sanitizeRedirect = (redirect: string | null): string => {
   return DEFAULT_REDIRECT;
 };
 
-export default function LoginPage() {
+// Login form component (uses useSearchParams)
+function LoginForm() {
   const toast = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -453,5 +454,18 @@ export default function LoginPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="fixed inset-0 z-10 grid place-items-center bg-[var(--bg)]">
+        <div className="text-[var(--muted)]">Loading...</div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
