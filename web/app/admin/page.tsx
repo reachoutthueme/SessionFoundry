@@ -29,12 +29,12 @@ export default async function AdminPage() {
   if (!isAdminUser(user)) redirect("/");
 
   // Fetch overview metrics (server-side; cookies included)
-  const h = headers();
-  const origin = `${h.get("x-forwarded-proto") || "http"}://${h.get("host")}`;
+  const hdrs = headers();
+  const origin = `${hdrs.get("x-forwarded-proto") || "http"}://${hdrs.get("host")}`;
   const r = await fetch(`${origin}/api/admin/metrics/overview`, { cache: "no-store" });
   const j = r.ok ? await r.json() : { kpis: {}, health: {} };
   const k = j.kpis || {};
-  const h = j.health || {};
+  const health = j.health || {};
 
   return (
     <div className="space-y-6">
@@ -54,9 +54,9 @@ export default async function AdminPage() {
       <div className="rounded-md border border-white/10 bg-white/5 p-4">
         <div className="font-medium mb-2">System health</div>
         <ul className="text-sm text-[var(--muted)] space-y-1">
-          <li>Database: <Status ok={!!h.db_ok} /></li>
-          <li>Env: Supabase URL: <Status ok={!!(h.env?.supabase_url)} /></li>
-          <li>Env: Supabase Key: <Status ok={!!(h.env?.supabase_key)} /></li>
+          <li>Database: <Status ok={!!health.db_ok} /></li>
+          <li>Env: Supabase URL: <Status ok={!!(health.env?.supabase_url)} /></li>
+          <li>Env: Supabase Key: <Status ok={!!(health.env?.supabase_key)} /></li>
         </ul>
       </div>
     </div>
