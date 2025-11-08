@@ -598,7 +598,7 @@ export default function ActivitiesManager({
                              <StatusPill status={(status as any) === 'Inactive' ? 'Queued' : (status as any)} />
                              {a.ends_at && <span className="opacity-80">{mm}:{ss}</span>}
                              {denom > 0 && <span className="opacity-80">{cc.total}/{denom}</span>}
-                             <button className="rounded px-2 py-1 hover:bg-white/5" onClick={()=>setFocusedId(a.id)}>Open</button>
+                             <button className="rounded px-2 py-1 hover:bg-white/5" onClick={()=>setFocusedId(a.id)}>Expand</button>
                            </div>
                          </div>
                        </div>

@@ -122,3 +122,9 @@ export const IconCopy = (p: IconProps) => svg(p, (<>
 </>));
 export const IconCheck = (p: IconProps) => svg(p, (<><path d="M20 6L9 17l-5-5"/></>));
 export const IconX = (p: IconProps) => svg(p, (<><path d="M18 6L6 18"/><path d="M6 6l12 12"/></>));
+export const IconEdit = (p: IconProps) => svg(p, (
+  <>
+    <path d="M12 20h9"/>
+    <path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/>
+  </>
+));

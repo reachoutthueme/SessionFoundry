@@ -223,9 +223,16 @@ export default function Page() {
                 </Button>
               </span>
             ) : (
-              <span>
-                
+              <span className="inline-flex items-center gap-2">
                 {s.name}
+                <button
+                  className="rounded p-1 hover:bg-white/5"
+                  title="Rename session"
+                  aria-label="Rename session"
+                  onClick={() => { setEditing(true); setNameInput(s.name); }}
+                >
+                  <IconEdit size={14} />
+                </button>
               </span>
             )}
           </h1>
@@ -260,43 +267,7 @@ export default function Page() {
         </div>
 
         <div className="relative flex items-center gap-2">
-          {/* Primary actions */}
-          <Button
-            onClick={async () => {
-              try {
-                const r = await fetch(`/api/activities?session_id=${id}`, { cache: 'no-store' });
-                const j = await r.json();
-                const acts = Array.isArray(j.activities) ? j.activities : [];
-                const sorted = [...acts].sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0));
-                const currentIdx = sorted.findIndex((a: any) => a.status === 'Active' || a.status === 'Voting');
-                const next = sorted.find((a: any, i: number) => i > currentIdx && (a.status === 'Draft' || a.status === 'Inactive')) || null;
-                if (currentIdx >= 0) {
-                  const cur = sorted[currentIdx];
-                  await fetch(`/api/activities/${cur.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'Closed' }) });
-                }
-                if (next) {
-                  await fetch(`/api/activities/${next.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'Active' }) });
-                }
-                toast(next ? 'Moved to next step' : 'No more steps', next ? 'success' : 'info');
-              } catch (e) {
-                toast('Failed to advance', 'error');
-              }
-            }}
-          >
-            Next
-          </Button>
-          {!editing && (
-            <Button
-              variant="outline"
-              disabled={saving}
-              onClick={() => {
-                setEditing(true);
-                setNameInput(s.name);
-              }}
-            >
-              Rename
-            </Button>
-          )}
+          {/* Primary actions (Next/rename inline removed here) */}
 
           {s.status === "Draft" || s.status === "Inactive" ? (
             <Button
@@ -318,7 +289,7 @@ export default function Page() {
                 await updateSession({ status: "Completed" });
               }}
             >
-              Complete
+              End session
             </Button>
           ) : null}
 
