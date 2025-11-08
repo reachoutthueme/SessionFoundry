@@ -13,9 +13,13 @@ export default function Modal({
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const lastActiveRef = useRef<Element | null>(null);
+  const onCloseRef = useRef(onClose);
+
+  // keep latest onClose without retriggering the mount effect
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
   useEffect(() => {
-    function esc(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    function esc(e: KeyboardEvent) { if (e.key === "Escape") onCloseRef.current?.(); }
     if (open) {
       document.addEventListener("keydown", esc);
       // lock body scroll
@@ -40,7 +44,7 @@ export default function Modal({
         }
       };
     }
-  }, [open, onClose]);
+  }, [open]);
 
   // Focus trap
   useEffect(() => {
