@@ -26,7 +26,8 @@ export async function getAuditLogs(params: { actor?: string; entity_type?: strin
   if (action) qc = qc.eq("action", action);
   if (from) qc = qc.gte("created_at", from);
   if (to) qc = qc.lte("created_at", to);
-  const { count = 0 } = await qc;
+  const qcRes = await qc;
+  const count = Number(qcRes.count ?? 0);
 
   // Rows
   const fromIdx = (page - 1) * per_page;
@@ -46,5 +47,5 @@ export async function getAuditLogs(params: { actor?: string; entity_type?: strin
 
   const { data: rows, error } = await q;
   if (error) return { logs: [], count: 0, page, per_page };
-  return { logs: rows || [], count, page, per_page };
+  return { logs: rows || [], count: Number(count || 0), page, per_page };
 }

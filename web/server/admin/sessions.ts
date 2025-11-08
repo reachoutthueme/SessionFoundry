@@ -24,7 +24,8 @@ export async function searchAdminSessions(params: { status?: string; owner?: str
   if (owner) qc = qc.eq("facilitator_user_id", owner);
   if (from) qc = qc.gte("created_at", from);
   if (to) qc = qc.lte("created_at", to);
-  const { count = 0 } = await qc;
+  const qcRes = await qc;
+  const count = Number(qcRes.count ?? 0);
 
   // Fetch current page
   const fromIdx = (page - 1) * per_page;
@@ -42,5 +43,5 @@ export async function searchAdminSessions(params: { status?: string; owner?: str
 
   const { data: rows, error } = await q;
   if (error) return { sessions: [], count: 0, page, per_page };
-  return { sessions: rows || [], count, page, per_page };
+  return { sessions: rows || [], count: Number(count || 0), page, per_page };
 }
