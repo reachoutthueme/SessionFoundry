@@ -374,7 +374,15 @@ export default function ActivitiesManager({
       const j = await r.json().catch(() => ({} as any));
 
       if (!r.ok) {
-        toast(j.error || "Failed to extend timer", "error");
+        const e: any = j?.error;
+        const msg = typeof e === "string"
+          ? e
+          : (typeof e?.message === "string"
+              ? e.message
+              : (e?.formErrors || e?.fieldErrors)
+                ? "Invalid input"
+                : "Failed to extend timer");
+        toast(msg, "error");
         return;
       }
 
@@ -399,7 +407,18 @@ export default function ActivitiesManager({
         body: JSON.stringify({ status: "Active", starts_at: starts, ends_at: ends }),
       });
       const j = await r.json().catch(() => ({} as any));
-      if (!r.ok) { toast(j.error || "Failed to reset timer", "error"); return; }
+      if (!r.ok) {
+        const e: any = j?.error;
+        const msg = typeof e === "string"
+          ? e
+          : (typeof e?.message === "string"
+              ? e.message
+              : (e?.formErrors || e?.fieldErrors)
+                ? "Invalid input"
+                : "Failed to reset timer");
+        toast(msg, "error");
+        return;
+      }
       toast("Timer reset", "success");
       await load();
     } catch (err) {
