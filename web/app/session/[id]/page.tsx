@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import { IconCopy, IconChevronRight } from "@/components/ui/Icons";
+import { IconCopy, IconChevronRight, IconEdit } from "@/components/ui/Icons";
 import ProTag from "@/components/ui/ProTag";
 import { Tabs } from "@/components/ui/Tabs";
 import ResultsPanel from "@/components/session/ResultsPanel.vibrant";
