@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, type PropsWithChildren, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import {
@@ -10,7 +10,6 @@ import {
   IconPresentation,
   IconList,
   IconSettings,
-  IconHelp,
   IconShield,
   IconChevronLeft,
   IconChevronRight,
@@ -19,6 +18,8 @@ import Modal from "@/components/ui/Modal";
 import ProTag from "@/components/ui/ProTag";
 import Logo from "@/components/ui/Logo";
 import LogoutButton from "@/components/ui/LogoutButton";
+import { apiFetch } from "@/app/lib/apiFetch";
+import { isPublicRoute, isParticipantRoute, isRestrictedRoute } from "@/app/lib/routeRules";
 
 // Types
 interface User {
@@ -42,35 +43,8 @@ interface NavLinkProps {
 
 // Constants
 const STORAGE_KEY = "sf_sidebar_collapsed";
-const RESTRICTED_PREFIXES = [
-  "/dashboard",
-  "/sessions",
-  "/templates",
-  "/settings",
-  "/session/",
-] as const;
 
-// Helper functions
-const isRestrictedRoute = (pathname: string): boolean => {
-  return RESTRICTED_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(prefix)
-  );
-};
-
-const isParticipantRoute = (pathname: string): boolean => {
-  return pathname.startsWith("/join") || pathname.startsWith("/participant");
-};
-
-const isPublicRoute = (pathname: string): boolean => {
-  return (
-    pathname === "/" ||
-    pathname === "/home" ||
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/privacy") ||
-    pathname.startsWith("/terms") ||
-    pathname.startsWith("/policies")
-  );
-};
+// Helper functions are centralized in @/app/lib/routeRules
 
 const getSidebarCollapsedState = (): boolean => {
   if (typeof window === "undefined") return false;
@@ -109,7 +83,7 @@ function Section({ label, children, collapsed }: SectionProps) {
 
 function NavLink({ href, label, icon, collapsed }: NavLinkProps) {
   const pathname = usePathname();
-  const isActive = pathname === href || pathname?.startsWith(`${href}/`);
+  const isActive = href === "/" ? pathname === "/" : (pathname === href || pathname?.startsWith(`${href}/`));
 
   return (
     <Link
@@ -133,6 +107,7 @@ function NavLink({ href, label, icon, collapsed }: NavLinkProps) {
 // Main component
 export default function Shell({ children }: PropsWithChildren) {
   const pathname = usePathname() || "/";
+  const searchParams = useSearchParams();
   const router = useRouter();
 
   // State
@@ -148,49 +123,45 @@ export default function Shell({ children }: PropsWithChildren) {
   const isPublicHome = isPublicRoute(pathname);
   const showFullChrome = !isParticipant && !isPublicHome;
 
-  // Fetch user session
+  // Fetch user session once on mount and on visibility/focus changes (avoid per-route fetches)
   useEffect(() => {
     let isMounted = true;
-
-    const fetchSession = async () => {
+    const load = async () => {
       setMeLoading(true);
       try {
-        const response = await fetch("/api/auth/session", { 
-          cache: "no-store",
-          credentials: "include"
-        });
-        
+        const response = await apiFetch("/api/auth/session", { cache: "no-store" });
         if (!isMounted) return;
-
         if (response.ok) {
           const data = await response.json();
           setMe(data.user || null);
         } else {
           setMe(null);
         }
-      } catch (error) {
-        console.error("Failed to fetch session:", error);
+      } catch (e) {
         if (isMounted) setMe(null);
       } finally {
         if (isMounted) setMeLoading(false);
       }
     };
-
-    fetchSession();
-
+    load();
+    const onVis = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    window.addEventListener("visibilitychange", onVis);
     return () => {
       isMounted = false;
+      window.removeEventListener("visibilitychange", onVis);
     };
-  }, [pathname]);
+  }, []);
 
   // Auth protection
   useEffect(() => {
     if (meLoading) return;
-    
     if (!me && isRestrictedRoute(pathname)) {
-      router.replace("/login?redirect=" + encodeURIComponent(pathname));
+      const full = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : "");
+      router.replace("/login?redirect=" + encodeURIComponent(full));
     }
-  }, [me, meLoading, pathname, router]);
+  }, [me, meLoading, pathname, searchParams, router]);
 
   // Persist sidebar state
   useEffect(() => {
@@ -237,17 +208,13 @@ export default function Shell({ children }: PropsWithChildren) {
               <span className="text-[var(--brand)]">Foundry</span>
             </Link>
 
-            <span className="text-xs text-[var(--muted)] select-none">Beta</span>
+            <span aria-hidden className="text-xs text-[var(--muted)] select-none">Beta</span>
           </div>
 
           {/* RIGHT SIDE */}
           <div className="flex items-center justify-end gap-2">
-            <input
-              type="search"
-              aria-label="Search"
-              placeholder="Search"
-              className="h-8 w-56 rounded-md border border-white/10 bg-[var(--panel)] px-3 text-sm outline-none focus:ring-1 focus:ring-[var(--ring)] transition-shadow"
-            />
+            {/* Theme toggle in header for quick access */}
+            <ThemeToggle />
 
             {meLoading ? (
               <div className="h-8 w-20 animate-pulse rounded-md bg-white/5" />
@@ -289,26 +256,25 @@ export default function Shell({ children }: PropsWithChildren) {
       {/* SIDEBAR */}
       <aside className="col-[1] row-[2] border-r border-white/10 bg-[var(--panel)]">
         <div className="flex h-full flex-col">
-          <nav className={`p-3 text-sm ${collapsed ? "space-y-2" : ""}`}>
+          <nav id="sidebar-nav" className={`p-3 text-sm ${collapsed ? "space-y-2" : ""}`}>
             {/* GENERAL */}
             <Section label="General" collapsed={collapsed}>
-              <div className="relative">
-                <NavLink
-                  collapsed={collapsed}
-                  href="/dashboard"
-                  label="Dashboard"
-                  icon={<IconDashboard />}
-                />
-                <button
-                  className="absolute top-1/2 z-10 h-8 w-8 -translate-y-1/2 grid place-items-center rounded-md border border-white/10 bg-[var(--panel-2)] transition-colors hover:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"
-                  style={{ right: -28 }}
-                  onClick={toggleSidebar}
-                  aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-                  title={collapsed ? "Expand" : "Collapse"}
-                >
-                  {collapsed ? <IconChevronRight /> : <IconChevronLeft />}
-                </button>
-              </div>
+              <NavLink
+                collapsed={collapsed}
+                href="/dashboard"
+                label="Dashboard"
+                icon={<IconDashboard />}
+              />
+              <button
+                className="mt-2 h-8 w-8 grid place-items-center rounded-md border border-white/10 bg-[var(--panel-2)] transition-colors hover:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"
+                onClick={toggleSidebar}
+                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                aria-pressed={collapsed}
+                aria-controls="sidebar-nav"
+                title={collapsed ? "Expand" : "Collapse"}
+              >
+                {collapsed ? <IconChevronRight /> : <IconChevronLeft />}
+              </button>
 
               <NavLink
                 collapsed={collapsed}
@@ -342,11 +308,13 @@ export default function Shell({ children }: PropsWithChildren) {
               {/* Policies accordion */}
               <div>
                 <button
+                  id="policies-button"
                   className={`w-full flex items-center ${
                     collapsed ? "justify-center" : "gap-2"
                   } rounded-md border border-transparent px-3 py-2 transition-colors hover:border-white/10 hover:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]`}
                   onClick={() => setPoliciesOpen((prev) => !prev)}
                   aria-expanded={policiesOpen}
+                  aria-controls="policies-panel"
                   aria-label="Policies menu"
                 >
                   {!collapsed && (
@@ -363,11 +331,12 @@ export default function Shell({ children }: PropsWithChildren) {
                   {!collapsed && <span>Policies</span>}
                 </button>
                 
-                {!collapsed && (
+                {!collapsed && policiesOpen && (
                   <div
-                    className={`mt-1 ml-6 pl-3 space-y-1 border-l border-white/10 overflow-hidden transition-all duration-200 ${
-                      policiesOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
-                    }`}
+                    id="policies-panel"
+                    role="region"
+                    aria-labelledby="policies-button"
+                    className="mt-1 ml-6 pl-3 space-y-1 border-l border-white/10"
                   >
                     <button
                       className="w-full flex items-center gap-2 text-left text-sm rounded-md border border-transparent px-3 py-2 transition-colors hover:border-white/10 hover:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"

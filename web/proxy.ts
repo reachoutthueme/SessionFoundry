@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { isRestrictedRoute, isPublicRoute, isParticipantRoute } from "@/app/lib/routeRules";
 
 // Next 16 proxy: apply security headers (CSP with nonce) on all routes
 export default function proxy(req: NextRequest) {
@@ -51,10 +52,22 @@ export default function proxy(req: NextRequest) {
   directives.push("frame-ancestors 'none'");
 
   res.headers.set("Content-Security-Policy", directives.join("; "));
+
+  // Simple auth gate: redirect unauthenticated users from restricted routes to login
+  try {
+    const { pathname, search } = req.nextUrl;
+    if (!isPublicRoute(pathname) && !isParticipantRoute(pathname) && isRestrictedRoute(pathname)) {
+      const hasToken = req.cookies.has("sf_at");
+      if (!hasToken) {
+        const redirectTo = `/login?redirect=${encodeURIComponent(pathname + search)}`;
+        return NextResponse.redirect(new URL(redirectTo, req.url));
+      }
+    }
+  } catch {}
+
   return res;
 }
 
 export const config = {
   matcher: ["/:path*"],
 };
-
