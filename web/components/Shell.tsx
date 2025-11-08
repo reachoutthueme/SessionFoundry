@@ -180,6 +180,15 @@ function ShellBody({ children }: PropsWithChildren) {
     ADMIN_OPEN_MEMORY = adminOpen;
   }, [adminOpen]);
 
+  // Auto-open Admin on first mount if landing on /admin* and user hasn't chosen yet
+  useEffect(() => {
+    if (!ADMIN_OPEN_MEMORY && !adminOpen && pathname.startsWith('/admin')) {
+      setAdminOpen(true);
+    }
+    // run only once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Toggle sidebar
   const toggleSidebar = useCallback(() => {
     setCollapsed((prev) => !prev);
@@ -357,41 +366,31 @@ function ShellBody({ children }: PropsWithChildren) {
                       aria-labelledby="admin-button"
                       className="mt-1 ml-6 pl-3 space-y-1 border-l border-white/10"
                     >
-                      <Link
+                      <NavLink
+                        collapsed={false}
                         href="/admin"
-                        className="w-full flex items-center gap-2 text-left text-sm rounded-md border border-transparent px-3 py-2 transition-colors hover:border-white/10 hover:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"
-                      >
-                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0" aria-hidden="true" />
-                        <span>Overview</span>
-                      </Link>
-                      <Link
+                        label={<span className="flex items-center gap-2"><span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0" aria-hidden="true" />Overview</span>}
+                      />
+                      <NavLink
+                        collapsed={false}
                         href="/admin/users"
-                        className="w-full flex items-center gap-2 text-left text-sm rounded-md border border-transparent px-3 py-2 transition-colors hover:border-white/10 hover:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"
-                      >
-                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0" aria-hidden="true" />
-                        <span>Users</span>
-                      </Link>
-                      <Link
+                        label={<span className="flex items-center gap-2"><span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0" aria-hidden="true" />Users</span>}
+                      />
+                      <NavLink
+                        collapsed={false}
                         href="/admin/sessions"
-                        className="w-full flex items-center gap-2 text-left text-sm rounded-md border border-transparent px-3 py-2 transition-colors hover:border-white/10 hover:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"
-                      >
-                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0" aria-hidden="true" />
-                        <span>Sessions</span>
-                      </Link>
-                      <Link
+                        label={<span className="flex items-center gap-2"><span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0" aria-hidden="true" />Sessions</span>}
+                      />
+                      <NavLink
+                        collapsed={false}
                         href="/admin/system"
-                        className="w-full flex items-center gap-2 text-left text-sm rounded-md border border-transparent px-3 py-2 transition-colors hover:border-white/10 hover:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"
-                      >
-                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0" aria-hidden="true" />
-                        <span>System</span>
-                      </Link>
-                      <Link
+                        label={<span className="flex items-center gap-2"><span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0" aria-hidden="true" />System</span>}
+                      />
+                      <NavLink
+                        collapsed={false}
                         href="/admin/system/audit"
-                        className="w-full flex items-center gap-2 text-left text-sm rounded-md border border-transparent px-3 py-2 transition-colors hover:border-white/10 hover:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"
-                      >
-                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0" aria-hidden="true" />
-                        <span>Audit Log</span>
-                      </Link>
+                        label={<span className="flex items-center gap-2"><span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0" aria-hidden="true" />Audit Log</span>}
+                      />
                     </div>
                   )}
                 </div>
