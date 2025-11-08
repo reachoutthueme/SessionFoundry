@@ -115,6 +115,7 @@ function ShellBody({ children }: PropsWithChildren) {
   const [me, setMe] = useState<User | null>(null);
   const [meLoading, setMeLoading] = useState(true);
   const [policiesOpen, setPoliciesOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [collapsed, setCollapsed] = useState(getSidebarCollapsedState);
@@ -315,34 +316,71 @@ function ShellBody({ children }: PropsWithChildren) {
             {/* ADMIN */}
             <Section label="Admin" collapsed={collapsed}>
               {me?.is_admin && (
-                <>
-                  <NavLink
-                    collapsed={collapsed}
-                    href="/admin"
-                    label="Overview"
-                    icon={<IconShield />}
-                  />
-                  <NavLink
-                    collapsed={collapsed}
-                    href="/admin/users"
-                    label="Users"
-                    icon={<IconList />}
-                  />
-                  <NavLink
-                    collapsed={collapsed}
-                    href="/admin/sessions"
-                    label="Sessions"
-                    icon={<IconPresentation />}
-                  />
-                </>
+                <div>
+                  <button
+                    id="admin-button"
+                    className={`w-full flex items-center ${
+                      collapsed ? "justify-center" : "gap-2"
+                    } rounded-md border border-transparent px-3 py-2 transition-colors hover:border-white/10 hover:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]`}
+                    onClick={() => setAdminOpen((prev) => !prev)}
+                    aria-expanded={adminOpen}
+                    aria-controls="admin-panel"
+                    aria-label="Admin menu"
+                  >
+                    {!collapsed && (
+                      <span
+                        className={`inline-block transition-transform duration-200 ${
+                          adminOpen ? "rotate-90" : ""
+                        }`}
+                        aria-hidden="true"
+                      >
+                        <IconChevronRight />
+                      </span>
+                    )}
+                    <IconShield />
+                    {!collapsed && <span>Admin</span>}
+                  </button>
+
+                  {!collapsed && adminOpen && (
+                    <div
+                      id="admin-panel"
+                      role="region"
+                      aria-labelledby="admin-button"
+                      className="mt-1 ml-6 pl-3 space-y-1 border-l border-white/10"
+                    >
+                      <Link
+                        href="/admin"
+                        className="w-full flex items-center gap-2 text-left text-sm rounded-md border border-transparent px-3 py-2 transition-colors hover:border-white/10 hover:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"
+                      >
+                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0" aria-hidden="true" />
+                        <span>Overview</span>
+                      </Link>
+                      <Link
+                        href="/admin/users"
+                        className="w-full flex items-center gap-2 text-left text-sm rounded-md border border-transparent px-3 py-2 transition-colors hover:border-white/10 hover:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"
+                      >
+                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0" aria-hidden="true" />
+                        <span>Users</span>
+                      </Link>
+                      <Link
+                        href="/admin/sessions"
+                        className="w-full flex items-center gap-2 text-left text-sm rounded-md border border-transparent px-3 py-2 transition-colors hover:border-white/10 hover:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"
+                      >
+                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0" aria-hidden="true" />
+                        <span>Sessions</span>
+                      </Link>
+                    </div>
+                  )}
+                </div>
               )}
+
               <NavLink
                 collapsed={collapsed}
                 href="/settings"
                 label="Settings"
                 icon={<IconSettings />}
               />
-              
+
               {/* Policies accordion */}
               <div>
                 <button
