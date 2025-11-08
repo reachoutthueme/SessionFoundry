@@ -17,24 +17,28 @@ export async function GET(req: NextRequest) {
   if (!isAdminUser({ id: data.user.id, email: data.user.email ?? null })) return noStore(NextResponse.json({ error: "Forbidden" }, { status: 403 }));
 
   const url = new URL(req.url);
-  const status = url.searchParams.get("status") || ""; // Draft/Active/Completed/Inactive
-  const owner = url.searchParams.get("owner") || ""; // facilitator_user_id
+  const actor = url.searchParams.get("actor") || "";
+  const entity_type = url.searchParams.get("entity_type") || "";
+  const entity_id = url.searchParams.get("entity_id") || "";
+  const action = url.searchParams.get("action") || "";
   const from = url.searchParams.get("from");
   const to = url.searchParams.get("to");
   const limit = Math.min(200, Math.max(1, Number(url.searchParams.get("limit") || 50)));
 
   let q = supabaseAdmin
-    .from("sessions")
-    .select("id,name,status,join_code,facilitator_user_id,created_at")
+    .from("audit_log")
+    .select("id, actor_user_id, action, entity_type, entity_id, created_at")
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (status) q = q.eq("status", status);
-  if (owner) q = q.eq("facilitator_user_id", owner);
+  if (actor) q = q.eq("actor_user_id", actor);
+  if (entity_type) q = q.eq("entity_type", entity_type);
+  if (entity_id) q = q.eq("entity_id", entity_id);
+  if (action) q = q.eq("action", action);
   if (from) q = q.gte("created_at", from);
   if (to) q = q.lte("created_at", to);
 
   const { data: rows, error: qe } = await q;
   if (qe) return noStore(NextResponse.json({ error: qe.message }, { status: 500 }));
-  return noStore(NextResponse.json({ sessions: rows || [] }));
+  return noStore(NextResponse.json({ logs: rows || [] }));
 }

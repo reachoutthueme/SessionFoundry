@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { supabaseAdmin } from "@/app/lib/supabaseAdmin";
+import { supabaseAdmin, isSupabaseAdminConfigured } from "@/app/lib/supabaseAdmin";
 import { isAdminUser } from "@/server/policies";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +10,17 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
   const store = await cookies();
   const token = store.get("sf_at")?.value || "";
   if (!token) redirect("/login?redirect=/admin/users");
+  if (!isSupabaseAdminConfigured()) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-xl font-semibold">Users</h1>
+        <div className="rounded-md border border-white/10 bg-white/5 p-4 text-sm">
+          Admin backend is not configured. Set SUPABASE_SERVICE_ROLE_KEY and SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL, then redeploy.
+        </div>
+      </div>
+    );
+  }
+
   const { data, error } = await supabaseAdmin.auth.getUser(token);
   if (error || !data?.user) redirect("/login?redirect=/admin/users");
   const user = { id: data.user.id, email: data.user.email ?? null };
@@ -75,4 +86,3 @@ function fmt(v?: string) {
   if (isNaN(d.getTime())) return '-';
   return d.toLocaleString();
 }
-

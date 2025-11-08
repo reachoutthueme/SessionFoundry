@@ -369,6 +369,20 @@ function ShellBody({ children }: PropsWithChildren) {
                         <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0" aria-hidden="true" />
                         <span>Sessions</span>
                       </Link>
+                      <Link
+                        href="/admin/system"
+                        className="w-full flex items-center gap-2 text-left text-sm rounded-md border border-transparent px-3 py-2 transition-colors hover:border-white/10 hover:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"
+                      >
+                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0" aria-hidden="true" />
+                        <span>System</span>
+                      </Link>
+                      <Link
+                        href="/admin/system/audit"
+                        className="w-full flex items-center gap-2 text-left text-sm rounded-md border border-transparent px-3 py-2 transition-colors hover:border-white/10 hover:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"
+                      >
+                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0" aria-hidden="true" />
+                        <span>Audit Log</span>
+                      </Link>
                     </div>
                   )}
                 </div>

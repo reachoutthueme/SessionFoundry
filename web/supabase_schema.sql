@@ -71,3 +71,20 @@ create table if not exists stocktake_responses (
 );
 create index if not exists stocktake_responses_activity_idx on stocktake_responses(activity_id);
 create unique index if not exists stocktake_unique on stocktake_responses(activity_id, initiative_id, participant_id);
+
+-- audit log (admin actions & important events)
+create table if not exists audit_log (
+  id uuid primary key default gen_random_uuid(),
+  actor_user_id uuid,
+  action text not null,
+  entity_type text,
+  entity_id text,
+  before jsonb,
+  after jsonb,
+  ip text,
+  user_agent text,
+  created_at timestamptz not null default now()
+);
+create index if not exists audit_log_created_idx on audit_log(created_at);
+create index if not exists audit_log_actor_idx on audit_log(actor_user_id);
+create index if not exists audit_log_entity_idx on audit_log(entity_type, entity_id);

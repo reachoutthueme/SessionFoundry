@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { supabaseAdmin } from "@/app/lib/supabaseAdmin";
+import { supabaseAdmin, isSupabaseAdminConfigured } from "@/app/lib/supabaseAdmin";
 import { isAdminUser } from "@/server/policies";
 
 function noStore(res: NextResponse) {
@@ -10,6 +10,9 @@ function noStore(res: NextResponse) {
 
 export async function GET(req: NextRequest) {
   // Auth via access token cookie
+  if (!isSupabaseAdminConfigured()) {
+    return noStore(NextResponse.json({ error: "Admin backend not configured" }, { status: 500 }));
+  }
   const store = await cookies();
   const token = store.get("sf_at")?.value || "";
   if (!token) return noStore(NextResponse.json({ error: "Unauthorized" }, { status: 401 }));
@@ -72,4 +75,3 @@ export async function GET(req: NextRequest) {
     return noStore(NextResponse.json({ error: e?.message || "Failed to load metrics" }, { status: 500 }));
   }
 }
-
