@@ -32,7 +32,7 @@ export function middleware(req: NextRequest) {
     directives.push("script-src 'self'");
   }
   // XHR/fetch/websocket endpoints required by app (self + Supabase)
-  const connectSrc = ["'self'"];
+  const connectSrc = ["'self'", "https:", "wss:"];
   if (supabaseOrigin) {
     connectSrc.push(supabaseOrigin);
     // Supabase realtime/websocket

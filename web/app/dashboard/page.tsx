@@ -41,6 +41,7 @@ export default function Page() {
       try {
         const res = await fetch("/api/dashboard/overview", {
           cache: "no-store",
+          credentials: "include",
           signal: ac.signal,
         });
 
