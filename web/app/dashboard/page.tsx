@@ -153,24 +153,6 @@ export default function Page() {
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <KPI title="Sessions" value={String(stats.total)} />
-        <KPI title="Active now" value={String(stats.active)} />
-        <KPI title="Participants" value={String(stats.participants)} />
-        <StatusBreakdown
-          active={stats.active}
-          completed={stats.completed}
-          inactive={stats.inactive}
-        />
-      </div>
-
-      {/* Templates rail */}
-      <TemplateRail />
-
-      {/* Suggestions */}
-      <SuggestedActions sessions={(data?.sessions ?? []) as any} stats={data?.stats ?? { participants: 0, brainstorm: 0, stocktake: 0 }} />
-
       {/* Sessions in last 14 days */}
       <Card>
         <CardHeader
@@ -184,6 +166,12 @@ export default function Page() {
           />
         </CardBody>
       </Card>
+
+      {/* Templates + Suggestions */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <TemplateRail />
+        <SuggestedActions sessions={(data?.sessions ?? []) as any} stats={data?.stats ?? { participants: 0, brainstorm: 0, stocktake: 0 }} />
+      </div>
 
       {/* Recent sessions */}
       <RecentSessions />

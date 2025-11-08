@@ -60,7 +60,7 @@ export default function TemplateRail() {
     })();
   }, []);
 
-  const top = useMemo(() => templates.slice(0, 6), [templates]);
+  const top = useMemo(() => templates.slice(0, 4), [templates]);
 
   async function createFromTemplate() {
     const t = selected;
@@ -128,33 +128,38 @@ export default function TemplateRail() {
         ) : top.length === 0 ? (
           <div className="p-2 text-sm text-[var(--muted)]">No templates available.</div>
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {top.map((t) => (
-              <div
-                key={t.id}
-                className="group relative overflow-hidden rounded-md border border-white/10 bg-gradient-to-br from-white/5 to-white/[0.03] p-3 hover:border-white/20"
-              >
-                <div className="text-[13px] font-medium">{t.name}</div>
-                <div className="mt-0.5 text-xs text-[var(--muted)]">
-                  {t.activities} activities
+          <>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {top.map((t) => (
+                <div
+                  key={t.id}
+                  className="group relative overflow-hidden rounded-md border border-white/10 bg-gradient-to-br from-white/5 to-white/[0.03] p-3 hover:border-white/20"
+                >
+                  <div className="text-[13px] font-medium">{t.name}</div>
+                  <div className="mt-0.5 text-xs text-[var(--muted)]">
+                    {t.activities} activities
+                  </div>
+                  <div className="mt-2 line-clamp-2 text-xs text-[var(--muted)]">{t.blurb}</div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setSelected(t);
+                        setSessionName(t.name);
+                        setOpen(true);
+                      }}
+                    >
+                      Create from template
+                    </Button>
+                    {!isPro && <ProTag />}
+                  </div>
                 </div>
-                <div className="mt-2 line-clamp-2 text-xs text-[var(--muted)]">{t.blurb}</div>
-                <div className="mt-3 flex items-center justify-between">
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      setSelected(t);
-                      setSessionName(t.name);
-                      setOpen(true);
-                    }}
-                  >
-                    Create from template
-                  </Button>
-                  {!isPro && <ProTag />}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            <div className="mt-3 flex justify-end">
+              <Button variant="ghost" size="sm" onClick={() => router.push("/templates")}>Browse all templates</Button>
+            </div>
+          </>
         )}
 
         {open && selected && (
