@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, type PropsWithChildren, type ReactNode } from "react";
+import { Suspense, useEffect, useState, useCallback, type PropsWithChildren, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -105,7 +105,7 @@ function NavLink({ href, label, icon, collapsed }: NavLinkProps) {
 }
 
 // Main component
-export default function Shell({ children }: PropsWithChildren) {
+function ShellBody({ children }: PropsWithChildren) {
   const pathname = usePathname() || "/";
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -428,5 +428,13 @@ export default function Shell({ children }: PropsWithChildren) {
         </div>
       </Modal>
     </div>
+  );
+}
+
+export default function Shell(props: PropsWithChildren) {
+  return (
+    <Suspense fallback={<div />}> 
+      <ShellBody {...props} />
+    </Suspense>
   );
 }

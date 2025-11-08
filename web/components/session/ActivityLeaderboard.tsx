@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/app/lib/apiFetch";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 
 type Row = { group_id: string; group_name: string; total: number };
@@ -12,7 +13,7 @@ export default function ActivityLeaderboard({ activityId, onClose }: { activityI
 
   async function load(initial = false) {
     try {
-      const r = await fetch(`/api/public/activities/${activityId}/leaderboard`, { cache: "no-store" });
+      const r = await apiFetch(`/api/public/activities/${activityId}/leaderboard`, { cache: "no-store" });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) {
         setError(j.error || "Failed to load leaderboard");
@@ -68,4 +69,3 @@ export default function ActivityLeaderboard({ activityId, onClose }: { activityI
     </Card>
   );
 }
-

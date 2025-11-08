@@ -53,6 +53,22 @@ export default function proxy(req: NextRequest) {
 
   res.headers.set("Content-Security-Policy", directives.join("; "));
 
+  // Ensure CSRF double-submit cookie exists (readable by JS)
+  try {
+    const hasCsrf = req.cookies.has("sf_csrf");
+    if (!hasCsrf) {
+      const token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+      const secure = process.env.NODE_ENV === "production" && req.nextUrl.protocol === "https:";
+      res.cookies.set("sf_csrf", token, {
+        httpOnly: false,
+        sameSite: "lax",
+        secure,
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      });
+    }
+  } catch {}
+
   // Simple auth gate: redirect unauthenticated users from restricted routes to login
   try {
     const { pathname, search } = req.nextUrl;

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
+import { apiFetch } from "@/app/lib/apiFetch";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
@@ -38,8 +39,8 @@ export default function TemplateRail() {
     (async () => {
       try {
         const [tRes, uRes] = await Promise.all([
-          fetch("/api/templates", { cache: "force-cache" }),
-          fetch("/api/auth/session", { cache: "no-store" }).catch(() => null),
+          apiFetch("/api/templates", { cache: "force-cache" }),
+          apiFetch("/api/auth/session", { cache: "no-store" }).catch(() => null),
         ]);
 
         if (!tRes.ok) throw new Error("Failed to load templates");
@@ -70,7 +71,7 @@ export default function TemplateRail() {
     setBusy(true);
     try {
       // Create session
-      const cr = await fetch("/api/sessions", {
+      const cr = await apiFetch("/api/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
@@ -87,7 +88,7 @@ export default function TemplateRail() {
       }
 
       // Apply template (Pro only)
-      const ar = await fetch("/api/templates/apply", {
+      const ar = await apiFetch("/api/templates/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ template_id: t.id, session_id: sessionId }),

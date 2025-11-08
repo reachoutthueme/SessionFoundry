@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { apiFetch } from "@/app/lib/apiFetch";
 
 type Me = {
   id: string;
@@ -25,7 +26,7 @@ export default function SettingsPage() {
       setLoading(true);
       setLoadError(null);
       try {
-        const r = await fetch("/api/auth/session", { cache: "no-store" });
+        const r = await apiFetch("/api/auth/session", { cache: "no-store" });
 
         if (!r.ok) {
           // could be 401 or server error
@@ -51,7 +52,7 @@ export default function SettingsPage() {
     setUpgradeBusy(true);
 
     try {
-      const r = await fetch("/api/auth/upgrade", { method: "POST" });
+      const r = await apiFetch("/api/auth/upgrade", { method: "POST" });
 
       if (!r.ok) {
         toast("Upgrade failed. Please try again.", "error");

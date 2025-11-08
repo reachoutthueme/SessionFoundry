@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, FormEvent, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { apiFetch } from "@/app/lib/apiFetch";
 import Button from "@/components/ui/Button";
 
 function JoinForm() {
@@ -35,10 +36,9 @@ function JoinForm() {
     const cleanName = name.trim();
 
     try {
-      const r = await fetch("/api/join", {
+      const r = await apiFetch("/api/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           join_code: cleanCode,
           display_name: cleanName || undefined,
@@ -163,4 +163,3 @@ export default function JoinPage() {
     </Suspense>
   );
 }
-

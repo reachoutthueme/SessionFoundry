@@ -6,6 +6,7 @@ import Button from "@/components/ui/Button";
 import Link from "next/link";
 import pkg from "@/package.json";
 import Modal from "@/components/ui/Modal";
+import { apiFetch } from "@/app/lib/apiFetch";
 
 export default function RootJoinPage() {
   const router = useRouter();
@@ -49,10 +50,9 @@ export default function RootJoinPage() {
     setJoining(true);
 
     try {
-      const r = await fetch("/api/join", {
+      const r = await apiFetch("/api/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           join_code: cleanCode,
           display_name: cleanName || undefined,

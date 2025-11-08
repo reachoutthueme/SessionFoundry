@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/app/lib/supabaseClient";
+import { apiFetch } from "@/app/lib/apiFetch";
 
 export default function LogoutButton() {
   async function handleLogout() {
@@ -13,7 +14,7 @@ export default function LogoutButton() {
 
     try {
       // 2. Tell our server to clear the auth cookie
-      await fetch("/api/auth/logout", { method: "POST" });
+      await apiFetch("/api/auth/logout", { method: "POST" });
     } catch {
       // ignore
     }

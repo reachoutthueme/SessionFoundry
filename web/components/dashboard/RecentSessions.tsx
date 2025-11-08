@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
+import { apiFetch } from "@/app/lib/apiFetch";
 import Button from "@/components/ui/Button";
 
 type Recent = {
@@ -68,7 +69,7 @@ export default function RecentSessions() {
       setLoading(true);
       setError(null);
       try {
-        const r = await fetch("/api/sessions/recent?limit=6", { cache: "no-store" });
+        const r = await apiFetch("/api/sessions/recent?limit=6", { cache: "no-store" });
         if (r.ok) {
           const j = await r.json();
           setRows(Array.isArray(j.sessions) ? j.sessions : []);
@@ -164,4 +165,3 @@ export default function RecentSessions() {
     </Card>
   );
 }
-

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/app/lib/apiFetch";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 
 type Row = { group_id: string; group_name: string; total: number };
@@ -18,7 +19,7 @@ export default function OverallLeaderboard({
 
   async function load(initial = false) {
     try {
-      const r = await fetch(`/api/public/leaderboard?session_id=${sessionId}`, {
+      const r = await apiFetch(`/api/public/leaderboard?session_id=${sessionId}`, {
         cache: "no-store",
       });
 

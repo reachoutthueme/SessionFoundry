@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { apiFetch } from "@/app/lib/apiFetch";
 
 export default function PricingPage() {
   const toast = useToast();
@@ -20,7 +21,7 @@ export default function PricingPage() {
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch("/api/auth/session", { cache: "no-store" });
+        const r = await apiFetch("/api/auth/session", { cache: "no-store" });
         if (!r.ok) {
           // not signed in or server error: treat as "free"
           setPlan("free");
@@ -45,7 +46,7 @@ export default function PricingPage() {
 
     setBusy(true);
     try {
-      const r = await fetch("/api/auth/upgrade", { method: "POST" });
+      const r = await apiFetch("/api/auth/upgrade", { method: "POST" });
 
       if (!r.ok) {
         toast("Upgrade failed. Please sign in and try again.", "error");
@@ -70,7 +71,7 @@ export default function PricingPage() {
 
     setBusy(true);
     try {
-      const r = await fetch("/api/auth/downgrade", { method: "POST" });
+      const r = await apiFetch("/api/auth/downgrade", { method: "POST" });
 
       if (!r.ok) {
         toast("Downgrade failed. Please sign in and try again.", "error");

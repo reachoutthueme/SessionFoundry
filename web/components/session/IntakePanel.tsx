@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/app/lib/apiFetch";
 import Button from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { useToast } from "@/components/ui/Toast";
@@ -33,7 +34,7 @@ export default function IntakePanel({
       : `/api/submissions?session_id=${sessionId}&group_only=1`;
 
     try {
-      const res = await fetch(url, { cache: "no-store" });
+      const res = await apiFetch(url, { cache: "no-store" });
       const json = await res.json().catch(() => ({}));
 
       if (!res.ok) {
@@ -74,10 +75,9 @@ export default function IntakePanel({
       : { session_id: sessionId, text: t };
 
     try {
-      const res = await fetch("/api/submissions", {
+      const res = await apiFetch("/api/submissions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // keep identifying cookie
         body: JSON.stringify(payload),
       });
 

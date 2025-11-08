@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useToast } from "@/components/ui/Toast";
 import ProTag from "@/components/ui/ProTag";
 import { IconCopy } from "@/components/ui/Icons";
+import { apiFetch } from "@/app/lib/apiFetch";
 
 type Sess = {
   id: string;
@@ -47,7 +48,7 @@ export default function Page() {
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch("/api/auth/session", { cache: "no-store" });
+        const r = await apiFetch("/api/auth/session", { cache: "no-store" });
         if (!r.ok) {
           setMe(null);
           return;
@@ -70,7 +71,7 @@ export default function Page() {
     setLoading(true);
     setLoadError(null);
     try {
-      const res = await fetch("/api/sessions", { cache: "no-store" });
+      const res = await apiFetch("/api/sessions", { cache: "no-store" });
       if (!res.ok) {
         let msg = "Failed to load sessions";
         try {
@@ -148,7 +149,7 @@ export default function Page() {
 
     setCreating(true);
     try {
-      const res = await fetch("/api/sessions", {
+      const res = await apiFetch("/api/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: n }),
@@ -184,7 +185,7 @@ export default function Page() {
     if (rowBusyId) return; // prevent double spam
     setRowBusyId(id);
     try {
-      const r = await fetch(`/api/session/${id}`, {
+      const r = await apiFetch(`/api/session/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),

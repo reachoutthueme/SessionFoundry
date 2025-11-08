@@ -7,6 +7,7 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import ProTag from "@/components/ui/ProTag";
+import { apiFetch } from "@/app/lib/apiFetch";
 
 type T = { id: string; name: string; blurb: string; activities: number };
 type Sess = { id: string; name: string };
@@ -40,9 +41,9 @@ export default function TemplatesPage() {
 
       try {
         const [rt, rs, ra] = await Promise.all([
-          fetch("/api/templates", { cache: "no-store" }),
-          fetch("/api/sessions", { cache: "no-store" }),
-          fetch("/api/auth/session", { cache: "no-store" }),
+          apiFetch("/api/templates", { cache: "no-store" }),
+          apiFetch("/api/sessions", { cache: "no-store" }),
+          apiFetch("/api/auth/session", { cache: "no-store" }),
         ]);
 
         // templates
@@ -140,7 +141,7 @@ export default function TemplatesPage() {
           return;
         }
 
-        const rCreate = await fetch("/api/sessions", {
+        const rCreate = await apiFetch("/api/sessions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name: cleanName }),
@@ -177,7 +178,7 @@ export default function TemplatesPage() {
         return;
       }
 
-      const rApply = await fetch("/api/templates/apply", {
+      const rApply = await apiFetch("/api/templates/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

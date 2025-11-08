@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { apiFetch } from "@/app/lib/apiFetch";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { getActivityDisplayName } from "@/lib/activities/registry";
 import { getResultsRenderer } from "@/lib/activities/components";
@@ -29,7 +30,7 @@ export default function ResultsPanel({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch(`/api/activities?session_id=${sessionId}`, {
+        const r = await apiFetch(`/api/activities?session_id=${sessionId}`, {
           cache: "no-store",
         });
         const j = await r.json().catch(() => ({}));
@@ -55,7 +56,7 @@ export default function ResultsPanel({ sessionId }: { sessionId: string }) {
     setErrorMap((m) => ({ ...m, [id]: null }));
 
     try {
-      const r = await fetch(`/api/activities/${id}/results`, {
+      const r = await apiFetch(`/api/activities/${id}/results`, {
         cache: "no-store",
       });
       const j = await r.json().catch(() => ({}));

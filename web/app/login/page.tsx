@@ -110,7 +110,6 @@ function LoginForm() {
     try {
       const session = await supabase.auth.getSession();
       const accessToken = session.data.session?.access_token;
-      const refreshToken = session.data.session?.refresh_token;
 
       if (!accessToken) {
         throw new Error("No access token available");
@@ -119,10 +118,8 @@ function LoginForm() {
       const response = await apiFetch("/api/auth/set-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        }),
+        // Only send the access_token; refresh token stays client-side
+        body: JSON.stringify({ access_token: accessToken }),
       });
 
       if (!response.ok) {

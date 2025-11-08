@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/app/lib/apiFetch";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
@@ -26,7 +27,7 @@ export default function StocktakeInitiativesManager({
   async function load() {
     setLoading(true);
     try {
-      const r = await fetch(
+      const r = await apiFetch(
         `/api/stocktake/initiatives?activity_id=${activityId}`,
         { cache: "no-store" }
       );
@@ -70,7 +71,7 @@ export default function StocktakeInitiativesManager({
 
     setBusyAdd(true);
     try {
-      const r = await fetch(`/api/stocktake/initiatives`, {
+      const r = await apiFetch(`/api/stocktake/initiatives`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -112,7 +113,7 @@ export default function StocktakeInitiativesManager({
 
     setBusyRemoveId(id);
     try {
-      const r = await fetch(
+      const r = await apiFetch(
         `/api/stocktake/initiatives/${id}`,
         { method: "DELETE" }
       );

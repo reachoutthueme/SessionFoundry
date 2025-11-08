@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/app/lib/apiFetch";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
@@ -36,7 +37,7 @@ export default function StocktakePanel({
       setLoading(true);
       try {
         // 1. Get initiatives
-        const r = await fetch(
+        const r = await apiFetch(
           `/api/stocktake/initiatives?activity_id=${activityId}`,
           { cache: "no-store" }
         );
@@ -60,7 +61,7 @@ export default function StocktakePanel({
 
         // 2. Get participant's previous responses (so we can pre-select)
         try {
-          const rr = await fetch(
+          const rr = await apiFetch(
             `/api/stocktake/responses?session_id=${sessionId}&activity_id=${activityId}`,
             { cache: "no-store" }
           );
@@ -112,7 +113,7 @@ export default function StocktakePanel({
       await Promise.all(
         items.map(async (it) => {
           const choice = sel[it.id];
-          const r = await fetch(`/api/stocktake/responses`, {
+          const r = await apiFetch(`/api/stocktake/responses`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             // NOTE: we're intentionally NOT including participant_id here.

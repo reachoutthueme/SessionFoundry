@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { apiFetch } from "@/app/lib/apiFetch";
 import Button from "@/components/ui/Button";
 import { IconSettings } from "@/components/ui/Icons";
 import { IconTimer, IconChevronRight } from "@/components/ui/Icons";
@@ -108,15 +109,9 @@ export default function ActivitiesManager({
     try {
       setLoading(true);
       const [rActs, rGroups, rCounts] = await Promise.all([
-        fetch(`/api/activities?session_id=${sessionId}`, {
-          cache: "no-store",
-        }),
-        fetch(`/api/groups?session_id=${sessionId}`, {
-          cache: "no-store",
-        }),
-        fetch(`/api/activities/submission_counts?session_id=${sessionId}`, {
-          cache: "no-store",
-        }),
+        apiFetch(`/api/activities?session_id=${sessionId}`, { cache: "no-store" }),
+        apiFetch(`/api/groups?session_id=${sessionId}`, { cache: "no-store" }),
+        apiFetch(`/api/activities/submission_counts?session_id=${sessionId}`, { cache: "no-store" }),
       ]);
 
       const jActs = await rActs.json();
@@ -152,7 +147,7 @@ export default function ActivitiesManager({
 
     async function tick() {
       try {
-        const r = await fetch(
+        const r = await apiFetch(
           `/api/activities/submission_counts?session_id=${sessionId}`,
           { cache: "no-store" }
         );
@@ -255,7 +250,7 @@ export default function ActivitiesManager({
     }
 
     try {
-      const r = await fetch("/api/activities", {
+      const r = await apiFetch("/api/activities", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -334,7 +329,7 @@ export default function ActivitiesManager({
     }
 
     try {
-      const r = await fetch(`/api/activities/${id}`, {
+      const r = await apiFetch(`/api/activities/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(patch),
@@ -359,7 +354,7 @@ export default function ActivitiesManager({
     if (!act) return;
 
     try {
-      const r = await fetch(`/api/activities/extend`, {
+      const r = await apiFetch(`/api/activities/extend`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ activity_id: id, minutes }),
@@ -394,7 +389,7 @@ export default function ActivitiesManager({
     const starts = new Date().toISOString();
     const ends = new Date(Date.now() + tl * 1000).toISOString();
     try {
-      const r = await fetch(`/api/activities/${id}`, {
+      const r = await apiFetch(`/api/activities/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "Active", starts_at: starts, ends_at: ends }),
@@ -435,12 +430,12 @@ export default function ActivitiesManager({
 
     try {
       const [r1, r2] = await Promise.all([
-        fetch(`/api/activities/${a.id}`, {
+        apiFetch(`/api/activities/${a.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ order_index: target }),
         }),
-        fetch(`/api/activities/${b.id}`, {
+        apiFetch(`/api/activities/${b.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ order_index: idx }),
@@ -875,7 +870,7 @@ export default function ActivitiesManager({
                                     setMenuId(null);
                                     try {
                                       const r =
-                                        await fetch(
+                                        await apiFetch(
                                           `/api/activities/${a.id}`,
                                           {
                                             method:
@@ -1023,7 +1018,7 @@ export default function ActivitiesManager({
                     ))}
                   </div>
                 </details>
-                <Button size="sm" variant="outline" onClick={async ()=>{ await fetch(`/api/session/${sessionId}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status:'Completed' }) }); toast('Session ended','success'); }}>End</Button>
+                <Button size="sm" variant="outline" onClick={async ()=>{ await apiFetch(`/api/session/${sessionId}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status:'Completed' }) }); toast('Session ended','success'); }}>End</Button>
                 {current && (
                   <span className="ml-2 text-xs text-[var(--muted)]">Current: <span className="text-[var(--text)]">{current.title || getActivityDisplayName(current.type)}</span> {(() => { const cc = counts[current.id]||{total:0,max:0,byGroup:{}}; const groupCount = groups.length; const denom = (cc.max||0)* (groupCount||0); return denom>0 ? `(${cc.total}/${denom})` : ''; })()}</span>
                 )}
@@ -1202,7 +1197,7 @@ export default function ActivitiesManager({
                     patch.config = v2.value;
 
                     try {
-                      const r = await fetch(
+                      const r = await apiFetch(
                         "/api/activities/" + a.id,
                         {
                           method: "PATCH",

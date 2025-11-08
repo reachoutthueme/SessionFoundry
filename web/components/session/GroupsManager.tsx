@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
+import { apiFetch } from "@/app/lib/apiFetch";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { useToast } from "@/components/ui/Toast";
 
@@ -26,8 +27,8 @@ export default function GroupsManager({ sessionId }: { sessionId: string }) {
     setLoading(true);
     try {
       const [rg, rp] = await Promise.all([
-        fetch(`/api/groups?session_id=${sessionId}`, { cache: "no-store" }),
-        fetch(`/api/participants?session_id=${sessionId}`, { cache: "no-store" }),
+        apiFetch(`/api/groups?session_id=${sessionId}`, { cache: "no-store" }),
+        apiFetch(`/api/participants?session_id=${sessionId}`, { cache: "no-store" }),
       ]);
 
       const jg = await rg.json().catch(() => ({}));
@@ -75,7 +76,7 @@ export default function GroupsManager({ sessionId }: { sessionId: string }) {
     }
     setCreating(true);
     try {
-      const r = await fetch(`/api/groups`, {
+      const r = await apiFetch(`/api/groups`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import TemplateRail from "@/components/dashboard/TemplateRail";
 import RecentSessions from "@/components/dashboard/RecentSessions";
+import { apiFetch } from "@/app/lib/apiFetch";
 import SuggestedActions from "@/components/dashboard/SuggestedActions";
 
 type Sess = {
@@ -39,9 +40,8 @@ export default function Page() {
       setError(null);
 
       try {
-        const res = await fetch("/api/dashboard/overview", {
+        const res = await apiFetch("/api/dashboard/overview", {
           cache: "no-store",
-          credentials: "include",
           signal: ac.signal,
         });
 

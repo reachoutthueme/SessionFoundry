@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import { apiFetch } from "@/app/lib/apiFetch";
 import Button from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { useToast } from "@/components/ui/Toast";
@@ -26,8 +27,8 @@ export default function VotingPanel({ sessionId, activityId }: { sessionId: stri
         ? `/api/submissions?activity_id=${activityId}`
         : `/api/submissions?session_id=${sessionId}`;
       const [rSubs, rActs] = await Promise.all([
-        fetch(url, { cache: "no-store" }),
-        fetch(`/api/activities?session_id=${sessionId}`, { cache: "no-store" })
+        apiFetch(url, { cache: "no-store" }),
+        apiFetch(`/api/activities?session_id=${sessionId}`, { cache: "no-store" })
       ]);
       const j = await rSubs.json();
       const ja = await rActs.json();
@@ -67,7 +68,7 @@ export default function VotingPanel({ sessionId, activityId }: { sessionId: stri
     }
     setSubmitting(true);
     const items = Object.entries(values).map(([submission_id, value]) => ({ submission_id, value }));
-    const r = await fetch("/api/votes/bulk", {
+    const r = await apiFetch("/api/votes/bulk", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(activityId ? { activity_id: activityId, items } : { session_id: sessionId, items }),
@@ -81,7 +82,7 @@ export default function VotingPanel({ sessionId, activityId }: { sessionId: stri
     setShowLeaderboard(true);
     if (resolvedActivityId) {
       try {
-        const res = await fetch(`/api/activities/${resolvedActivityId}/results`, { cache: "no-store" });
+        const res = await apiFetch(`/api/activities/${resolvedActivityId}/results`, { cache: "no-store" });
         const data = await res.json();
         const rows = Array.isArray(data?.submissions) ? (data.submissions as any[]) : [];
         const lb = rows.map((s) => ({
@@ -100,7 +101,7 @@ export default function VotingPanel({ sessionId, activityId }: { sessionId: stri
     let stop = false;
     async function fetchResults() {
       try {
-        const res = await fetch(`/api/activities/${resolvedActivityId}/results`, { cache: "no-store" });
+        const res = await apiFetch(`/api/activities/${resolvedActivityId}/results`, { cache: "no-store" });
         const data = await res.json();
         const rows = Array.isArray(data?.submissions) ? (data.submissions as any[]) : [];
         const lb = rows.map((s) => ({
