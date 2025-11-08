@@ -1,7 +1,8 @@
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { supabaseAdmin, isSupabaseAdminConfigured } from "@/app/lib/supabaseAdmin";
 import { isAdminUser } from "@/server/policies";
+import { getAdminOverviewMetrics } from "@/server/admin/metrics";
 
 export const dynamic = "force-dynamic";
 
@@ -28,13 +29,8 @@ export default async function AdminPage() {
   const user = { id: data.user.id, email: data.user.email ?? null };
   if (!isAdminUser(user)) redirect("/");
 
-  // Fetch overview metrics (server-side; cookies included)
-  const hdrs = await headers();
-  const origin = `${hdrs.get("x-forwarded-proto") || "http"}://${hdrs.get("host")}`;
-  const r = await fetch(`${origin}/api/admin/metrics/overview`, { cache: "no-store" });
-  const j = r.ok ? await r.json() : { kpis: {}, health: {} };
-  const k = j.kpis || {};
-  const health = j.health || {};
+  // Direct server call (no HTTP hop)
+  const { kpis: k, health } = await getAdminOverviewMetrics();
 
   return (
     <div className="space-y-6">
