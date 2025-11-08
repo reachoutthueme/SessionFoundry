@@ -162,7 +162,7 @@ export default function PricingPage() {
         {/* Pro (featured) */}
         <div className="relative">
           <div
-            className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full border border-[var(--brand)]/40 bg-[var(--brand)]/15 px-2 py-0.5 text-[11px]"
+            className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full border border-[var(--brand)]/60 bg-[var(--brand)] text-[var(--btn-on-brand)] px-2 py-0.5 text-[11px] shadow"
             aria-label="Most popular plan"
           >
             Most popular

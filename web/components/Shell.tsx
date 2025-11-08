@@ -117,6 +117,7 @@ function ShellBody({ children }: PropsWithChildren) {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [collapsed, setCollapsed] = useState(getSidebarCollapsedState);
+  const [q, setQ] = useState("");
 
   // Route checks
   const isParticipant = isParticipantRoute(pathname);
@@ -213,8 +214,23 @@ function ShellBody({ children }: PropsWithChildren) {
 
           {/* RIGHT SIDE */}
           <div className="flex items-center justify-end gap-2">
-            {/* Theme toggle in header for quick access */}
-            <ThemeToggle />
+            {/* Search (header) */}
+            <div className="hidden md:block">
+              <label htmlFor="app-search" className="sr-only">Search</label>
+              <input
+                id="app-search"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const term = q.trim();
+                    if (term) router.push(`/sessions?search=${encodeURIComponent(term)}`);
+                  }
+                }}
+                placeholder="Search..."
+                className="h-8 w-56 rounded-md border border-white/10 bg-[var(--panel)] px-3 text-sm outline-none focus:ring-[var(--ring)]"
+              />
+            </div>
 
             {meLoading ? (
               <div className="h-8 w-20 animate-pulse rounded-md bg-white/5" />
@@ -254,7 +270,16 @@ function ShellBody({ children }: PropsWithChildren) {
       </header>
 
       {/* SIDEBAR */}
-      <aside className="col-[1] row-[2] border-r border-white/10 bg-[var(--panel)]">
+      <aside className="col-[1] row-[2] border-r border-white/10 bg-[var(--panel)] relative">
+        {/* Sidebar collapse/expand handle */}
+        <button
+          className="absolute -right-3 top-3 z-10 grid h-7 w-7 place-items-center rounded-full border border-white/10 bg-[var(--panel-2)] shadow hover:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"
+          onClick={toggleSidebar}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Expand" : "Collapse"}
+        >
+          {collapsed ? <IconChevronRight /> : <IconChevronLeft />}
+        </button>
         <div className="flex h-full flex-col">
           <nav id="sidebar-nav" className={`p-3 text-sm ${collapsed ? "space-y-2" : ""}`}>
             {/* GENERAL */}
@@ -265,16 +290,6 @@ function ShellBody({ children }: PropsWithChildren) {
                 label="Dashboard"
                 icon={<IconDashboard />}
               />
-              <button
-                className="mt-2 h-8 w-8 grid place-items-center rounded-md border border-white/10 bg-[var(--panel-2)] transition-colors hover:bg-white/5 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"
-                onClick={toggleSidebar}
-                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-                aria-pressed={collapsed}
-                aria-controls="sidebar-nav"
-                title={collapsed ? "Expand" : "Collapse"}
-              >
-                {collapsed ? <IconChevronRight /> : <IconChevronLeft />}
-              </button>
 
               <NavLink
                 collapsed={collapsed}
@@ -366,7 +381,7 @@ function ShellBody({ children }: PropsWithChildren) {
             {/* THEME TOGGLE */}
             <div className={`pt-4 ${collapsed ? 'flex flex-col items-center' : 'px-3 flex flex-col items-center'}`}>
               {!collapsed && (
-                <div className="mb-2 text-xs text-[var(--muted)] self-start">Color Mode</div>
+                <div className="mb-2 text-xs text-[var(--muted)] self-center text-center">Color Mode</div>
               )}
               <ThemeToggle />
             </div>

@@ -5,11 +5,13 @@ import { isRestrictedRoute, isPublicRoute, isParticipantRoute } from "@/app/lib/
 // Next 16 proxy: apply security headers (CSP with nonce) on all routes
 export default function proxy(req: NextRequest) {
   const res = NextResponse.next();
+  const { pathname } = req.nextUrl;
+  const allowEmbed = pathname === "/privacy" || pathname === "/terms";
 
   // Core headers
   res.headers.set("X-Content-Type-Options", "nosniff");
   res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.headers.set("X-Frame-Options", "DENY");
+  res.headers.set("X-Frame-Options", allowEmbed ? "SAMEORIGIN" : "DENY");
 
   // HSTS in production & https
   if (process.env.NODE_ENV === "production" && req.nextUrl.protocol === "https:") {
@@ -49,7 +51,7 @@ export default function proxy(req: NextRequest) {
   directives.push(`connect-src ${connectSrc.join(" ")}`);
   directives.push("object-src 'none'");
   directives.push("base-uri 'self'");
-  directives.push("frame-ancestors 'none'");
+  directives.push(`frame-ancestors ${allowEmbed ? "'self'" : "'none'"}`);
 
   res.headers.set("Content-Security-Policy", directives.join("; "));
 
