@@ -17,15 +17,53 @@ export default async function AdminPage() {
   const user = { id: data.user.id, email: data.user.email ?? null };
   if (!isAdminUser(user)) redirect("/");
 
+  // Fetch overview metrics (server-side; cookies included)
+  const r = await fetch("/api/admin/metrics/overview", { cache: "no-store" });
+  const j = r.ok ? await r.json() : { kpis: {}, health: {} };
+  const k = j.kpis || {};
+  const h = j.health || {};
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <h1 className="text-xl font-semibold">Admin Dashboard</h1>
       <p className="text-sm text-[var(--muted)]">Only visible to admins.</p>
+
+      {/* KPI cards */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <KpiCard label="Sessions (7d)" value={k.sessions_last_7d ?? 0} />
+        <KpiCard label="Sessions (28d)" value={k.sessions_last_28d ?? 0} />
+        <KpiCard label="Completion rate (28d)" value={((k.completion_rate_28d ?? 0) * 100).toFixed(0) + "%"} />
+        <KpiCard label="Avg participants / session (28d)" value={(k.avg_participants_per_session_28d ?? 0).toFixed(1)} />
+        <KpiCard label="Avg submissions / session (28d)" value={(k.avg_submissions_per_session_28d ?? 0).toFixed(1)} />
+      </div>
+
+      {/* Health */}
       <div className="rounded-md border border-white/10 bg-white/5 p-4">
-        <div className="text-sm">User: {user.email || user.id}</div>
-        <div className="text-sm">Welcome to the admin area.</div>
+        <div className="font-medium mb-2">System health</div>
+        <ul className="text-sm text-[var(--muted)] space-y-1">
+          <li>Database: <Status ok={!!h.db_ok} /></li>
+          <li>Env: Supabase URL: <Status ok={!!(h.env?.supabase_url)} /></li>
+          <li>Env: Supabase Key: <Status ok={!!(h.env?.supabase_key)} /></li>
+        </ul>
       </div>
     </div>
   );
 }
 
+function KpiCard({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-md border border-white/10 bg-white/5 p-4">
+      <div className="text-[var(--muted)] text-xs">{label}</div>
+      <div className="mt-1 text-2xl font-semibold">{value}</div>
+    </div>
+  );
+}
+
+function Status({ ok }: { ok: boolean }) {
+  return (
+    <span className={`inline-flex items-center gap-2 ${ok ? 'text-green-300' : 'text-rose-300'}`}>
+      <span className={`inline-block h-2 w-2 rounded-full ${ok ? 'bg-green-400' : 'bg-rose-400'}`} />
+      {ok ? 'OK' : 'Issue'}
+    </span>
+  );
+}

@@ -315,12 +315,26 @@ function ShellBody({ children }: PropsWithChildren) {
             {/* ADMIN */}
             <Section label="Admin" collapsed={collapsed}>
               {me?.is_admin && (
-                <NavLink
-                  collapsed={collapsed}
-                  href="/admin"
-                  label="Admin"
-                  icon={<IconShield />}
-                />
+                <>
+                  <NavLink
+                    collapsed={collapsed}
+                    href="/admin"
+                    label="Overview"
+                    icon={<IconShield />}
+                  />
+                  <NavLink
+                    collapsed={collapsed}
+                    href="/admin/users"
+                    label="Users"
+                    icon={<IconList />}
+                  />
+                  <NavLink
+                    collapsed={collapsed}
+                    href="/admin/sessions"
+                    label="Sessions"
+                    icon={<IconPresentation />}
+                  />
+                </>
               )}
               <NavLink
                 collapsed={collapsed}
