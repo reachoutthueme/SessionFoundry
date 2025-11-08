@@ -50,9 +50,27 @@ export default async function AdminPage() {
       <div className="rounded-md border border-white/10 bg-white/5 p-4">
         <div className="font-medium mb-2">System health</div>
         <ul className="text-sm text-[var(--muted)] space-y-1">
-          <li>Database: <Status ok={!!health.db_ok} /></li>
-          <li>Env: Supabase URL: <Status ok={!!(health.env?.supabase_url)} /></li>
-          <li>Env: Supabase Key: <Status ok={!!(health.env?.supabase_key)} /></li>
+          <li>
+            Database: <Status ok={!!health.db_ok} title={
+              health.db_ok
+                ? "Connected as service role; count query succeeded"
+                : "Could not run admin DB query; check URL/key/connectivity"
+            } />
+          </li>
+          <li>
+            Env: Supabase URL: <Status ok={!!(health.env?.supabase_url)} title={
+              (health.env?.supabase_url)
+                ? "NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL) is set"
+                : "Missing NEXT_PUBLIC_SUPABASE_URL/SUPABASE_URL"
+            } />
+          </li>
+          <li>
+            Env: Supabase Key: <Status ok={!!(health.env?.supabase_key)} title={
+              (health.env?.supabase_key)
+                ? "SUPABASE_SERVICE_ROLE_KEY is set (server only)"
+                : "Missing SUPABASE_SERVICE_ROLE_KEY"
+            } />
+          </li>
         </ul>
       </div>
     </div>
@@ -68,9 +86,9 @@ function KpiCard({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function Status({ ok }: { ok: boolean }) {
+function Status({ ok, title }: { ok: boolean; title?: string }) {
   return (
-    <span className={`inline-flex items-center gap-2 ${ok ? 'text-green-300' : 'text-rose-300'}`}>
+    <span title={title} className={`inline-flex items-center gap-2 ${ok ? 'text-green-300' : 'text-rose-300'}`}>
       <span className={`inline-block h-2 w-2 rounded-full ${ok ? 'bg-green-400' : 'bg-rose-400'}`} />
       {ok ? 'OK' : 'Issue'}
     </span>

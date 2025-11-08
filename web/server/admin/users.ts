@@ -9,12 +9,12 @@ export type AdminUserRow = {
   sessions_count?: number;
 };
 
-export async function listAdminUsers(q: string, page: number, perPage: number): Promise<{ users: AdminUserRow[]; count: number; page: number; per_page: number }>
+export async function listAdminUsers(q: string, page: number, perPage: number): Promise<{ users: AdminUserRow[]; count: number; page: number; per_page: number; has_more: boolean }>
 {
-  if (!isSupabaseAdminConfigured()) return { users: [], count: 0, page, per_page: perPage };
+  if (!isSupabaseAdminConfigured()) return { users: [], count: 0, page, per_page: perPage, has_more: false };
 
   const { data: list, error: le } = await (supabaseAdmin as any).auth.admin.listUsers({ page, perPage });
-  if (le) return { users: [], count: 0, page, per_page: perPage };
+  if (le) return { users: [], count: 0, page, per_page: perPage, has_more: false };
 
   let users: any[] = Array.isArray(list?.users) ? list.users : [];
   if (q) {
@@ -44,6 +44,6 @@ export async function listAdminUsers(q: string, page: number, perPage: number): 
     sessions_count: counts[u.id] || 0,
   }));
 
-  return { users: results, count: results.length, page, per_page: perPage };
+  const has_more = Array.isArray(users) && users.length >= perPage; // best-effort; Supabase returns fewer on last page
+  return { users: results, count: results.length, page, per_page: perPage, has_more };
 }
-

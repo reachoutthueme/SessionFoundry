@@ -33,9 +33,9 @@ export default async function AdminSystemPage() {
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">System</h1>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Card label="DB: sessions" ok={!!j.db_checks?.sessions} extra={fmtCount(j.totals?.sessions)} />
-        <Card label="DB: activities" ok={!!j.db_checks?.activities} extra={fmtCount(j.totals?.activities)} />
-        <Card label="DB: submissions" ok={!!j.db_checks?.submissions} extra={fmtCount(j.totals?.submissions)} />
+        <Card label="DB: sessions" ok={!!j.db_checks?.sessions} okTitle={j.db_checks?.sessions ? "Admin SELECT count(*) succeeded" : "Failed DB check for sessions table"} extra={fmtCount(j.totals?.sessions)} />
+        <Card label="DB: activities" ok={!!j.db_checks?.activities} okTitle={j.db_checks?.activities ? "Admin SELECT count(*) succeeded" : "Failed DB check for activities table"} extra={fmtCount(j.totals?.activities)} />
+        <Card label="DB: submissions" ok={!!j.db_checks?.submissions} okTitle={j.db_checks?.submissions ? "Admin SELECT count(*) succeeded" : "Failed DB check for submissions table"} extra={fmtCount(j.totals?.submissions)} />
       </div>
 
       <div className="rounded-md border border-white/10 bg-white/5 p-4">
@@ -44,7 +44,7 @@ export default async function AdminSystemPage() {
           {Object.entries(j.env || {}).map(([k, v]: any) => (
             <div key={k} className="flex items-center gap-2">
               <span className="w-64 truncate font-mono text-xs">{k}</span>
-              <Status ok={!!v} />
+              <Status ok={!!v} title={v ? `${k} is set` : `${k} is missing`} />
             </div>
           ))}
         </dl>
@@ -58,21 +58,21 @@ function fmtCount(n?: number) {
   return v.toLocaleString();
 }
 
-function Card({ label, ok, extra }: { label: string; ok: boolean; extra?: string | number }) {
+function Card({ label, ok, extra, okTitle }: { label: string; ok: boolean; extra?: string | number; okTitle?: string }) {
   return (
     <div className="rounded-md border border-white/10 bg-white/5 p-4">
       <div className="text-sm text-[var(--muted)]">{label}</div>
       <div className="mt-2 flex items-center justify-between">
-        <Status ok={ok} />
+        <Status ok={ok} title={okTitle} />
         {extra !== undefined && <div className="text-sm">{extra}</div>}
       </div>
     </div>
   );
 }
 
-function Status({ ok }: { ok: boolean }) {
+function Status({ ok, title }: { ok: boolean; title?: string }) {
   return (
-    <span className={`inline-flex items-center gap-2 ${ok ? 'text-green-300' : 'text-rose-300'}`}>
+    <span title={title} className={`inline-flex items-center gap-2 ${ok ? 'text-green-300' : 'text-rose-300'}`}>
       <span className={`inline-block h-2 w-2 rounded-full ${ok ? 'bg-green-400' : 'bg-rose-400'}`} />
       {ok ? 'OK' : 'Issue'}
     </span>

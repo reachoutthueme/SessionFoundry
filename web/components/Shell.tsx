@@ -45,6 +45,10 @@ interface NavLinkProps {
 // Constants
 const STORAGE_KEY = "sf_sidebar_collapsed";
 
+// In-memory (per-tab, resets on hard refresh) state for keeping the Admin accordion open
+// across route transitions without persisting it beyond a full reload.
+let ADMIN_OPEN_MEMORY = false;
+
 // Helper functions are centralized in @/app/lib/routeRules
 
 const getSidebarCollapsedState = (): boolean => {
@@ -115,7 +119,7 @@ function ShellBody({ children }: PropsWithChildren) {
   const [me, setMe] = useState<User | null>(null);
   const [meLoading, setMeLoading] = useState(true);
   const [policiesOpen, setPoliciesOpen] = useState(false);
-  const [adminOpen, setAdminOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(ADMIN_OPEN_MEMORY);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [collapsed, setCollapsed] = useState(getSidebarCollapsedState);
@@ -170,6 +174,11 @@ function ShellBody({ children }: PropsWithChildren) {
   useEffect(() => {
     setSidebarCollapsedState(collapsed);
   }, [collapsed]);
+
+  // Remember admin accordion state for this tab's lifetime (clears on refresh)
+  useEffect(() => {
+    ADMIN_OPEN_MEMORY = adminOpen;
+  }, [adminOpen]);
 
   // Toggle sidebar
   const toggleSidebar = useCallback(() => {

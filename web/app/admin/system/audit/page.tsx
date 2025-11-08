@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { supabaseAdmin, isSupabaseAdminConfigured } from "@/app/lib/supabaseAdmin";
 import { isAdminUser } from "@/server/policies";
 import { getAuditLogs } from "@/server/admin/audit";
@@ -33,7 +34,42 @@ export default async function AdminAuditPage({ searchParams }: { searchParams?: 
   const from = s(searchParams?.from);
   const to = s(searchParams?.to);
 
-  const { logs: rows } = await getAuditLogs({ actor, entity_type, entity_id, action, from, to, limit: 100 });
+  const page = Math.max(1, Number(searchParams?.page || 1) || 1);
+  const per_page = Math.min(200, Math.max(1, Number(searchParams?.per_page || 50) || 50));
+  const { logs: rows, count } = await getAuditLogs({ actor, entity_type, entity_id, action, from, to, page, per_page });
+  const sort = typeof searchParams?.sort === 'string' ? searchParams.sort : 'created_at';
+  const dir = (typeof searchParams?.dir === 'string' && (searchParams.dir === 'asc' || searchParams.dir === 'desc')) ? (searchParams.dir as 'asc'|'desc') : 'desc';
+  const sorted = [...rows].sort((a: any, b: any) => {
+    const val = (k: string, x: any) => (x?.[k] ?? '');
+    const av = val(sort, a);
+    const bv = val(sort, b);
+    let cmp = 0;
+    if (sort === 'created_at') cmp = new Date(av || 0).getTime() - new Date(bv || 0).getTime();
+    else cmp = String(av).localeCompare(String(bv));
+    return dir === 'asc' ? cmp : -cmp;
+  });
+
+  function sortLink(key: string) {
+    const nextDir: 'asc'|'desc' = sort === key ? (dir === 'asc' ? 'desc' : 'asc') : 'asc';
+    const params = new URLSearchParams();
+    if (actor) params.set('actor', actor);
+    if (entity_type) params.set('entity_type', entity_type);
+    if (entity_id) params.set('entity_id', entity_id);
+    if (action) params.set('action', action);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    params.set('page', String(page));
+    params.set('per_page', String(per_page));
+    params.set('sort', key);
+    params.set('dir', nextDir);
+    return `/admin/system/audit?${params.toString()}`;
+  }
+
+  function hdr(key: string, text: string) {
+    const is = sort === key;
+    const arrow = is ? (dir === 'asc' ? ' ▲' : ' ▼') : '';
+    return <Link href={sortLink(key)}>{text}{arrow}</Link>;
+  }
 
   return (
     <div className="space-y-4">
@@ -52,14 +88,14 @@ export default async function AdminAuditPage({ searchParams }: { searchParams?: 
         <table className="w-full text-sm">
           <thead className="bg-[var(--panel)] text-[var(--muted)] sticky top-0">
             <tr>
-              <th className="px-3 py-2 text-left">Time</th>
-              <th className="px-3 py-2 text-left">Actor</th>
-              <th className="px-3 py-2 text-left">Action</th>
-              <th className="px-3 py-2 text-left">Entity</th>
+              <th className="px-3 py-2 text-left">{hdr('created_at', 'Time')}</th>
+              <th className="px-3 py-2 text-left">{hdr('actor_user_id', 'Actor')}</th>
+              <th className="px-3 py-2 text-left">{hdr('action', 'Action')}</th>
+              <th className="px-3 py-2 text-left">{hdr('entity_type', 'Entity')}</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((r: any) => (
+            {sorted.map((r: any) => (
               <tr key={r.id} className="border-t border-white/10">
                 <td className="px-3 py-2">{fmt(r.created_at)}</td>
                 <td className="px-3 py-2 font-mono text-xs">{r.actor_user_id || '-'}</td>
@@ -72,6 +108,26 @@ export default async function AdminAuditPage({ searchParams }: { searchParams?: 
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex items-center justify-between text-sm">
+        <div className="text-[var(--muted)]">Page {page} • {count.toLocaleString()} total</div>
+        <div className="flex gap-2">
+          <Link
+            href={(() => { const p = new URLSearchParams(); if (actor) p.set('actor', actor); if (entity_type) p.set('entity_type', entity_type); if (entity_id) p.set('entity_id', entity_id); if (action) p.set('action', action); if (from) p.set('from', from); if (to) p.set('to', to); p.set('page', String(Math.max(1, page-1))); p.set('per_page', String(per_page)); p.set('sort', sort); p.set('dir', dir); return `/admin/system/audit?${p.toString()}`; })()}
+            className={`rounded-md border px-3 py-1.5 ${page <= 1 ? 'pointer-events-none opacity-50' : 'hover:bg-white/5 border-white/10'}`}
+            aria-disabled={page <= 1}
+          >
+            Prev
+          </Link>
+          <Link
+            href={(() => { const p = new URLSearchParams(); if (actor) p.set('actor', actor); if (entity_type) p.set('entity_type', entity_type); if (entity_id) p.set('entity_id', entity_id); if (action) p.set('action', action); if (from) p.set('from', from); if (to) p.set('to', to); const hasNext = page * per_page < count; const nextPage = hasNext ? page+1 : page; p.set('page', String(nextPage)); p.set('per_page', String(per_page)); p.set('sort', sort); p.set('dir', dir); return `/admin/system/audit?${p.toString()}`; })()}
+            className={`rounded-md border px-3 py-1.5 ${page * per_page >= count ? 'pointer-events-none opacity-50' : 'hover:bg-white/5 border-white/10'}`}
+            aria-disabled={page * per_page >= count}
+          >
+            Next
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { supabaseAdmin, isSupabaseAdminConfigured } from "@/app/lib/supabaseAdmin";
 import { isAdminUser } from "@/server/policies";
 import { searchAdminSessions } from "@/server/admin/sessions";
@@ -30,8 +31,41 @@ export default async function AdminSessionsPage({ searchParams }: { searchParams
   const owner = typeof searchParams?.owner === 'string' ? searchParams?.owner : '';
   const from = typeof searchParams?.from === 'string' ? searchParams?.from : '';
   const to = typeof searchParams?.to === 'string' ? searchParams?.to : '';
+  const pageNum = Math.max(1, Number(searchParams?.page || 1) || 1);
+  const perPage = Math.min(200, Math.max(1, Number(searchParams?.per_page || 50) || 50));
 
-  const { sessions: rows } = await searchAdminSessions({ status, owner, from, to, limit: 100 });
+  const { sessions: rows, count } = await searchAdminSessions({ status, owner, from, to, page: pageNum, per_page: perPage });
+  const sort = typeof searchParams?.sort === 'string' ? searchParams.sort : 'created_at';
+  const dir = (typeof searchParams?.dir === 'string' && (searchParams.dir === 'asc' || searchParams.dir === 'desc')) ? (searchParams.dir as 'asc'|'desc') : 'desc';
+  const sorted = [...rows].sort((a: any, b: any) => {
+    const val = (k: string, x: any) => (x?.[k] ?? '');
+    const av = val(sort, a);
+    const bv = val(sort, b);
+    let cmp = 0;
+    if (sort === 'created_at') cmp = new Date(av || 0).getTime() - new Date(bv || 0).getTime();
+    else cmp = String(av).localeCompare(String(bv));
+    return dir === 'asc' ? cmp : -cmp;
+  });
+
+  function sortLink(key: string) {
+    const nextDir: 'asc'|'desc' = sort === key ? (dir === 'asc' ? 'desc' : 'asc') : 'asc';
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    if (owner) params.set('owner', owner);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    params.set('page', String(pageNum));
+    params.set('per_page', String(perPage));
+    params.set('sort', key);
+    params.set('dir', nextDir);
+    return `/admin/sessions?${params.toString()}`;
+  }
+
+  function hdr(key: string, text: string) {
+    const is = sort === key;
+    const arrow = is ? (dir === 'asc' ? ' ▲' : ' ▼') : '';
+    return <Link href={sortLink(key)}>{text}{arrow}</Link>;
+  }
 
   return (
     <div className="space-y-4">
@@ -54,15 +88,15 @@ export default async function AdminSessionsPage({ searchParams }: { searchParams
         <table className="w-full text-sm">
           <thead className="bg-[var(--panel)] text-[var(--muted)] sticky top-0">
             <tr>
-              <th className="px-3 py-2 text-left">Name</th>
-              <th className="px-3 py-2 text-left">Status</th>
-              <th className="px-3 py-2 text-left">Owner</th>
-              <th className="px-3 py-2 text-left">Join code</th>
-              <th className="px-3 py-2 text-left">Created</th>
+              <th className="px-3 py-2 text-left">{hdr('name', 'Name')}</th>
+              <th className="px-3 py-2 text-left">{hdr('status', 'Status')}</th>
+              <th className="px-3 py-2 text-left">{hdr('facilitator_user_id', 'Owner')}</th>
+              <th className="px-3 py-2 text-left">{hdr('join_code', 'Join code')}</th>
+              <th className="px-3 py-2 text-left">{hdr('created_at', 'Created')}</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((s: any) => (
+            {sorted.map((s: any) => (
               <tr key={s.id} className="border-t border-white/10">
                 <td className="px-3 py-2">{s.name}</td>
                 <td className="px-3 py-2">{s.status}</td>
@@ -76,6 +110,26 @@ export default async function AdminSessionsPage({ searchParams }: { searchParams
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex items-center justify-between text-sm">
+        <div className="text-[var(--muted)]">Page {pageNum} • {count.toLocaleString()} total</div>
+        <div className="flex gap-2">
+          <Link
+            href={(() => { const p = new URLSearchParams(); if (status) p.set('status', status); if (owner) p.set('owner', owner); if (from) p.set('from', from); if (to) p.set('to', to); p.set('page', String(Math.max(1, pageNum-1))); p.set('per_page', String(perPage)); p.set('sort', sort); p.set('dir', dir); return `/admin/sessions?${p.toString()}`; })()}
+            className={`rounded-md border px-3 py-1.5 ${pageNum <= 1 ? 'pointer-events-none opacity-50' : 'hover:bg-white/5 border-white/10'}`}
+            aria-disabled={pageNum <= 1}
+          >
+            Prev
+          </Link>
+          <Link
+            href={(() => { const p = new URLSearchParams(); if (status) p.set('status', status); if (owner) p.set('owner', owner); if (from) p.set('from', from); if (to) p.set('to', to); const hasNext = pageNum * perPage < count; const nextPage = hasNext ? pageNum+1 : pageNum; p.set('page', String(nextPage)); p.set('per_page', String(perPage)); p.set('sort', sort); p.set('dir', dir); return `/admin/sessions?${p.toString()}`; })()}
+            className={`rounded-md border px-3 py-1.5 ${pageNum * perPage >= count ? 'pointer-events-none opacity-50' : 'hover:bg-white/5 border-white/10'}`}
+            aria-disabled={pageNum * perPage >= count}
+          >
+            Next
+          </Link>
+        </div>
       </div>
     </div>
   );

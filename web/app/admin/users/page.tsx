@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { supabaseAdmin, isSupabaseAdminConfigured } from "@/app/lib/supabaseAdmin";
 import { isAdminUser } from "@/server/policies";
 import { listAdminUsers } from "@/server/admin/users";
@@ -30,8 +31,37 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
   const q = typeof searchParams?.q === 'string' ? searchParams?.q : '';
   const page = Number(searchParams?.page || 1) || 1;
   const per_page = Number(searchParams?.per_page || 20) || 20;
+  const sort = typeof searchParams?.sort === 'string' ? searchParams.sort : 'created_at';
+  const dir = (typeof searchParams?.dir === 'string' && (searchParams.dir === 'asc' || searchParams.dir === 'desc')) ? (searchParams.dir as 'asc'|'desc') : 'desc';
 
-  const { users: rows } = await listAdminUsers(q, page, per_page);
+  const { users: rows, has_more } = await listAdminUsers(q, page, per_page);
+  const sorted = [...rows].sort((a: any, b: any) => {
+    const val = (k: string, x: any) => (x?.[k] ?? '');
+    const av = val(sort, a);
+    const bv = val(sort, b);
+    let cmp = 0;
+    if (sort === 'sessions_count') cmp = (Number(av) || 0) - (Number(bv) || 0);
+    else if (sort === 'created_at' || sort === 'last_sign_in_at') cmp = new Date(av || 0).getTime() - new Date(bv || 0).getTime();
+    else cmp = String(av).localeCompare(String(bv));
+    return dir === 'asc' ? cmp : -cmp;
+  });
+
+  function sortLink(key: string) {
+    const nextDir: 'asc'|'desc' = sort === key ? (dir === 'asc' ? 'desc' : 'asc') : 'asc';
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    params.set('page', String(page));
+    params.set('per_page', String(per_page));
+    params.set('sort', key);
+    params.set('dir', nextDir);
+    return `/admin/users?${params.toString()}`;
+  }
+
+  function hdr(key: string, text: string) {
+    const is = sort === key;
+    const arrow = is ? (dir === 'asc' ? ' ▲' : ' ▼') : '';
+    return <Link href={sortLink(key)}>{text}{arrow}</Link>;
+  }
 
   return (
     <div className="space-y-4">
@@ -50,15 +80,15 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
         <table className="w-full text-sm">
           <thead className="bg-[var(--panel)] text-[var(--muted)] sticky top-0">
             <tr>
-              <th className="px-3 py-2 text-left">Email</th>
-              <th className="px-3 py-2 text-left">User ID</th>
-              <th className="px-3 py-2 text-left">Created</th>
-              <th className="px-3 py-2 text-left">Last sign-in</th>
-              <th className="px-3 py-2 text-left">Sessions</th>
+              <th className="px-3 py-2 text-left">{hdr('email', 'Email')}</th>
+              <th className="px-3 py-2 text-left">{hdr('id', 'User ID')}</th>
+              <th className="px-3 py-2 text-left">{hdr('created_at', 'Created')}</th>
+              <th className="px-3 py-2 text-left">{hdr('last_sign_in_at', 'Last sign-in')}</th>
+              <th className="px-3 py-2 text-left">{hdr('sessions_count', 'Sessions')}</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((u: any) => (
+            {sorted.map((u: any) => (
               <tr key={u.id} className="border-t border-white/10">
                 <td className="px-3 py-2">{u.email || '-'}</td>
                 <td className="px-3 py-2 font-mono text-xs">{u.id}</td>
@@ -74,6 +104,26 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex items-center justify-between text-sm">
+        <div className="text-[var(--muted)]">Page {page}</div>
+        <div className="flex gap-2">
+          <Link
+            href={(() => { const p = new URLSearchParams({ q, page: String(Math.max(1, page-1)), per_page: String(per_page), sort, dir }); return `/admin/users?${p.toString()}`; })()}
+            className={`rounded-md border px-3 py-1.5 ${page <= 1 ? 'pointer-events-none opacity-50' : 'hover:bg-white/5 border-white/10'}`}
+            aria-disabled={page <= 1}
+          >
+            Prev
+          </Link>
+          <Link
+            href={(() => { const p = new URLSearchParams({ q, page: String(page+1), per_page: String(per_page), sort, dir }); return `/admin/users?${p.toString()}`; })()}
+            className={`rounded-md border px-3 py-1.5 ${!has_more ? 'pointer-events-none opacity-50' : 'hover:bg-white/5 border-white/10'}`}
+            aria-disabled={!has_more}
+          >
+            Next
+          </Link>
+        </div>
       </div>
     </div>
   );
