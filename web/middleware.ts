@@ -27,9 +27,11 @@ export function middleware(req: NextRequest) {
   directives.push("img-src 'self' data: blob: https:");
   // Scripts: keep self; allow eval in dev to avoid breaking HMR/React dev tools
   if (process.env.NODE_ENV !== "production") {
-    directives.push("script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'");
+    directives.push("script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'");
   } else {
-    directives.push("script-src 'self'");
+    // In production, Next injects nonces for inline scripts, but setting a nonce header here is non-trivial.
+    // To avoid breaking the app, allow 'unsafe-inline'. If you want a stricter policy, migrate to proxy with nonces.
+    directives.push("script-src 'self' 'unsafe-inline'");
   }
   // XHR/fetch/websocket endpoints required by app (self + Supabase)
   const connectSrc = ["'self'", "https:", "wss:"];
