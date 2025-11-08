@@ -241,7 +241,7 @@ export async function POST(req: Request) {
     );
   }
   const gate = await hooks.canSubmit({
-    session_id,
+    session_id: session_id || "",
     activity_id,
     participant_id,
     group_id,
