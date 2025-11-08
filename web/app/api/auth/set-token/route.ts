@@ -29,7 +29,8 @@ export async function POST(req: NextRequest) {
   // Double-submit CSRF: header must match cookie
   try {
     const csrfHeader = req.headers.get("x-csrf") || "";
-    const csrfCookie = cookies().get("sf_csrf")?.value || "";
+    const cookieStore = await cookies();
+    const csrfCookie = cookieStore.get("sf_csrf")?.value || "";
     if (!csrfHeader || !csrfCookie || csrfHeader !== csrfCookie) {
       return NextResponse.json({ error: "CSRF mismatch" }, { status: 403 });
     }
@@ -38,7 +39,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Rate limit by csrf token (best-effort)
-  const csrfKey = cookies().get("sf_csrf")?.value || "anon";
+  const cookieStore = await cookies();
+  const csrfKey = cookieStore.get("sf_csrf")?.value || "anon";
   const rl = rateLimit(`auth:set-token:${csrfKey}`, { limit: 20, windowMs: 60_000 });
   if (!rl.allowed) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": String(Math.ceil((rl.reset - Date.now()) / 1000)) } });
