@@ -29,6 +29,11 @@ export default function ClientProviders({ children }: PropsWithChildren) {
   const bcRef = useRef<BroadcastChannel | null>(null);
 
   useEffect(() => {
+    // If Supabase client isn't configured (missing env), skip auth sync
+    if (!supabase || !('auth' in supabase) || !(supabase as any).auth) {
+      try { console.warn("[auth sync] Supabase client not configured; skipping auth sync"); } catch {}
+      return;
+    }
     // Cross-tab coordination
     try {
       bcRef.current = new BroadcastChannel(SYNC_CHANNEL);
@@ -242,7 +247,7 @@ export default function ClientProviders({ children }: PropsWithChildren) {
     // Subscribe to auth state changes (includes INITIAL_SESSION in supabase-js v2)
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(handleAuthStateChange);
+    } = (supabase as any).auth.onAuthStateChange(handleAuthStateChange);
 
     // Cleanup
     return () => {

@@ -7,7 +7,9 @@ export default function LogoutButton() {
   async function handleLogout() {
     try {
       // 1. Tell Supabase "this user is signed out" on the client
-      await supabase.auth.signOut();
+      if ((supabase as any)?.auth?.signOut) {
+        await (supabase as any).auth.signOut();
+      }
     } catch {
       // ignore errors here, we'll still kill server session
     }
