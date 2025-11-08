@@ -57,6 +57,27 @@ export async function GET(req: Request) {
 /** POST /api/groups  { session_id, name } */
 export async function POST(req: Request) {
   try {
+    // CSRF: same-origin + double-submit header check
+    const url = new URL(req.url);
+    const origin = req.headers.get("origin") || "";
+    const referer = req.headers.get("referer") || "";
+    const base = `${url.protocol}//${url.host}`;
+    const sameOrigin = origin === base || (referer && referer.startsWith(base));
+    if (!sameOrigin) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const csrfHeader = req.headers.get("x-csrf") || "";
+    const cookieHeader = req.headers.get("cookie") || "";
+    const csrfCookie = (() => {
+      const parts = cookieHeader.split(";").map((p) => p.trim());
+      for (const p of parts) {
+        if (p.startsWith("sf_csrf=")) return decodeURIComponent(p.slice("sf_csrf=".length));
+      }
+      return "";
+    })();
+    if (!csrfHeader || !csrfCookie || csrfHeader !== csrfCookie) {
+      return NextResponse.json({ error: "CSRF mismatch" }, { status: 403 });
+    }
     if (req.headers.get("content-type")?.includes("application/json") !== true) {
       return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
     }
@@ -119,4 +140,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
-

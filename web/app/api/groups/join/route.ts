@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { getParticipantInSession, getSessionStatus } from "@/app/api/_util/auth";
+import { rateLimit } from "@/server/rateLimit";
 
 const BodySchema = z.object({
   session_id: z.string().min(1, "session_id required"),
@@ -15,6 +16,27 @@ function noStore(res: NextResponse) {
 
 export async function POST(req: Request) {
   try {
+    // CSRF: same-origin + double-submit header check
+    const url = new URL(req.url);
+    const origin = req.headers.get("origin") || "";
+    const referer = req.headers.get("referer") || "";
+    const base = `${url.protocol}//${url.host}`;
+    const sameOrigin = origin === base || (referer && referer.startsWith(base));
+    if (!sameOrigin) {
+      return noStore(NextResponse.json({ error: "Forbidden" }, { status: 403 }));
+    }
+    const csrfHeader = req.headers.get("x-csrf") || "";
+    const cookieHeader = req.headers.get("cookie") || "";
+    const csrfCookie = (() => {
+      const parts = cookieHeader.split(";").map((p) => p.trim());
+      for (const p of parts) {
+        if (p.startsWith("sf_csrf=")) return decodeURIComponent(p.slice("sf_csrf=".length));
+      }
+      return "";
+    })();
+    if (!csrfHeader || !csrfCookie || csrfHeader !== csrfCookie) {
+      return noStore(NextResponse.json({ error: "CSRF mismatch" }, { status: 403 }));
+    }
     // Content type guard
     if (!req.headers.get("content-type")?.includes("application/json")) {
       return noStore(NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 }));
@@ -69,6 +91,12 @@ export async function POST(req: Request) {
     }
     if (!grp || grp.session_id !== session_id) {
       return noStore(NextResponse.json({ error: "Invalid group for this session" }, { status: 400 }));
+    }
+
+    // Optional: rate limit group switching to prevent spam
+    const rl = rateLimit(`group:join:${participant.id}`, { limit: 60, windowMs: 10 * 60 * 1000 });
+    if (!rl.allowed) {
+      return noStore(NextResponse.json({ error: "Too many changes" }, { status: 429 }));
     }
 
     // Update participant -> group
