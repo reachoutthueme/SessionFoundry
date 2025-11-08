@@ -466,7 +466,7 @@ export default function ActivitiesManager({
           title="Activities"
           subtitle="Create and control workshop flow"
           rightSlot={
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-2 py-1 text-xs text-MUTEDVAR">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-2 py-1 text-xs text-[var(--muted)]">
               <span
                 className={`inline-block h-2 w-2 rounded-full ${statusColor} animate-pulse`}
               />
@@ -485,7 +485,7 @@ export default function ActivitiesManager({
                   isExpired ? (
                     <StatusPill status="Overdue" label="Overdue" />
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-xs text-MUTEDVAR" aria-live="polite"><IconTimer size={12} /> <Timer endsAt={current.ends_at} /></span>
+                    <span className="inline-flex items-center gap-1 text-xs text-[var(--muted)]" aria-live="polite"><IconTimer size={12} /> <Timer endsAt={current.ends_at} /></span>
                   )
                 ) : null}
               </div>
@@ -507,7 +507,7 @@ export default function ActivitiesManager({
 
           {/* Header row: count + add */}
           <div className="mb-3 flex items-center justify-between">
-            <div className="text-sm text-MUTEDVAR">
+            <div className="text-sm text-[var(--muted)]">
               {items.length} steps
             </div>
             <Button onClick={() => setOpen(true)}>Add step</Button>
@@ -518,7 +518,7 @@ export default function ActivitiesManager({
             <div className="mb-3 flex items-center justify-between text-sm">
               <div>Progress: {summary.closed} of {summary.total} steps complete</div>
               {current?.ends_at && (current.status === "Active" || current.status === "Voting") && (
-                <div className="flex items-center gap-2 text-xs text-MUTEDVAR"><IconTimer size={12} /> <Timer endsAt={current.ends_at} /></div>
+                <div className="flex items-center gap-2 text-xs text-[var(--muted)]"><IconTimer size={12} /> <Timer endsAt={current.ends_at} /></div>
               )}
             </div>
             {sorted.length > 0 && (
@@ -555,7 +555,7 @@ export default function ActivitiesManager({
                 <div className="h-12 animate-pulse rounded bg-white/10" />
               </div>
             ) : items.length === 0 ? (
-              <div className="text-sm text-MUTEDVAR">
+              <div className="text-sm text-[var(--muted)]">
                 No activities yet.
               </div>
             ) : (
@@ -600,7 +600,7 @@ export default function ActivitiesManager({
                            <div className="min-w-0 flex items-center gap-2 text-sm">
                              <span className="opacity-70">{idx+1}.</span>
                              <span className="truncate max-w-[32ch]">{a.title || getActivityDisplayName(a.type)}</span>
-                             <span className="text-xs text-MUTEDVAR">[{a.type}]</span>
+                            <span className="text-xs text-[var(--muted)]">[{a.type}]</span>
                            </div>
                            <div className="flex items-center gap-3 text-xs">
                              <StatusPill status={(status as any) === 'Inactive' ? 'Queued' : (status as any)} />
@@ -625,13 +625,13 @@ export default function ActivitiesManager({
                         <div>
                           <div className="flex items-center gap-2 font-medium">
                             {a.title || getActivityDisplayName(a.type)}
-                            <span className="ml-1 text-xs text-MUTEDVAR">
+                            <span className="ml-1 text-xs text-[var(--muted)]">
                               [{a.type === "brainstorm"
                                 ? "standard"
                                 : a.type}]
                             </span>
                             {a.config?.skipped && (
-                              <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] text-MUTEDVAR">
+                              <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] text-[var(--muted)]">
                                 Skipped
                               </span>
                             )}
@@ -643,9 +643,9 @@ export default function ActivitiesManager({
                                 <StatusPill status="Overdue" label="Overdue" />
                               ) : (
                                 <>
-                                  <span className="inline-flex items-center gap-1 text-MUTEDVAR"><IconTimer size={12} /> <Timer endsAt={a.ends_at} /></span>
-                                  <Button size="xs" variant="outline" onClick={() => extendTimer(a.id, 1)}>+1m</Button>
-                                  <Button size="xs" variant="outline" onClick={() => extendTimer(a.id, 5)}>+5m</Button>
+                                  <span className="inline-flex items-center gap-1 text-[var(--muted)]"><IconTimer size={12} /> <Timer endsAt={a.ends_at} /></span>
+                                  <Button size="sm" variant="outline" className="px-2 py-0.5 text-[10px]" onClick={() => extendTimer(a.id, 1)}>+1m</Button>
+                                  <Button size="sm" variant="outline" className="px-2 py-0.5 text-[10px]" onClick={() => extendTimer(a.id, 5)}>+5m</Button>
                                 </>
                               )
                             ) : (
@@ -655,7 +655,7 @@ export default function ActivitiesManager({
 
                           <div className="mt-2 inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1 text-xs">
                             {(['Overview','Submissions','Settings'] as const).map(t => (
-                              <button key={t} onClick={()=>setTabById(prev=>({...prev,[a.id]:t}))} className={`px-2 py-0.5 rounded-full ${tab===t ? 'bg-[var(--brand)] text-[var(--btn-on-brand)]' : 'text-MUTEDVAR hover:bg-white/5'}`}>{t}</button>
+                              <button key={t} onClick={()=>setTabById(prev=>({...prev,[a.id]:t}))} className={`px-2 py-0.5 rounded-full ${tab===t ? 'bg-[var(--brand)] text-[var(--btn-on-brand)]' : 'text-[var(--muted)] hover:bg-white/5'}`}>{t}</button>
                             ))}
                           </div>
 
@@ -663,7 +663,7 @@ export default function ActivitiesManager({
                             <div className="mt-2 text-xs">
                               {groupList.length ===
                               0 ? (
-                                <span className="text-MUTEDVAR">
+                                <span className="text-[var(--muted)]">
                                   No groups
                                 </span>
                               ) : (
@@ -671,8 +671,8 @@ export default function ActivitiesManager({
                                   {max > 0 && (
                                     <div className="mb-2">
                                       <div className="flex items-center justify-between">
-                                        <span className="text-MUTEDVAR">Submissions</span>
-                                        <span className="text-MUTEDVAR">
+                                        <span className="text-[var(--muted)]">Submissions</span>
+                                        <span className="text-[var(--muted)]">
                                           {cc.total}/
                                           {max *
                                             groupList.length}
@@ -762,7 +762,7 @@ export default function ActivitiesManager({
                           )}
 
                           {tab === 'Overview' && (
-                            <div className="mt-3 text-xs text-MUTEDVAR">
+                            <div className="mt-3 text-xs text-[var(--muted)]">
                               {a.description ? a.description : a.instructions}
                             </div>
                           )}
@@ -1025,7 +1025,7 @@ export default function ActivitiesManager({
                 </details>
                 <Button size="sm" variant="outline" onClick={async ()=>{ await fetch(`/api/session/${sessionId}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status:'Completed' }) }); toast('Session ended','success'); }}>End</Button>
                 {current && (
-                  <span className="ml-2 text-xs text-MUTEDVAR">Current: <span className="text-[var(--text)]">{current.title || getActivityDisplayName(current.type)}</span> {(() => { const cc = counts[current.id]||{total:0,max:0,byGroup:{}}; const groupCount = groups.length; const denom = (cc.max||0)* (groupCount||0); return denom>0 ? `(${cc.total}/${denom})` : ''; })()}</span>
+                  <span className="ml-2 text-xs text-[var(--muted)]">Current: <span className="text-[var(--text)]">{current.title || getActivityDisplayName(current.type)}</span> {(() => { const cc = counts[current.id]||{total:0,max:0,byGroup:{}}; const groupCount = groups.length; const denom = (cc.max||0)* (groupCount||0); return denom>0 ? `(${cc.total}/${denom})` : ''; })()}</span>
                 )}
               </div>
             </div>
@@ -1079,7 +1079,7 @@ export default function ActivitiesManager({
               </div>
 
               {/* Help text for type */}
-              <div className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs text-MUTEDVAR">
+              <div className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs text-[var(--muted)]">
                 {type === "brainstorm" && (
                   <div>
                     Standard activity: capture one
@@ -1258,7 +1258,7 @@ export default function ActivitiesManager({
                 );
                 if (!a) {
                   return (
-                    <div className="text-sm text-MUTEDVAR">
+                    <div className="text-sm text-[var(--muted)]">
                       This activity no longer
                       exists.
                     </div>
@@ -1267,7 +1267,7 @@ export default function ActivitiesManager({
 
                 return (
                   <div className="space-y-3">
-                    <div className="text-xs text-MUTEDVAR">
+                    <div className="text-xs text-[var(--muted)]">
                       Type: {a.type}
                     </div>
 
