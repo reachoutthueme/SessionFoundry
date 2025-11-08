@@ -198,7 +198,7 @@ export async function GET(
 
   const md = buildDeckMarkdown(sessCheck as any, activities as any, participantsRows as any, submissions as any, votes as any);
 
-  const filename = `deck_${sanitizeForFilename(s.name || "session")}_${sanitizeForFilename(s.id)}.md`;
+  const filename = `deck_${sanitizeForFilename((sessCheck as any).name || "session")}_${sanitizeForFilename((sessCheck as any).id)}.md`;
 
   const res = new NextResponse(md, {
     status: 200,
