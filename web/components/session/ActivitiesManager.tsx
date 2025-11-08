@@ -465,14 +465,6 @@ export default function ActivitiesManager({
         <CardHeader
           title="Activities"
           subtitle="Create and control workshop flow"
-          rightSlot={
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-2 py-1 text-xs text-[var(--muted)]">
-              <span
-                className={`inline-block h-2 w-2 rounded-full ${statusColor} animate-pulse`}
-              />
-              <span>{statusLabel}</span>
-            </div>
-          }
         />
         <CardBody>
           {/* Sticky control bar */}
@@ -654,7 +646,7 @@ export default function ActivitiesManager({
                           </div>
 
                           <div className="mt-2 inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1 text-xs">
-                            {(['Overview','Submissions','Settings'] as const).map(t => (
+                            {(['Overview','Submissions'] as const).map(t => (
                               <button key={t} onClick={()=>setTabById(prev=>({...prev,[a.id]:t}))} className={`px-2 py-0.5 rounded-full ${tab===t ? 'bg-[var(--brand)] text-[var(--btn-on-brand)]' : 'text-[var(--muted)] hover:bg-white/5'}`}>{t}</button>
                             ))}
                           </div>
@@ -767,11 +759,7 @@ export default function ActivitiesManager({
                             </div>
                           )}
 
-                          {tab === 'Settings' && (
-                            <div className="mt-3">
-                              <Button size="sm" variant="outline" onClick={() => setEditId(a.id)}>Edit settings</Button>
-                            </div>
-                          )}
+                          {/* Settings tab removed; gear menu handles settings */}
                         </div>
 
                         {/* right-side controls */}

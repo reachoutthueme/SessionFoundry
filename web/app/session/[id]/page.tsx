@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import { IconCopy } from "@/components/ui/Icons";
+import { IconCopy, IconChevronRight } from "@/components/ui/Icons";
 import ProTag from "@/components/ui/ProTag";
 import { Tabs } from "@/components/ui/Tabs";
 import ResultsPanel from "@/components/session/ResultsPanel.vibrant";
@@ -285,34 +285,6 @@ export default function Page() {
           >
             Next
           </Button>
-          <div className="relative">
-            <details>
-              <summary className="list-none">
-                <Button variant="outline">Add time</Button>
-              </summary>
-              <div className="absolute right-0 z-10 mt-1 w-36 rounded-md border border-white/12 bg-[var(--panel)] p-1 shadow-lg">
-                {[{m:1,label:'+1 minute'},{m:5,label:'+5 minutes'}].map(({m,label})=> (
-                  <button key={m} className="block w-full rounded px-2 py-1 text-left text-sm hover:bg-white/5" onClick={async (e)=>{
-                    try {
-                      const r = await fetch(`/api/activities?session_id=${id}`, { cache: 'no-store' });
-                      const j = await r.json();
-                      const acts = Array.isArray(j.activities) ? j.activities : [];
-                      const cur = acts.find((a: any) => a.status === 'Active' || a.status === 'Voting');
-                      if (!cur) { toast('No active step', 'info'); return; }
-                      const prev = cur.ends_at ? new Date(cur.ends_at).getTime() : Date.now();
-                      const base = Number.isFinite(prev) ? Math.max(prev, Date.now()) : Date.now();
-                      const next = new Date(base + m*60_000).toISOString();
-                      const starts = cur.starts_at || new Date().toISOString();
-                      await fetch(`/api/activities/${cur.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'Active', starts_at: starts, ends_at: next }) });
-                      toast(`+${m} min added`, 'success');
-                    } catch { toast('Failed to add time','error'); }
-                    const d = (e.currentTarget.closest('details') as HTMLDetailsElement | null); if (d) d.open=false;
-                  }}>{label}</button>
-                ))}
-              </div>
-            </details>
-          </div>
-          <Button variant="outline" onClick={async ()=>{ await updateSession({ status: 'Completed' }); }}>End</Button>
           {!editing && (
             <Button
               variant="outline"
@@ -361,8 +333,8 @@ export default function Page() {
               onClick={() => setExportOpen((o) => !o)}
             >
               <span className="inline-flex items-center gap-1">
-                Export <span className="opacity-80">?</span>
-              </span>{" "}
+                Export <IconChevronRight size={12} className="rotate-90 opacity-80" />
+              </span>
               <ProTag />
             </Button>
 
