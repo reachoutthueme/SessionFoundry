@@ -55,8 +55,9 @@ export async function POST(req: NextRequest) {
   }
 
   const access_token = typeof body?.access_token === "string" ? body.access_token : "";
-  // refresh_token intentionally ignored on client (defense-in-depth)
-  const refresh_token = "";
+  // Optional refresh_token accepted for validation only; not persisted
+  const refresh_token: string | undefined =
+    typeof body?.refresh_token === "string" ? body.refresh_token : undefined;
   const expires_in = Number.isFinite(body?.expires_in) ? Number(body.expires_in) : 55 * 60; // ~55m default
   const refresh_expires_in = Number.isFinite(body?.refresh_expires_in)
     ? Number(body.refresh_expires_in)
