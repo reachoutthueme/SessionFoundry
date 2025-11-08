@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { supabaseAdmin, isSupabaseAdminConfigured } from "@/app/lib/supabaseAdmin";
 import { isAdminUser } from "@/server/policies";
@@ -30,7 +30,9 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
   const page = Number(searchParams?.page || 1) || 1;
   const per_page = Number(searchParams?.per_page || 20) || 20;
 
-  const r = await fetch(`/api/admin/users?q=${encodeURIComponent(q)}&page=${page}&per_page=${per_page}`, { cache: "no-store" });
+  const h = headers();
+  const origin = `${h.get("x-forwarded-proto") || "http"}://${h.get("host")}`;
+  const r = await fetch(`${origin}/api/admin/users?q=${encodeURIComponent(q)}&page=${page}&per_page=${per_page}`, { cache: "no-store" });
   const j = r.ok ? await r.json() : { users: [], count: 0 };
   const rows = Array.isArray(j.users) ? j.users : [];
 

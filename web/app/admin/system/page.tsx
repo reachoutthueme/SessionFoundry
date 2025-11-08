@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { supabaseAdmin, isSupabaseAdminConfigured } from "@/app/lib/supabaseAdmin";
 import { isAdminUser } from "@/server/policies";
@@ -26,7 +26,9 @@ export default async function AdminSystemPage() {
   const user = { id: data.user.id, email: data.user.email ?? null };
   if (!isAdminUser(user)) redirect("/");
 
-  const r = await fetch("/api/admin/system/health", { cache: "no-store" });
+  const h = headers();
+  const origin = `${h.get("x-forwarded-proto") || "http"}://${h.get("host")}`;
+  const r = await fetch(`${origin}/api/admin/system/health`, { cache: "no-store" });
   const j = r.ok ? await r.json() : { db_checks: {}, totals: {}, env: {} };
 
   return (

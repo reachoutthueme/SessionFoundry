@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { supabaseAdmin, isSupabaseAdminConfigured } from "@/app/lib/supabaseAdmin";
 import { isAdminUser } from "@/server/policies";
@@ -29,7 +29,9 @@ export default async function AdminPage() {
   if (!isAdminUser(user)) redirect("/");
 
   // Fetch overview metrics (server-side; cookies included)
-  const r = await fetch("/api/admin/metrics/overview", { cache: "no-store" });
+  const h = headers();
+  const origin = `${h.get("x-forwarded-proto") || "http"}://${h.get("host")}`;
+  const r = await fetch(`${origin}/api/admin/metrics/overview`, { cache: "no-store" });
   const j = r.ok ? await r.json() : { kpis: {}, health: {} };
   const k = j.kpis || {};
   const h = j.health || {};
