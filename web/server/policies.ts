@@ -20,3 +20,14 @@ export async function canExportSession(user: AuthedUser, sessionId: string): Pro
   if (user.plan !== "pro") return false;
   return userOwnsSession(user.id, sessionId);
 }
+
+// Admin helpers
+export function isAdminUser(user: { id: string; email?: string | null } | null | undefined): boolean {
+  if (!user) return false;
+  const adminIds = (process.env.ADMIN_USER_ID || "").split(",").map((s) => s.trim()).filter(Boolean);
+  const adminEmails = (process.env.ADMIN_EMAIL || "").toLowerCase().split(",").map((s) => s.trim()).filter(Boolean);
+  if (adminIds.length && adminIds.includes(user.id)) return true;
+  const email = (user.email || "").toLowerCase();
+  if (email && adminEmails.length && adminEmails.includes(email)) return true;
+  return false;
+}

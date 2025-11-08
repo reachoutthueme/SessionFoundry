@@ -26,6 +26,7 @@ interface User {
   id: string;
   email?: string | null;
   plan: "free" | "pro";
+  is_admin?: boolean;
 }
 
 interface SectionProps {
@@ -313,6 +314,14 @@ function ShellBody({ children }: PropsWithChildren) {
 
             {/* ADMIN */}
             <Section label="Admin" collapsed={collapsed}>
+              {me?.is_admin && (
+                <NavLink
+                  collapsed={collapsed}
+                  href="/admin"
+                  label="Admin"
+                  icon={<IconShield />}
+                />
+              )}
               <NavLink
                 collapsed={collapsed}
                 href="/settings"

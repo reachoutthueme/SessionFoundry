@@ -3,6 +3,7 @@ export const RESTRICTED_PREFIXES = [
   "/sessions",
   "/templates",
   "/settings",
+  "/admin",
   "/session/",
 ] as const;
 
@@ -26,4 +27,3 @@ export function isPublicRoute(pathname: string): boolean {
     pathname.startsWith("/policies")
   );
 }
-
