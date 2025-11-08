@@ -68,6 +68,7 @@ export default function ActivitiesManager({
 
   // Stocktake modal state
   const [manageId, setManageId] = useState<string | null>(null);
+  const [stockInitDraft, setStockInitDraft] = useState("");
 
   // "Actions" dropdown state
   const [menuId, setMenuId] = useState<string | null>(null);
@@ -1180,14 +1181,31 @@ export default function ActivitiesManager({
 
                 {type==="stocktake" && (
                   <div>
-                    <label className="block text-sm">Initiatives (list builder)</label>
-                    <div className="text-[10px] text-[var(--muted)] mb-1">Add each initiative you want people to rate S/L/S/M/B.</div>
-                    <textarea
-                      value={(configDraft?.initial_initiatives || []).join('\n')}
-                      onChange={(e)=> setConfigDraft((prev:any)=> ({...prev, initial_initiatives: e.target.value.split('\n')}))}
-                      placeholder={["Reduce deployment time","Automate testing","Refactor billing"].join('\n')}
-                      className="min-h-24 w-full rounded-md border border-white/10 bg-[var(--panel)] px-3 py-2 outline-none"
-                    />
+                    <label className="block text-sm">Stocktake initiatives</label>
+                    <div className="text-[10px] text-[var(--muted)] mb-2">Add or remove items</div>
+                    <div className="flex gap-2 mb-3">
+                      <input
+                        value={stockInitDraft}
+                        onChange={(e)=> setStockInitDraft(e.target.value)}
+                        placeholder="Add initiative"
+                        className="flex-1 h-10 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none"
+                        maxLength={200}
+                        onKeyDown={(e)=>{ if (e.key==='Enter') { e.preventDefault(); const t=stockInitDraft.trim(); if(!t) return; setConfigDraft((prev:any)=> ({...prev, initial_initiatives: [...(Array.isArray(prev?.initial_initiatives)?prev.initial_initiatives:[]), t]})); setStockInitDraft(""); } }}
+                      />
+                      <Button onClick={()=>{ const t=stockInitDraft.trim(); if(!t) return; setConfigDraft((prev:any)=> ({...prev, initial_initiatives: [...(Array.isArray(prev?.initial_initiatives)?prev.initial_initiatives:[]), t]})); setStockInitDraft(""); }}>Add</Button>
+                    </div>
+                    {!(Array.isArray(configDraft?.initial_initiatives) && configDraft.initial_initiatives.length>0) ? (
+                      <div className="text-sm text-[var(--muted)]">No initiatives yet.</div>
+                    ) : (
+                      <ul className="space-y-2">
+                        {(configDraft.initial_initiatives as string[]).map((it:string, idx:number)=> (
+                          <li key={idx} className="p-3 rounded-md bg-white/5 border border-white/10 flex items-center justify-between">
+                            <span className="text-sm break-words">{it}</span>
+                            <Button size="sm" variant="outline" onClick={()=> setConfigDraft((prev:any)=> ({...prev, initial_initiatives: (prev.initial_initiatives as string[]).filter((_,i)=> i!==idx)}))}>Remove</Button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 )}
 
