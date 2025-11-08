@@ -1067,7 +1067,7 @@ export default function ActivitiesManager({
               {/* Left: form */}
               <div className="space-y-3 min-w-0">
                 {/* Type cards */}
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr items-start content-start">
                   {[{ key:'brainstorm', title:'Standard activity', tag:'Collect ideas, then (optionally) vote.', bullets:['Each participant/group submits 1–N items','Optional point-based voting','Best for ideation & short pitches'] },
                     { key:'stocktake', title:'Stocktake', tag:'Vote S/L/S/M/B on initiatives.', bullets:['You define initiatives','Everyone votes once per initiative','Best for prioritization/portfolio'] },
                     { key:'assignment', title:'Assignment', tag:'Give a prompt; teams submit to that prompt.', bullets:['You define prompts (each row = an item)','Teams submit one deliverable','Best for quick exercises'] }].map((c:any)=>{
@@ -1077,10 +1077,10 @@ export default function ActivitiesManager({
                         key={c.key}
                         type="button"
                         onClick={() => { if (c.key !== type) setType(c.key as any); }}
-                        className={`min-w-0 h-full text-left rounded-md border p-3 transition ${active? 'border-white/30 bg-white/10' : 'border-white/10 hover:bg-white/5'}`}
+                        className={`min-w-0 h-full text-left rounded-md border p-3 transition ${active? 'border-white/30 bg-white/10' : 'border-white/10 hover:bg-white/5'} flex flex-col items-start justify-start gap-1`}
                       >
                         <div className="font-medium">{c.title}</div>
-                        <div className="min-h-[36px] text-xs text-[var(--muted)] mt-0.5">{c.tag}</div>
+                        <div className="min-h-[56px] text-xs text-[var(--muted)] mt-0.5">{c.tag}</div>
                         <ul className="mt-2 text-xs list-disc pl-4 text-[var(--muted)] break-words">
                           {c.bullets.map((b:string)=> <li key={b}>{b}</li>)}
                         </ul>
@@ -1184,7 +1184,7 @@ export default function ActivitiesManager({
                     <div className="text-[10px] text-[var(--muted)] mb-1">Add each initiative you want people to rate S/L/S/M/B.</div>
                     <textarea
                       value={(configDraft?.initial_initiatives || []).join('\n')}
-                      onChange={(e)=> setConfigDraft((prev:any)=> ({...prev, initial_initiatives: e.target.value.split('\n').map(s=>s.trim()).filter(Boolean)}))}
+                      onChange={(e)=> setConfigDraft((prev:any)=> ({...prev, initial_initiatives: e.target.value.split('\n')}))}
                       placeholder={["Reduce deployment time","Automate testing","Refactor billing"].join('\n')}
                       className="min-h-24 w-full rounded-md border border-white/10 bg-[var(--panel)] px-3 py-2 outline-none"
                     />
