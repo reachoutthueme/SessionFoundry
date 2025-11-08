@@ -65,10 +65,12 @@ export default function ActivitiesManager({
   const [eDescription, setEDescription] = useState("");
   // Centralized draft config for the Edit modal
   const [eConfigDraft, setEConfigDraft] = useState<any>({});
+  const [assignmentEditPromptDraft, setAssignmentEditPromptDraft] = useState("");
 
   // Stocktake modal state
   const [manageId, setManageId] = useState<string | null>(null);
   const [stockInitDraft, setStockInitDraft] = useState("");
+  const [assignmentPromptDraft, setAssignmentPromptDraft] = useState("");
 
   // "Actions" dropdown state
   const [menuId, setMenuId] = useState<string | null>(null);
@@ -1168,14 +1170,31 @@ export default function ActivitiesManager({
 
                 {type==="assignment" && (
                   <div>
-                    <label className="block text-sm">Prompts (one per line)</label>
-                    <div className="text-[10px] text-[var(--muted)] mb-1">Each row is an item. One item will be randomly assigned to each team.</div>
-                    <textarea
-                      value={(configDraft?.prompts || []).join('\n')}
-                      onChange={(e)=> setConfigDraft((prev:any)=> ({...prev, prompts: e.target.value.split('\n').map((s)=>s.trim()).filter(Boolean)}))}
-                      placeholder={["Draft a landing page hero","Write a customer email","Sketch a simple onboarding"].join('\n')}
-                      className="min-h-24 w-full rounded-md border border-white/10 bg-[var(--panel)] px-3 py-2 outline-none"
-                    />
+                    <label className="block text-sm">Prompts</label>
+                    <div className="text-[10px] text-[var(--muted)] mb-2">Each item on this list is a prompt. One item will be randomly assigned to each team.</div>
+                    <div className="flex gap-2 mb-3">
+                      <input
+                        value={assignmentPromptDraft}
+                        onChange={(e)=> setAssignmentPromptDraft(e.target.value)}
+                        placeholder="Add prompt"
+                        className="flex-1 h-10 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none"
+                        maxLength={200}
+                        onKeyDown={(e)=>{ if (e.key==='Enter') { e.preventDefault(); const t=assignmentPromptDraft.trim(); if(!t) return; setConfigDraft((prev:any)=> ({...prev, prompts: [...(Array.isArray(prev?.prompts)?prev.prompts:[]), t]})); setAssignmentPromptDraft(""); } }}
+                      />
+                      <Button onClick={()=>{ const t=assignmentPromptDraft.trim(); if(!t) return; setConfigDraft((prev:any)=> ({...prev, prompts: [...(Array.isArray(prev?.prompts)?prev.prompts:[]), t]})); setAssignmentPromptDraft(""); }}>Add</Button>
+                    </div>
+                    {!(Array.isArray(configDraft?.prompts) && configDraft.prompts.length>0) ? (
+                      <div className="text-sm text-[var(--muted)]">No prompts yet.</div>
+                    ) : (
+                      <ul className="space-y-2">
+                        {(configDraft.prompts as string[]).map((it:string, idx:number)=> (
+                          <li key={idx} className="p-3 rounded-md bg-white/5 border border-white/10 flex items-center justify-between">
+                            <span className="text-sm break-words">{it}</span>
+                            <Button size="sm" variant="outline" onClick={()=> setConfigDraft((prev:any)=> ({...prev, prompts: (prev.prompts as string[]).filter((_,i)=> i!==idx)}))}>Remove</Button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 )}
 
@@ -1255,7 +1274,29 @@ export default function ActivitiesManager({
                       <div className="text-sm">
                         <div className="mb-1">Rate initiative</div>
                         <div className="inline-flex gap-1 text-xs">
-                          {['stop','less','same','more','begin'].map(c=> <span key={c} className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5">{c}</span>)}
+                          {['stop','less','same','more','begin'].map(c=> (
+                            <span key={c} className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5">{c}</span>
+                          ))}
+                        </div>
+
+                        <div className="mt-3">
+                          <div className="mb-1 text-xs text-[var(--muted)]">Initiatives preview</div>
+                          {Array.isArray(configDraft?.initial_initiatives) && configDraft.initial_initiatives.length > 0 ? (
+                            <ul className="space-y-2 max-h-48 overflow-auto pr-1">
+                              {(configDraft.initial_initiatives as string[]).map((t, i) => (
+                                <li key={i} className="rounded-md border border-white/10 bg-white/5 p-2">
+                                  <div className="mb-1 text-xs break-words">{t || 'Untitled'}</div>
+                                  <div className="inline-flex gap-1 text-[10px]">
+                                    {['stop','less','same','more','begin'].map(c => (
+                                      <span key={c} className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5">{c}</span>
+                                    ))}
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <div className="text-xs text-[var(--muted)]">No initiatives yet. Add them on the left.</div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -1425,6 +1466,37 @@ export default function ActivitiesManager({
                       onChange={(fn) => setEConfigDraft(fn)}
                       onManageInitiatives={() => setManageId(a.id)}
                     />
+
+                    {/* Inline prompts manager for Assignment type */}
+                    {a.type === 'assignment' && (
+                      <div className="mt-3">
+                        <label className="block text-sm">Prompts</label>
+                        <div className="text-[10px] text-[var(--muted)] mb-2">Each item on this list is a prompt. One item will be randomly assigned to each team.</div>
+                        <div className="flex gap-2 mb-3">
+                          <input
+                            value={assignmentEditPromptDraft}
+                            onChange={(e)=> setAssignmentEditPromptDraft(e.target.value)}
+                            placeholder="Add prompt"
+                            className="flex-1 h-10 rounded-md bg-[var(--panel)] border border-white/10 px-3 outline-none"
+                            maxLength={200}
+                            onKeyDown={(e)=>{ if (e.key==='Enter') { e.preventDefault(); const t=assignmentEditPromptDraft.trim(); if(!t) return; setEConfigDraft((prev:any)=> ({...prev, prompts: [...(Array.isArray(prev?.prompts)?prev.prompts:[]), t]})); setAssignmentEditPromptDraft(""); } }}
+                          />
+                          <Button onClick={()=>{ const t=assignmentEditPromptDraft.trim(); if(!t) return; setEConfigDraft((prev:any)=> ({...prev, prompts: [...(Array.isArray(prev?.prompts)?prev.prompts:[]), t]})); setAssignmentEditPromptDraft(""); }}>Add</Button>
+                        </div>
+                        {!(Array.isArray(eConfigDraft?.prompts) && eConfigDraft.prompts.length>0) ? (
+                          <div className="text-sm text-[var(--muted)]">No prompts yet.</div>
+                        ) : (
+                          <ul className="space-y-2">
+                            {(eConfigDraft.prompts as string[]).map((it:string, idx:number)=> (
+                              <li key={idx} className="p-3 rounded-md bg-white/5 border border-white/10 flex items-center justify-between">
+                                <span className="text-sm break-words">{it}</span>
+                                <Button size="sm" variant="outline" onClick={()=> setEConfigDraft((prev:any)=> ({...prev, prompts: (prev.prompts as string[]).filter((_,i)=> i!==idx)}))}>Remove</Button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })()
