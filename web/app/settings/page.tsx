@@ -169,6 +169,127 @@ export default function SettingsPage() {
           )}
         </CardBody>
       </Card>
+
+      {/* Change password */}
+      <Card>
+        <CardHeader
+          title="Change Password"
+          subtitle="Update your account password"
+        />
+        <CardBody>
+          {loading ? (
+            <div className="h-24 animate-pulse rounded bg-white/10" />
+          ) : !me ? (
+            <div className="text-sm text-[var(--muted)]">
+              {loadError ? loadError : "You are not signed in."}
+            </div>
+          ) : (
+            <ChangePasswordForm />
+          )}
+        </CardBody>
+      </Card>
     </div>
+  );
+}
+
+function ChangePasswordForm() {
+  const toast = useToast();
+  const [oldPw, setOldPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [show, setShow] = useState<{ old: boolean; n1: boolean; n2: boolean }>({ old: false, n1: false, n2: false });
+
+  async function submit(e?: React.FormEvent) {
+    e?.preventDefault();
+    if (busy) return;
+    if (!oldPw || !newPw || !confirmPw) {
+      toast("Please fill in all fields", "error");
+      return;
+    }
+    if (newPw !== confirmPw) {
+      toast("New passwords do not match", "error");
+      return;
+    }
+    if (newPw.length < 8) {
+      toast("Password must be at least 8 characters", "error");
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = await apiFetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ old_password: oldPw, new_password: newPw, confirm_password: confirmPw }),
+      });
+      const j = await r.json().catch(() => ({} as any));
+      if (!r.ok) {
+        toast(j?.error || "Failed to change password", "error");
+        return;
+      }
+      toast("Password updated", "success");
+      setOldPw("");
+      setNewPw("");
+      setConfirmPw("");
+    } catch (err) {
+      toast("Network error", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form className="space-y-3" onSubmit={submit}>
+      <div className="flex items-center gap-3">
+        <label className="w-40 text-sm text-[var(--muted)]">Current password</label>
+        <input
+          type={show.old ? "text" : "password"}
+          value={oldPw}
+          onChange={(e) => setOldPw(e.target.value)}
+          className="flex-1 h-10 rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
+          autoComplete="current-password"
+        />
+        <button type="button" className="text-xs text-[var(--muted)] hover:text-[var(--text)]" onClick={() => setShow((s)=>({ ...s, old: !s.old }))}>
+          {show.old ? "Hide" : "Show"}
+        </button>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <label className="w-40 text-sm text-[var(--muted)]">New password</label>
+        <input
+          type={show.n1 ? "text" : "password"}
+          value={newPw}
+          onChange={(e) => setNewPw(e.target.value)}
+          className="flex-1 h-10 rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
+          autoComplete="new-password"
+        />
+        <button type="button" className="text-xs text-[var(--muted)] hover:text-[var(--text)]" onClick={() => setShow((s)=>({ ...s, n1: !s.n1 }))}>
+          {show.n1 ? "Hide" : "Show"}
+        </button>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <label className="w-40 text-sm text-[var(--muted)]">Confirm new password</label>
+        <input
+          type={show.n2 ? "text" : "password"}
+          value={confirmPw}
+          onChange={(e) => setConfirmPw(e.target.value)}
+          className="flex-1 h-10 rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
+          autoComplete="new-password"
+        />
+        <button type="button" className="text-xs text-[var(--muted)] hover:text-[var(--text)]" onClick={() => setShow((s)=>({ ...s, n2: !s.n2 }))}>
+          {show.n2 ? "Hide" : "Show"}
+        </button>
+      </div>
+
+      <div className="flex justify-end gap-2 pt-2">
+        <Button type="button" variant="outline" onClick={() => { setOldPw(""); setNewPw(""); setConfirmPw(""); }}>
+          Reset
+        </Button>
+        <Button type="submit" disabled={busy}>
+          {busy ? "Saving..." : "Change Password"}
+        </Button>
+      </div>
+    </form>
   );
 }
