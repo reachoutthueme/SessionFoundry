@@ -197,7 +197,7 @@ export async function POST(req: Request) {
   }
 
   // participant + group from cookie (required)
-  const participant = await getParticipantInSession(req, session_id);
+  const participant = await getParticipantInSession(req, session_id || "");
   if (!participant) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const participant_id = participant.id;
   const group_id: string | null = participant.group_id ?? null;
@@ -209,7 +209,7 @@ export async function POST(req: Request) {
   }
 
   // ensure session is Active for writing
-  const sStatus = await getSessionStatus(session_id);
+  const sStatus = await getSessionStatus(session_id || "");
   if (sStatus !== "Active")
     return NextResponse.json(
       { error: "Session not accepting submissions" },
