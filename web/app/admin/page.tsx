@@ -29,7 +29,7 @@ export default async function AdminPage() {
   if (!isAdminUser(user)) redirect("/");
 
   // Fetch overview metrics (server-side; cookies included)
-  const hdrs = headers();
+  const hdrs = await headers();
   const origin = `${hdrs.get("x-forwarded-proto") || "http"}://${hdrs.get("host")}`;
   const r = await fetch(`${origin}/api/admin/metrics/overview`, { cache: "no-store" });
   const j = r.ok ? await r.json() : { kpis: {}, health: {} };

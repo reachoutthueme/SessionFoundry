@@ -30,7 +30,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
   const page = Number(searchParams?.page || 1) || 1;
   const per_page = Number(searchParams?.per_page || 20) || 20;
 
-  const h = headers();
+  const h = await headers();
   const origin = `${h.get("x-forwarded-proto") || "http"}://${h.get("host")}`;
   const r = await fetch(`${origin}/api/admin/users?q=${encodeURIComponent(q)}&page=${page}&per_page=${per_page}`, { cache: "no-store" });
   const j = r.ok ? await r.json() : { users: [], count: 0 };

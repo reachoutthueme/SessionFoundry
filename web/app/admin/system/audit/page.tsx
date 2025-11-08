@@ -40,7 +40,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams?: 
   if (from) qs.set('from', from);
   if (to) qs.set('to', to);
 
-  const h = headers();
+  const h = await headers();
   const origin = `${h.get("x-forwarded-proto") || "http"}://${h.get("host")}`;
   const r = await fetch(`${origin}/api/admin/system/audit?${qs.toString()}`, { cache: "no-store" });
   const j = r.ok ? await r.json() : { logs: [] };
