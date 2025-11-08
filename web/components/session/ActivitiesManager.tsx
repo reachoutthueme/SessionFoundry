@@ -1032,6 +1032,7 @@ export default function ActivitiesManager({
             open={open}
             onClose={() => setOpen(false)}
             title="Add step"
+            size="lg"
             footer={
               <>
                 <div className="mr-auto text-xs text-[var(--muted)]">
@@ -1065,9 +1066,9 @@ export default function ActivitiesManager({
           >
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {/* Left: form */}
-              <div className="space-y-3">
+              <div className="space-y-3 min-w-0">
                 {/* Type cards */}
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {[{ key:'brainstorm', title:'Standard activity', tag:'Collect ideas, then (optionally) vote.', bullets:['Each participant/group submits 1–N items','Optional point-based voting','Best for ideation & short pitches'] },
                     { key:'stocktake', title:'Stocktake', tag:'Vote S/L/S/M/B on initiatives.', bullets:['You define initiatives','Everyone votes once per initiative','Best for prioritization/portfolio'] },
                     { key:'assignment', title:'Assignment', tag:'Give a prompt; teams submit to that prompt.', bullets:['You define prompts (each row = an item)','Teams submit one deliverable','Best for quick exercises'] }].map((c:any)=>{
@@ -1082,11 +1083,11 @@ export default function ActivitiesManager({
                           setType(c.key as any);
                         }
                       }}
-                        className={`text-left rounded-md border p-3 transition ${active? 'border-white/30 bg-white/10' : 'border-white/10 hover:bg-white/5'}`}
+                        className={`min-w-0 text-left rounded-md border p-3 transition ${active? 'border-white/30 bg-white/10' : 'border-white/10 hover:bg-white/5'}`}
                       >
                         <div className="font-medium">{c.title}</div>
                         <div className="text-xs text-[var(--muted)] mt-0.5">{c.tag}</div>
-                        <ul className="mt-2 text-xs list-disc pl-4 text-[var(--muted)]">
+                        <ul className="mt-2 text-xs list-disc pl-4 text-[var(--muted)] break-words">
                           {c.bullets.map((b:string)=> <li key={b}>{b}</li>)}
                         </ul>
                       </button>
@@ -1226,7 +1227,7 @@ export default function ActivitiesManager({
               </div>
 
               {/* Right: live preview */}
-              <div className="rounded-md border border-white/10 bg-white/5 p-3">
+              <div className="rounded-md border border-white/10 bg-white/5 p-3 min-w-0">
                 <div className="mb-2 text-xs text-[var(--muted)]">Preview — participant view</div>
                 <div className="rounded-md border border-white/10 bg-[var(--panel)] p-3">
                   <div className="text-lg font-semibold">{title || (type==='assignment' ? 'Untitled assignment' : type==='stocktake' ? 'Untitled stocktake' : 'Untitled activity')}</div>
