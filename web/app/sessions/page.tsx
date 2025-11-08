@@ -314,8 +314,19 @@ export default function Page() {
                 </thead>
                 <tbody>
                   {filtered.map((s, idx) => (
-                    <tr key={s.id} className={`border-t border-white/10 ${idx % 2 === 1 ? 'bg-white/5' : ''} hover:bg-white/10`}
-                      onClick={() => router.push(`/session/${s.id}`)}>
+                    <tr
+                      key={s.id}
+                      className={`cursor-pointer border-t border-white/10 ${idx % 2 === 1 ? 'bg-white/5' : ''} hover:bg-white/10`}
+                      onClick={() => router.push(`/session/${s.id}`)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          router.push(`/session/${s.id}`);
+                        }
+                      }}
+                    >
                       <td className="px-4 py-3" onClick={(e)=>e.stopPropagation()}>
                         <input type="checkbox" aria-label={`Select ${s.name}`} checked={!!selected[s.id]} onChange={(e)=> setSelected(prev=> ({ ...prev, [s.id]: e.target.checked }))} />
                       </td>
@@ -338,7 +349,7 @@ export default function Page() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-right" onClick={(e)=>e.stopPropagation()}>
-                        <Link href={`/session/${s.id}`}><Button variant="ghost">Open</Button></Link>
+                        <Button variant="ghost" onClick={() => router.push(`/session/${s.id}`)}>Open</Button>
                       </td>
                     </tr>
                   ))}

@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/Toast";
 import StocktakeInitiativesManager from "@/components/session/StocktakeInitiativesManager";
 import Timer from "@/components/ui/Timer";
 import FacilitatorConfig from "@/components/activities/facilitator";
+import InfoPopover from "@/components/ui/InfoPopover";
 import { validateConfig } from "@/lib/activities/schemas";
 import { StatusPill } from "@/components/ui/StatusPill";
 
@@ -1033,6 +1034,19 @@ export default function ActivitiesManager({
             title="Add step"
             footer={
               <>
+                <div className="mr-auto text-xs text-[var(--muted)]">
+                  {/* Summary bar */}
+                  {(() => {
+                    const parts: string[] = [];
+                    parts.push(type === 'brainstorm' ? 'Brainstorm' : type === 'stocktake' ? 'Stocktake' : 'Assignment');
+                    const ms = Number(configDraft?.max_submissions || 0);
+                    if (type !== 'stocktake' && ms) parts.push(`${ms} submissions per participant`);
+                    if (type !== 'stocktake') parts.push((configDraft?.voting_enabled ? 'Voting on' : 'Voting off'));
+                    const tl = Number(configDraft?.time_limit_sec || 0);
+                    if (tl) parts.push(`${Math.floor(tl/60)}:${String(tl%60).padStart(2,'0')}`);
+                    return <span>{parts.join(' • ')}</span>;
+                  })()}
+                </div>
                 <Button
                   variant="outline"
                   onClick={() => setOpen(false)}
@@ -1040,124 +1054,216 @@ export default function ActivitiesManager({
                   Cancel
                 </Button>
                 <Button
+                  type="submit"
                   onClick={create}
-                  disabled={!title.trim()}
+                  disabled={title.trim().length<2 || title.trim().length>80 || (type!=='stocktake' && configDraft?.voting_enabled && !(Number(configDraft?.points_budget)||0))}
                 >
                   Create
                 </Button>
               </>
             }
           >
-            <div className="space-y-3">
-              {/* Type */}
-              <div className="flex gap-3">
-                <label className="w-28 pt-2 text-sm">
-                  Type
-                </label>
-                <select
-                  value={type}
-                  onChange={(e) =>
-                    setType(e.target.value as any)
-                  }
-                  className="flex-1 h-10 rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
-                >
-                  <option value="brainstorm">
-                    Standard activity
-                  </option>
-                  <option value="stocktake">
-                    Process stocktake
-                  </option>
-                  <option value="assignment">
-                    Prompt assignment
-                  </option>
-                </select>
-              </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {/* Left: form */}
+              <div className="space-y-3">
+                {/* Type cards */}
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  {[{ key:'brainstorm', title:'Standard activity', tag:'Collect ideas, then (optionally) vote.', bullets:['Each participant/group submits 1–N items','Optional point-based voting','Best for ideation & short pitches'] },
+                    { key:'stocktake', title:'Stocktake', tag:'Vote S/L/S/M/B on initiatives.', bullets:['You define initiatives','Everyone votes once per initiative','Best for prioritization/portfolio'] },
+                    { key:'assignment', title:'Assignment', tag:'Give a prompt; teams submit to that prompt.', bullets:['You define prompts (each row = an item)','Teams submit one deliverable','Best for quick exercises'] }].map((c:any)=>{
+                    const active = type===c.key;
+                    return (
+                      <button key={c.key} type="button" onClick={()=>{
+                        if (c.key!==type) {
+                          // confirm if switching away from voting-enabled types to ones without voting UI
+                          if ((type==='brainstorm' || type==='assignment') && configDraft?.voting_enabled && c.key!=='brainstorm') {
+                            if (!confirm(`Switch to ${c.title}? Voting settings won’t apply.`)) return;
+                          }
+                          setType(c.key as any);
+                        }
+                      }}
+                        className={`text-left rounded-md border p-3 transition ${active? 'border-white/30 bg-white/10' : 'border-white/10 hover:bg-white/5'}`}
+                      >
+                        <div className="font-medium">{c.title}</div>
+                        <div className="text-xs text-[var(--muted)] mt-0.5">{c.tag}</div>
+                        <ul className="mt-2 text-xs list-disc pl-4 text-[var(--muted)]">
+                          {c.bullets.map((b:string)=> <li key={b}>{b}</li>)}
+                        </ul>
+                      </button>
+                    );
+                  })}
+                </div>
 
-              {/* Help text for type */}
-              <div className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs text-[var(--muted)]">
-                {type === "brainstorm" && (
-                  <div>
-                    Standard activity: capture one
-                    or more submissions per
-                    participant or group. Useful
-                    for many tasks (e.g., draft an
-                    outline, propose actions). You
-                    can enable voting to
-                    prioritize ideas.
+                {/* Title */}
+                <div>
+                  <label className="block text-sm">Title</label>
+                  <div className="text-[10px] text-[var(--muted)] mb-1">What participants will see at the top of the screen.</div>
+                  <input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Top risks in Q1 delivery"
+                    className="h-10 w-full rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
+                  />
+                  {title.trim().length>0 && (title.trim().length<2 || title.trim().length>80) && (
+                    <div className="mt-1 text-xs text-rose-300">Enter a title (2–80 characters).</div>
+                  )}
+                </div>
+
+                {/* Instructions / Prompt (label varies) */}
+                <div>
+                  <label className="block text-sm">{type==='assignment' ? 'Prompt' : 'Instructions'}</label>
+                  <div className="text-[10px] text-[var(--muted)] mb-1">What you want them to do. Keep it action-oriented (e.g., “List 3 risks for…”).</div>
+                  <textarea
+                    value={instructions}
+                    onChange={(e) => setInstructions(e.target.value)}
+                    placeholder={type==='assignment' ? 'List 3 risks and 1 mitigation for each.' : 'Describe the task clearly and briefly.'}
+                    className="min-h-20 w-full rounded-md border border-white/10 bg-[var(--panel)] px-3 py-2 outline-none"
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-sm">Description</label>
+                  <div className="text-[10px] text-[var(--muted)] mb-1">Optional context visible to facilitators only.</div>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Any facilitator notes or context"
+                    className="min-h-20 w-full rounded-md border border-white/10 bg-[var(--panel)] px-3 py-2 outline-none"
+                  />
+                </div>
+
+                {/* Per-type settings */}
+                {type!=="stocktake" && (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-sm">
+                        Max submissions <span className="text-[var(--muted)]">(per participant)</span>
+                        <InfoPopover>
+                          Upper limit per participant/group. Example: set 3 if you want each person to add up to three ideas.
+                          Use 0 for unlimited.
+                        </InfoPopover>
+                      </label>
+                      <input
+                        type="number"
+                        value={configDraft?.max_submissions ?? ''}
+                        onChange={(e)=> setConfigDraft((prev:any)=> ({...prev, max_submissions: Math.max(0, parseInt(e.target.value||'0',10)||0)}))}
+                        placeholder="3"
+                        className="h-10 w-full rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 pt-6">
+                      <input id="voting-enabled" type="checkbox" checked={!!configDraft?.voting_enabled} onChange={(e)=> setConfigDraft((prev:any)=> ({...prev, voting_enabled: e.target.checked, points_budget: e.target.checked ? (prev?.points_budget||100) : undefined}))} />
+                      <label htmlFor="voting-enabled" className="text-sm">Enable voting</label>
+                    </div>
+                    {configDraft?.voting_enabled && (
+                      <div className="sm:col-span-2">
+                        <label className="block text-sm">
+                          Points budget <span className="text-[var(--muted)]">(per voter)</span>
+                          <InfoPopover>
+                            Total points each voter can distribute across any ideas. With 100 points, a voter could put 40 on idea A, 30 on B, 30 on C.
+                          </InfoPopover>
+                        </label>
+                        <input
+                          type="number"
+                          value={configDraft?.points_budget ?? ''}
+                          onChange={(e)=> setConfigDraft((prev:any)=> ({...prev, points_budget: Math.max(1, parseInt(e.target.value||'0',10)||0)}))}
+                          placeholder="100"
+                          className="h-10 w-full rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
+                        />
+                        {(!Number(configDraft?.points_budget) || Number(configDraft?.points_budget) < 1) && (
+                          <div className="mt-1 text-xs text-rose-300">Points budget must be ≥ 1 when voting is enabled.</div>
+                        )}
+                        <div className="text-[10px] text-[var(--muted)] mt-1">Tip: With 100 points, a voter could put 40 on idea A, 30 on B, 30 on C.</div>
+                      </div>
+                    )}
                   </div>
                 )}
-                {type === "stocktake" && (
+
+                {type==="assignment" && (
                   <div>
-                    Review predefined initiatives
-                    with Stop/Less/Same/More/Begin
-                    ratings. Manage the list via
-                    the Initiatives action on the
-                    activity.
+                    <label className="block text-sm">Prompts (one per line)</label>
+                    <div className="text-[10px] text-[var(--muted)] mb-1">Each row is an item. One item will be randomly assigned to each team.</div>
+                    <textarea
+                      value={(configDraft?.prompts || []).join('\n')}
+                      onChange={(e)=> setConfigDraft((prev:any)=> ({...prev, prompts: e.target.value.split('\n').map((s)=>s.trim()).filter(Boolean)}))}
+                      placeholder={["Draft a landing page hero","Write a customer email","Sketch a simple onboarding"].join('\n')}
+                      className="min-h-24 w-full rounded-md border border-white/10 bg-[var(--panel)] px-3 py-2 outline-none"
+                    />
                   </div>
                 )}
-                {type === "assignment" && (
+
+                {type==="stocktake" && (
                   <div>
-                    Distribute a list of prompts
-                    across groups so each group
-                    works on one. You can enable
-                    voting later to compare
-                    outputs.
+                    <label className="block text-sm">
+                      Initiatives (list builder)
+                      <InfoPopover>
+                        Add each initiative you want people to rate Stop/Less/Same/More/Begin. One row per initiative.
+                      </InfoPopover>
+                    </label>
+                    <div className="text-[10px] text-[var(--muted)] mb-1">Add each initiative you want people to rate S/L/S/M/B.</div>
+                    <textarea
+                      value={(configDraft?.initial_initiatives || []).join('\n')}
+                      onChange={(e)=> setConfigDraft((prev:any)=> ({...prev, initial_initiatives: e.target.value.split('\n').map(s=>s.trim()).filter(Boolean)}))}
+                      placeholder={["Reduce deployment time","Automate testing","Refactor billing"].join('\n')}
+                      className="min-h-24 w-full rounded-md border border-white/10 bg-[var(--panel)] px-3 py-2 outline-none"
+                    />
                   </div>
                 )}
+
+                {/* Time limit */}
+                <div>
+                  <label className="block text-sm">Time limit <span className="text-[var(--muted)]">(seconds)</span></label>
+                  <div className="text-[10px] text-[var(--muted)] mb-1">Timer is visible to all and you can extend it during the activity.</div>
+                  <input
+                    type="number"
+                    value={configDraft?.time_limit_sec ?? ''}
+                    onChange={(e)=> setConfigDraft((prev:any)=> ({...prev, time_limit_sec: Math.max(0, parseInt(e.target.value||'0',10)||0)}))}
+                    placeholder="300"
+                    className="h-10 w-full rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
+                  />
+                </div>
               </div>
 
-              {/* Title */}
-              <div className="flex gap-3">
-                <label className="w-28 pt-2 text-sm">
-                  Title
-                </label>
-                <input
-                  value={title}
-                  onChange={(e) =>
-                    setTitle(e.target.value)
-                  }
-                  className="flex-1 h-10 rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
-                />
+              {/* Right: live preview */}
+              <div className="rounded-md border border-white/10 bg-white/5 p-3">
+                <div className="mb-2 text-xs text-[var(--muted)]">Preview — participant view</div>
+                <div className="rounded-md border border-white/10 bg-[var(--panel)] p-3">
+                  <div className="text-lg font-semibold">{title || (type==='assignment' ? 'Untitled assignment' : type==='stocktake' ? 'Untitled stocktake' : 'Untitled activity')}</div>
+                  <div className="mt-1 text-sm text-[var(--muted)]">{instructions || (type==='assignment' ? 'Your assigned prompt will appear here.' : 'Instructions will appear here.')}</div>
+                  <div className="mt-3">
+                    {type==='brainstorm' && (
+                      <div className="text-sm">
+                        <div className="mb-1">Submission box</div>
+                        <div className="h-8 rounded border border-white/10 bg-white/5" />
+                        {configDraft?.voting_enabled && (
+                          <div className="mt-3">
+                            <div className="mb-1 text-xs text-[var(--muted)]">Voting chips (example)</div>
+                            <div className="inline-flex gap-1">
+                              {[10,20,30,40].map(p=> <span key={p} className="rounded-full bg-[var(--brand)]/20 px-2 py-0.5 text-xs">+{p}</span>)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {type==='assignment' && (
+                      <div className="text-sm">
+                        <div className="mb-1">Assigned item</div>
+                        <div className="rounded border border-white/10 bg-white/5 p-2 text-xs">{(configDraft?.prompts && configDraft.prompts[0]) || 'One of the prompt items will be randomly assigned to each team.'}</div>
+                        <div className="mt-2 text-[10px] text-[var(--muted)]">Each row in the prompts list is an item. One item is randomly assigned to each team.</div>
+                      </div>
+                    )}
+                    {type==='stocktake' && (
+                      <div className="text-sm">
+                        <div className="mb-1">Rate initiative</div>
+                        <div className="inline-flex gap-1 text-xs">
+                          {['stop','less','same','more','begin'].map(c=> <span key={c} className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5">{c}</span>)}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-
-              {/* Instructions */}
-              <div className="flex gap-3">
-                <label className="w-28 pt-2 text-sm">
-                  Instructions
-                </label>
-                <textarea
-                  value={instructions}
-                  onChange={(e) =>
-                    setInstructions(
-                      e.target.value
-                    )
-                  }
-                  className="flex-1 min-h-20 rounded-md border border-white/10 bg-[var(--panel)] px-3 py-2 outline-none"
-                />
-              </div>
-
-              {/* Description */}
-              <div className="flex gap-3">
-                <label className="w-28 pt-2 text-sm">
-                  Description
-                </label>
-                <textarea
-                  value={description}
-                  onChange={(e) =>
-                    setDescription(
-                      e.target.value
-                    )
-                  }
-                  className="flex-1 min-h-20 rounded-md border border-white/10 bg-[var(--panel)] px-3 py-2 outline-none"
-                />
-              </div>
-
-              {/* Per-type settings */}
-              <FacilitatorConfig
-                type={type}
-                draft={configDraft}
-                onChange={(fn) => setConfigDraft(fn)}
-              />
             </div>
           </Modal>
 

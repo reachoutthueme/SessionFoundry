@@ -91,6 +91,10 @@ export async function POST(req: Request) {
     );
   }
   const { session_id, type, title, instructions, description, config, order_index } = parsed.data;
+  // Capture any helper fields that aren't part of strict config schemas (e.g., initial_initiatives)
+  const initialInitiatives: string[] = Array.isArray(raw?.config?.initial_initiatives)
+    ? (raw.config.initial_initiatives as any[]).map((s) => String(s).trim()).filter(Boolean)
+    : [];
 
   // Auth
   const user = await getUserFromRequest(req);
@@ -143,6 +147,16 @@ export async function POST(req: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // If stocktake and initiatives were provided at create-time, seed them
+  try {
+    if (type === 'stocktake' && initialInitiatives.length && data?.id) {
+      const rows = initialInitiatives.map((t) => ({ activity_id: (data as any).id, title: t }));
+      await supabaseAdmin.from('stocktake_initiatives').insert(rows);
+    }
+  } catch {
+    // non-fatal; leave creation successful even if seeding initiatives fails
+  }
 
   return NextResponse.json({ activity: data }, { status: 201 });
 }
