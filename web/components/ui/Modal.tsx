@@ -9,7 +9,7 @@ export default function Modal({
   title?: string;
   children?: React.ReactNode;
   footer?: React.ReactNode;
-  size?: "md" | "lg";
+  size?: "md" | "lg" | "xl";
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const lastActiveRef = useRef<Element | null>(null);
@@ -74,8 +74,11 @@ export default function Modal({
   return (
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-labelledby={titleId}>
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div ref={containerRef} className={`w-full ${size === 'lg' ? 'max-w-3xl' : 'max-w-md'} rounded-[var(--radius)] bg-[var(--panel-2)] border border-white/10 shadow-2xl animate-modal-in`}>
+      <div className="absolute inset-0 flex items-center justify-center p-4 md:p-6">
+        <div
+          ref={containerRef}
+          className={`w-full ${size === 'xl' ? 'max-w-5xl' : size === 'lg' ? 'max-w-3xl' : 'max-w-md'} my-6 md:my-10 max-h-[85vh] overflow-auto rounded-[var(--radius)] bg-[var(--panel-2)] border border-white/10 shadow-2xl animate-modal-in`}
+        >
           {title && <div id={titleId} className="p-4 border-b border-white/10 font-semibold">{title}</div>}
           <div className="p-4">{children}</div>
           {footer && <div className="p-3 border-t border-white/10 flex justify-end gap-2">{footer}</div>}

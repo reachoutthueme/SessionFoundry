@@ -1032,7 +1032,7 @@ export default function ActivitiesManager({
             open={open}
             onClose={() => setOpen(false)}
             title="Add step"
-            size="lg"
+            size="xl"
             footer={
               <>
                 <div className="mr-auto text-xs text-[var(--muted)]">
