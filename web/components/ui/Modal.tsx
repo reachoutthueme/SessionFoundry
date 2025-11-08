@@ -77,11 +77,22 @@ export default function Modal({
       <div className="absolute inset-0 flex items-center justify-center p-4 md:p-6">
         <div
           ref={containerRef}
-          className={`w-full ${size === 'xl' ? 'max-w-5xl' : size === 'lg' ? 'max-w-3xl' : 'max-w-md'} my-6 md:my-10 max-h-[85vh] overflow-auto rounded-[var(--radius)] bg-[var(--panel-2)] border border-white/10 shadow-2xl animate-modal-in`}
+          className={`w-full ${size === 'xl' ? 'max-w-5xl' : size === 'lg' ? 'max-w-3xl' : 'max-w-md'} my-6 md:my-10 max-h-[85vh] flex flex-col rounded-[var(--radius)] bg-[var(--panel-2)] border border-white/10 shadow-2xl animate-modal-in`}
         >
-          {title && <div id={titleId} className="p-4 border-b border-white/10 font-semibold">{title}</div>}
-          <div className="p-4">{children}</div>
-          {footer && <div className="p-3 border-t border-white/10 flex justify-end gap-2">{footer}</div>}
+          {title && (
+            <div
+              id={titleId}
+              className="sticky top-0 z-10 p-4 border-b border-white/10 font-semibold bg-[var(--panel-2)]/95 backdrop-blur"
+            >
+              {title}
+            </div>
+          )}
+          <div className="p-4 overflow-auto">{children}</div>
+          {footer && (
+            <div className="sticky bottom-0 z-10 p-3 border-t border-white/10 bg-[var(--panel-2)]/95 backdrop-blur flex justify-end gap-2">
+              {footer}
+            </div>
+          )}
         </div>
       </div>
     </div>
