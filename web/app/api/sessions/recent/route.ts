@@ -36,30 +36,50 @@ export async function GET(req: Request) {
       last_viewed_at: String(r.last_viewed_at || r.sessions.created_at),
     }));
 
-    // Enrich counts (small N, so individual count queries are acceptable)
-    const withCounts = await Promise.all(
-      sessions.map(async (s) => {
-        let participants = 0;
-        let activities = 0;
-        try {
-          const [{ count: pc }, { count: ac }] = await Promise.all([
-            supabaseAdmin
-              .from("participants")
-              .select("id", { count: "exact", head: true })
-              .eq("session_id", s.id),
-            supabaseAdmin
-              .from("activities")
-              .select("id", { count: "exact", head: true })
-              .eq("session_id", s.id),
-          ]);
-          participants = typeof pc === "number" ? pc : 0;
-          activities = typeof ac === "number" ? ac : 0;
-        } catch {
-          // ignore count errors; keep zeros
+    // Enrich counts with two aggregate queries instead of per-session head counts
+    const sessionIds = sessions.map((s) => s.id);
+    let bySessionParticipants = new Map<string, number>();
+    let bySessionActivities = new Map<string, number>();
+
+    if (sessionIds.length > 0) {
+      try {
+        // Note: This selects rows and aggregates in memory. For very large tables,
+        // prefer a Postgres view or RPC to return grouped counts instead.
+        const [partsRes, actsRes] = await Promise.all([
+          supabaseAdmin
+            .from("participants")
+            .select("session_id")
+            .in("session_id", sessionIds),
+          supabaseAdmin
+            .from("activities")
+            .select("session_id")
+            .in("session_id", sessionIds),
+        ]);
+
+        if (!partsRes.error && Array.isArray(partsRes.data)) {
+          partsRes.data.forEach((row: any) => {
+            const sid = String(row.session_id || "");
+            if (!sid) return;
+            bySessionParticipants.set(sid, (bySessionParticipants.get(sid) || 0) + 1);
+          });
         }
-        return { ...s, participants, activities };
-      })
-    );
+        if (!actsRes.error && Array.isArray(actsRes.data)) {
+          actsRes.data.forEach((row: any) => {
+            const sid = String(row.session_id || "");
+            if (!sid) return;
+            bySessionActivities.set(sid, (bySessionActivities.get(sid) || 0) + 1);
+          });
+        }
+      } catch {
+        // ignore aggregation errors; keep zeros
+      }
+    }
+
+    const withCounts = sessions.map((s) => ({
+      ...s,
+      participants: bySessionParticipants.get(s.id) || 0,
+      activities: bySessionActivities.get(s.id) || 0,
+    }));
 
     const res = NextResponse.json({ sessions: withCounts });
     res.headers.set("Cache-Control", "private, max-age=10, s-maxage=0");
@@ -97,4 +117,3 @@ export async function GET(req: Request) {
     }
   }
 }
-

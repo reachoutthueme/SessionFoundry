@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { supabaseAdmin } from "@/app/lib/supabaseAdmin";
+import { getCachedUser, setCachedUser } from "@/server/authCache";
 
 // -----------------------------
 // Types
@@ -29,7 +30,7 @@ async function getCookieValue(name: string): Promise<string | undefined> {
 }
 
 // -----------------------------
-// Auth: Resolve user from Request
+// Auth: Resolve user from Request (with tiny in-memory cache)
 // -----------------------------
 export async function getUserFromRequest(req: Request): Promise<AuthedUser> {
   try {
@@ -49,14 +50,23 @@ export async function getUserFromRequest(req: Request): Promise<AuthedUser> {
     }
     if (!token) return null;
 
+    // Small cache to avoid repeated network calls to Supabase
+    const cached = getCachedUser(token);
+    if (cached !== undefined) return cached;
+
     const { data, error } = await supabaseAdmin.auth.getUser(token);
-    if (error || !data?.user) return null;
+    if (error || !data?.user) {
+      setCachedUser(token, null, 10_000);
+      return null;
+    }
 
     const u = data.user;
     const plan =
       ((u.user_metadata as any)?.plan as string) === "pro" ? "pro" : "free";
 
-    return { id: u.id, email: u.email, plan };
+    const user: AuthedUser = { id: u.id, email: u.email, plan };
+    setCachedUser(token, user, 20_000);
+    return user;
   } catch {
     return null;
   }

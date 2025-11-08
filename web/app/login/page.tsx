@@ -6,6 +6,7 @@ import { Suspense, useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/app/lib/supabaseClient";
+import { apiFetch } from "@/app/lib/apiFetch";
 import Button from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { useToast } from "@/components/ui/Toast";
@@ -75,9 +76,8 @@ function LoginForm() {
 
     const checkSession = async () => {
       try {
-        const response = await fetch("/api/auth/session", { 
+        const response = await apiFetch("/api/auth/session", { 
           cache: "no-store",
-          credentials: "include"
         });
         
         if (!isMounted) return;
@@ -116,7 +116,7 @@ function LoginForm() {
         throw new Error("No access token available");
       }
 
-      const response = await fetch("/api/auth/set-token", {
+      const response = await apiFetch("/api/auth/set-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
