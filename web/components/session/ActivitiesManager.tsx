@@ -12,7 +12,6 @@ import { useToast } from "@/components/ui/Toast";
 import StocktakeInitiativesManager from "@/components/session/StocktakeInitiativesManager";
 import Timer from "@/components/ui/Timer";
 import FacilitatorConfig from "@/components/activities/facilitator";
-import InfoPopover from "@/components/ui/InfoPopover";
 import { validateConfig } from "@/lib/activities/schemas";
 import { StatusPill } from "@/components/ui/StatusPill";
 
@@ -1068,25 +1067,20 @@ export default function ActivitiesManager({
               {/* Left: form */}
               <div className="space-y-3 min-w-0">
                 {/* Type cards */}
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr">
                   {[{ key:'brainstorm', title:'Standard activity', tag:'Collect ideas, then (optionally) vote.', bullets:['Each participant/group submits 1–N items','Optional point-based voting','Best for ideation & short pitches'] },
                     { key:'stocktake', title:'Stocktake', tag:'Vote S/L/S/M/B on initiatives.', bullets:['You define initiatives','Everyone votes once per initiative','Best for prioritization/portfolio'] },
                     { key:'assignment', title:'Assignment', tag:'Give a prompt; teams submit to that prompt.', bullets:['You define prompts (each row = an item)','Teams submit one deliverable','Best for quick exercises'] }].map((c:any)=>{
                     const active = type===c.key;
                     return (
-                      <button key={c.key} type="button" onClick={()=>{
-                        if (c.key!==type) {
-                          // confirm if switching away from voting-enabled types to ones without voting UI
-                          if ((type==='brainstorm' || type==='assignment') && configDraft?.voting_enabled && c.key!=='brainstorm') {
-                            if (!confirm(`Switch to ${c.title}? Voting settings won’t apply.`)) return;
-                          }
-                          setType(c.key as any);
-                        }
-                      }}
-                        className={`min-w-0 text-left rounded-md border p-3 transition ${active? 'border-white/30 bg-white/10' : 'border-white/10 hover:bg-white/5'}`}
+                      <button
+                        key={c.key}
+                        type="button"
+                        onClick={() => { if (c.key !== type) setType(c.key as any); }}
+                        className={`min-w-0 h-full text-left rounded-md border p-3 transition ${active? 'border-white/30 bg-white/10' : 'border-white/10 hover:bg-white/5'}`}
                       >
                         <div className="font-medium">{c.title}</div>
-                        <div className="text-xs text-[var(--muted)] mt-0.5">{c.tag}</div>
+                        <div className="min-h-[36px] text-xs text-[var(--muted)] mt-0.5">{c.tag}</div>
                         <ul className="mt-2 text-xs list-disc pl-4 text-[var(--muted)] break-words">
                           {c.bullets.map((b:string)=> <li key={b}>{b}</li>)}
                         </ul>
@@ -1125,7 +1119,7 @@ export default function ActivitiesManager({
                 {/* Description */}
                 <div>
                   <label className="block text-sm">Description</label>
-                  <div className="text-[10px] text-[var(--muted)] mb-1">Optional context visible to facilitators only.</div>
+                  <div className="text-[10px] text-[var(--muted)] mb-1">Optional context visible to everyone.</div>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
@@ -1138,13 +1132,7 @@ export default function ActivitiesManager({
                 {type!=="stocktake" && (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="block text-sm">
-                        Max submissions <span className="text-[var(--muted)]">(per participant)</span>
-                        <InfoPopover>
-                          Upper limit per participant/group. Example: set 3 if you want each person to add up to three ideas.
-                          Use 0 for unlimited.
-                        </InfoPopover>
-                      </label>
+                      <label className="block text-sm">Max submissions <span className="text-[var(--muted)]">(per participant)</span></label>
                       <input
                         type="number"
                         value={configDraft?.max_submissions ?? ''}
@@ -1152,6 +1140,7 @@ export default function ActivitiesManager({
                         placeholder="3"
                         className="h-10 w-full rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
                       />
+                      <div className="text-[10px] text-[var(--muted)] mt-1">Upper limit per participant/group (0 = unlimited).</div>
                     </div>
                     <div className="flex items-center gap-2 pt-6">
                       <input id="voting-enabled" type="checkbox" checked={!!configDraft?.voting_enabled} onChange={(e)=> setConfigDraft((prev:any)=> ({...prev, voting_enabled: e.target.checked, points_budget: e.target.checked ? (prev?.points_budget||100) : undefined}))} />
@@ -1159,12 +1148,7 @@ export default function ActivitiesManager({
                     </div>
                     {configDraft?.voting_enabled && (
                       <div className="sm:col-span-2">
-                        <label className="block text-sm">
-                          Points budget <span className="text-[var(--muted)]">(per voter)</span>
-                          <InfoPopover>
-                            Total points each voter can distribute across any ideas. With 100 points, a voter could put 40 on idea A, 30 on B, 30 on C.
-                          </InfoPopover>
-                        </label>
+                        <label className="block text-sm">Points budget <span className="text-[var(--muted)]">(per voter)</span></label>
                         <input
                           type="number"
                           value={configDraft?.points_budget ?? ''}
@@ -1196,12 +1180,7 @@ export default function ActivitiesManager({
 
                 {type==="stocktake" && (
                   <div>
-                    <label className="block text-sm">
-                      Initiatives (list builder)
-                      <InfoPopover>
-                        Add each initiative you want people to rate Stop/Less/Same/More/Begin. One row per initiative.
-                      </InfoPopover>
-                    </label>
+                    <label className="block text-sm">Initiatives (list builder)</label>
                     <div className="text-[10px] text-[var(--muted)] mb-1">Add each initiative you want people to rate S/L/S/M/B.</div>
                     <textarea
                       value={(configDraft?.initial_initiatives || []).join('\n')}
