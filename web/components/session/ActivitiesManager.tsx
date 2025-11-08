@@ -602,7 +602,7 @@ export default function ActivitiesManager({
                            <div className="min-w-0 flex items-center gap-2 text-sm">
                              <span className="opacity-70">{idx+1}.</span>
                              <span className="truncate max-w-[32ch]">{a.title || getActivityDisplayName(a.type)}</span>
-                            <span className="text-xs text-[var(--muted)]">[{a.type}]</span>
+                            <span className="text-xs text-[var(--muted)]">[{a.type === 'brainstorm' ? 'standard' : a.type}]</span>
                            </div>
                            <div className="flex items-center gap-3 text-xs">
                              <StatusPill status={(status as any) === 'Inactive' ? 'Queued' : (status as any)} />
