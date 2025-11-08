@@ -1,7 +1,8 @@
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { supabaseAdmin, isSupabaseAdminConfigured } from "@/app/lib/supabaseAdmin";
 import { isAdminUser } from "@/server/policies";
+import { searchAdminSessions } from "@/server/admin/sessions";
 
 export const dynamic = "force-dynamic";
 
@@ -30,16 +31,7 @@ export default async function AdminSessionsPage({ searchParams }: { searchParams
   const from = typeof searchParams?.from === 'string' ? searchParams?.from : '';
   const to = typeof searchParams?.to === 'string' ? searchParams?.to : '';
 
-  const qs = new URLSearchParams();
-  if (status) qs.set('status', status);
-  if (owner) qs.set('owner', owner);
-  if (from) qs.set('from', from);
-  if (to) qs.set('to', to);
-  const h = await headers();
-  const origin = `${h.get("x-forwarded-proto") || "http"}://${h.get("host")}`;
-  const r = await fetch(`${origin}/api/admin/sessions/search?${qs.toString()}`, { cache: "no-store" });
-  const j = r.ok ? await r.json() : { sessions: [] };
-  const rows = Array.isArray(j.sessions) ? j.sessions : [];
+  const { sessions: rows } = await searchAdminSessions({ status, owner, from, to, limit: 100 });
 
   return (
     <div className="space-y-4">

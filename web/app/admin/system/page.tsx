@@ -1,7 +1,8 @@
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { supabaseAdmin, isSupabaseAdminConfigured } from "@/app/lib/supabaseAdmin";
 import { isAdminUser } from "@/server/policies";
+import { getSystemHealth } from "@/server/admin/system";
 
 export const dynamic = "force-dynamic";
 
@@ -26,10 +27,7 @@ export default async function AdminSystemPage() {
   const user = { id: data.user.id, email: data.user.email ?? null };
   if (!isAdminUser(user)) redirect("/");
 
-  const h = await headers();
-  const origin = `${h.get("x-forwarded-proto") || "http"}://${h.get("host")}`;
-  const r = await fetch(`${origin}/api/admin/system/health`, { cache: "no-store" });
-  const j = r.ok ? await r.json() : { db_checks: {}, totals: {}, env: {} };
+  const j = await getSystemHealth();
 
   return (
     <div className="space-y-6">

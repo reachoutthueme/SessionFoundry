@@ -1,7 +1,8 @@
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { supabaseAdmin, isSupabaseAdminConfigured } from "@/app/lib/supabaseAdmin";
 import { isAdminUser } from "@/server/policies";
+import { getAuditLogs } from "@/server/admin/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -32,19 +33,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams?: 
   const from = s(searchParams?.from);
   const to = s(searchParams?.to);
 
-  const qs = new URLSearchParams();
-  if (actor) qs.set('actor', actor);
-  if (entity_type) qs.set('entity_type', entity_type);
-  if (entity_id) qs.set('entity_id', entity_id);
-  if (action) qs.set('action', action);
-  if (from) qs.set('from', from);
-  if (to) qs.set('to', to);
-
-  const h = await headers();
-  const origin = `${h.get("x-forwarded-proto") || "http"}://${h.get("host")}`;
-  const r = await fetch(`${origin}/api/admin/system/audit?${qs.toString()}`, { cache: "no-store" });
-  const j = r.ok ? await r.json() : { logs: [] };
-  const rows = Array.isArray(j.logs) ? j.logs : [];
+  const { logs: rows } = await getAuditLogs({ actor, entity_type, entity_id, action, from, to, limit: 100 });
 
   return (
     <div className="space-y-4">
