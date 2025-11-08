@@ -358,18 +358,11 @@ export default function ActivitiesManager({
     const act = items.find((a) => a.id === id);
     if (!act) return;
 
-    const prev = act.ends_at ? new Date(act.ends_at).getTime() : Date.now();
-    const base = Number.isFinite(prev) ? Math.max(prev, Date.now()) : Date.now();
-    const next = new Date(base + minutes * 60_000).toISOString();
-
-    // Reactivate or keep active while extending time
-    const startsAt = act.starts_at || new Date().toISOString();
-
     try {
-      const r = await fetch(`/api/activities/${id}`, {
-        method: "PATCH",
+      const r = await fetch(`/api/activities/extend`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "Active", starts_at: startsAt, ends_at: next }),
+        body: JSON.stringify({ activity_id: id, minutes }),
       });
       const j = await r.json().catch(() => ({} as any));
 

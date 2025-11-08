@@ -18,7 +18,7 @@ const PatchSchema = z.object({
   ends_at: z.string().datetime().optional(),
   // Config is validated against the activity type later
   config: z.unknown().optional(),
-});
+}).strict();
 
 // Small helper to no-store the response
 function noStore<T>(payload: T, init?: number | ResponseInit) {
@@ -38,6 +38,10 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   const owns = await userOwnsActivity(user.id, activityId);
   if (!owns) return noStore({ error: "Not found" }, { status: 404 });
 
+  // Require JSON content
+  if (!req.headers.get("content-type")?.includes("application/json")) {
+    return noStore({ error: "Content-Type must be application/json" }, { status: 415 });
+  }
   // Parse & validate body
   const rawBody = await req.json().catch(() => ({}));
   const parsed = PatchSchema.safeParse(rawBody);

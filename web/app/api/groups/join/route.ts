@@ -6,7 +6,7 @@ import { getParticipantInSession, getSessionStatus } from "@/app/api/_util/auth"
 const BodySchema = z.object({
   session_id: z.string().min(1, "session_id required"),
   group_id: z.string().min(1, "group_id required"),
-});
+}).strict();
 
 function noStore(res: NextResponse) {
   res.headers.set("Cache-Control", "no-store");

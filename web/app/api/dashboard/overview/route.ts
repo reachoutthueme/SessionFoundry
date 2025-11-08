@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/app/lib/supabaseAdmin";
 import { getUserFromRequest } from "@/app/api/_util/auth";
+import { rateLimit } from "@/server/rateLimit";
 
 type SessionRow = {
   id: string;
@@ -28,6 +29,12 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const limit = Math.max(1, Math.min(Number(url.searchParams.get("limit") || 50), 200));
     const offset = Math.max(0, Number(url.searchParams.get("offset") || 0));
+
+    // rate limit per-user to prevent dashboard abuse
+    const rl = rateLimit(`dashboard:overview:${user.id}`, { limit: 120, windowMs: 5 * 60 * 1000 });
+    if (!rl.allowed) {
+      return noStore(NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": String(Math.ceil((rl.reset - Date.now()) / 1000)) } }));
+    }
 
     // Fetch sessions for this facilitator
     const { data: sessions, error: se } = await supabaseAdmin

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getUserFromRequest, userOwnsActivity } from "@/app/api/_util/auth";
+import { rateLimit } from "@/server/rateLimit";
 import { getActivityMeta, getServerHooks } from "@/lib/activities/server";
 
 const IdSchema = z.string().min(1).max(128);
@@ -24,6 +25,11 @@ export async function GET(
   const owns = await userOwnsActivity(user.id, activity_id);
   if (!owns) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const rl = rateLimit(`results:activity:${user.id}:${activity_id}`, { limit: 60, windowMs: 5 * 60 * 1000 });
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": String(Math.ceil((rl.reset - Date.now()) / 1000)) } });
   }
 
   const meta = await getActivityMeta(activity_id);

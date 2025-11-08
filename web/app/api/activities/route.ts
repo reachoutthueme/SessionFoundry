@@ -8,6 +8,7 @@ import {
   getParticipantInSession,
 } from "@/app/api/_util/auth";
 import { validateConfig } from "@/lib/activities/schemas";
+import { ActivityCreate } from "@/contracts";
 
 // ---------- Schemas ----------
 const GetQuerySchema = z.object({
@@ -20,17 +21,9 @@ const GetQuerySchema = z.object({
     .string()
     .optional()
     .transform(v => (v ? Math.max(parseInt(v, 10) || 0, 0) : undefined)),
-});
+}).strict();
 
-const PostBodySchema = z.object({
-  session_id: z.string().min(1),
-  type: z.enum(["brainstorm", "stocktake", "assignment"]),
-  title: z.string().trim().min(1).max(120),
-  instructions: z.string().trim().max(4000).optional().default(""),
-  description: z.string().trim().max(4000).optional().default(""),
-  config: z.unknown().optional().default({}),
-  order_index: z.number().int().min(0).optional(),
-});
+// POST body contract is shared via @/contracts
 
 // ---------- GET: list activities ----------
 export async function GET(req: Request) {
@@ -90,7 +83,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   // Parse & validate
   const raw = await req.json().catch(() => ({}));
-  const parsed = PostBodySchema.safeParse(raw);
+  const parsed = ActivityCreate.safeParse(raw);
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues.map(i => `${i.path.join(".")}: ${i.message}`).join("; ") },

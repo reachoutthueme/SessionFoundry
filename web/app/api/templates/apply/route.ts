@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { supabaseAdmin } from "@/app/lib/supabaseAdmin";
 import { getUserFromRequest } from "@/app/api/_util/auth";
+import { TemplateApply } from "@/contracts";
+import { canExportSession } from "@/server/policies";
 import { templates, normalizeActivity } from "../data";
 import { validateConfig } from "@/lib/activities/schemas";
 
-const Body = z.object({
-  template_id: z.string().min(1, "template_id required"),
-  session_id: z.string().min(1, "session_id required"),
-});
+// Contract is shared via @/contracts
 
 const MAX_ACTIVITIES = 50;
 const MAX_INITIATIVES_PER_STOCKTAKE = 200;
@@ -22,27 +20,25 @@ export async function POST(req: Request) {
   // Auth & plan
   const user = await getUserFromRequest(req);
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
-  if (user.plan !== "pro") {
-    return NextResponse.json({ error: "Pro plan required for templates" }, { status: 402 });
-  }
 
   // Parse body
-  const parsed = Body.safeParse(await req.json().catch(() => ({})));
+  const parsed = TemplateApply.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.errors[0]?.message || "Invalid body" }, { status: 400 });
   }
   const { template_id, session_id } = parsed.data;
 
   // Ensure ownership of session
+  const can = await canExportSession(user, session_id);
+  if (!can) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // Fetch session status (used below)
   const { data: sessRow, error: sessErr } = await supabaseAdmin
     .from("sessions")
-    .select("id, facilitator_user_id, status")
+    .select("id, status")
     .eq("id", session_id)
     .maybeSingle();
   if (sessErr) return NextResponse.json({ error: sessErr.message }, { status: 500 });
-  if (!sessRow || (sessRow as any).facilitator_user_id !== user.id) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
 
   // Optional safety: only allow applying to Inactive sessions
   const sessionStatus = (sessRow as any).status as string | undefined;

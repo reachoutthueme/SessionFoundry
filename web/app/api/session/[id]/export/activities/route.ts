@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../../../lib/supabaseAdmin";
 import { getUserFromRequest } from "@/app/api/_util/auth";
+import { canExportSession } from "@/server/policies";
+import { rateLimit } from "@/server/rateLimit";
 
 export async function GET(
   req: NextRequest,
@@ -10,24 +12,24 @@ export async function GET(
 
   const user = await getUserFromRequest(req);
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  const can = await canExportSession(user, session_id);
+  if (!can) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Gate exports to Pro
-  if (user.plan !== "pro") {
-    // 403 is more standard than 402
-    return NextResponse.json({ error: "Pro plan required for exports" }, { status: 403 });
+  const rl = rateLimit(`export:activities:${user.id}`);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many export requests" }, {
+      status: 429,
+      headers: { "Retry-After": String(Math.ceil((rl.reset - Date.now()) / 1000)) },
+    });
   }
 
-  // Ensure the user owns the session
   const { data: sess, error: se0 } = await supabaseAdmin
     .from("sessions")
-    .select("id, facilitator_user_id, name")
+    .select("id, name")
     .eq("id", session_id)
     .maybeSingle();
-
   if (se0) return NextResponse.json({ error: se0.message }, { status: 500 });
-  if (!sess || (sess as any).facilitator_user_id !== user.id) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
+  if (!sess) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const { data: activities, error } = await supabaseAdmin
     .from("activities")

@@ -7,6 +7,8 @@ import {
   getUserFromRequest,
 } from "@/app/api/_util/auth";
 import { getServerHooks } from "@/lib/activities/server";
+import { SubmissionCreate } from "@/contracts";
+import { rateLimit } from "@/server/rateLimit";
 
 /** Minimal cookie reader that avoids next/headers types entirely */
 function getCookie(req: Request, name: string): string | undefined {
@@ -153,11 +155,18 @@ export async function GET(req: Request) {
 
 // POST accepts activity_id, or session_id (resolves latest Active/Voting brainstorm activity)
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => ({}));
-  const text = (body?.text ?? "").toString().trim();
-  let activity_id = (body?.activity_id ?? "").toString();
-  let session_id = (body?.session_id ?? "").toString();
-  if (!text) return NextResponse.json({ error: "text required" }, { status: 400 });
+  if (!req.headers.get("content-type")?.includes("application/json")) {
+    return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
+  }
+  const json = await req.json().catch(() => ({}));
+  const parsed = SubmissionCreate.safeParse(json);
+  if (!parsed.success) {
+    const msg = parsed.error.issues?.[0]?.message ?? "Invalid body";
+    return NextResponse.json({ error: msg }, { status: 400 });
+  }
+  let { text, activity_id, session_id } = parsed.data as { text: string; activity_id?: string; session_id?: string };
+  activity_id = activity_id || "";
+  session_id = session_id || "";
 
   if (!activity_id && session_id) {
     const { data: acts, error: ae } = await supabaseAdmin
@@ -192,6 +201,12 @@ export async function POST(req: Request) {
   if (!participant) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const participant_id = participant.id;
   const group_id: string | null = participant.group_id ?? null;
+
+  // Gentle submission rate-limit per participant
+  const rl = rateLimit(`submission:create:${participant_id}`, { limit: 120, windowMs: 10 * 60 * 1000 });
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many submissions, please slow down." }, { status: 429, headers: { "Retry-After": String(Math.ceil((rl.reset - Date.now()) / 1000)) } });
+  }
 
   // ensure session is Active for writing
   const sStatus = await getSessionStatus(session_id);

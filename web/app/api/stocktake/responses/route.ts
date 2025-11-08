@@ -12,7 +12,7 @@ type StocktakeChoice = typeof ALLOWED_CHOICES[number];
 const getQuerySchema = z.object({
   activity_id: z.string().min(1, "activity_id required"),
   session_id: z.string().min(1, "session_id required"),
-});
+}).strict();
 
 const postBodySchema = z.object({
   activity_id: z.preprocess((v) => String(v ?? "").trim(), z.string().min(1)),
@@ -20,7 +20,7 @@ const postBodySchema = z.object({
   initiative_id: z.preprocess((v) => String(v ?? "").trim(), z.string().min(1)),
   choice: z
     .preprocess((v) => String(v ?? "").trim().toLowerCase(), z.enum(ALLOWED_CHOICES)),
-});
+}).strict();
 
 // Re-usable helper to fetch & assert activity belongs to session and is Active
 async function assertActiveActivityInSession(activity_id: string, session_id: string) {

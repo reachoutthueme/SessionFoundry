@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../../../lib/supabaseAdmin";
 import { getUserFromRequest } from "@/app/api/_util/auth";
+import { canExportSession } from "@/server/policies";
+import { rateLimit } from "@/server/rateLimit";
+import { buildDeckMarkdown, sanitizeForFilename } from "@/server/exports/deckBuilder";
 
 // --- Types for rows coming back from Supabase --- //
 type SessionRow = {
@@ -67,26 +70,29 @@ export async function GET(
 ) {
   const { id: session_id } = await params;
 
-  // auth / plan check
+  // authZ + plan
   const user = await getUserFromRequest(req);
-  if (!user) {
-    return NextResponse.json({ error: "Sign in required" }, { status: 401 });
-  }
-  if (user.plan !== "pro") {
-    return NextResponse.json({ error: "Pro plan required for exports" }, { status: 403 });
+  if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  const can = await canExportSession(user, session_id);
+  if (!can) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // edge rate-limit by user
+  const rl = rateLimit(`export:deck:${user.id}`);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many export requests" }, {
+      status: 429,
+      headers: { "Retry-After": String(Math.ceil((rl.reset - Date.now()) / 1000)) },
+    });
   }
 
-  // verify facilitator owns this session
+  // load session basics for export header
   const { data: sessCheck, error: se0 } = await supabaseAdmin
     .from("sessions")
-    .select("id,facilitator_user_id,name,status,join_code,created_at")
+    .select("id,name,status,join_code,created_at")
     .eq("id", session_id)
-    .maybeSingle<Pick<SessionRow, "id" | "facilitator_user_id" | "name" | "status" | "join_code" | "created_at">>();
-
+    .maybeSingle<Pick<SessionRow, "id" | "name" | "status" | "join_code" | "created_at">>();
   if (se0) return NextResponse.json({ error: se0.message }, { status: 500 });
-  if (!sessCheck || sessCheck.facilitator_user_id !== user.id) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
+  if (!sessCheck) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // pull core data in parallel
   const [actsRes, partsRes] = await Promise.all([
@@ -190,93 +196,7 @@ export async function GET(
     byActivity.set(activityId, arr);
   });
 
-  // --- Build Markdown export ---
-  const s = sessCheck;
-  const lines: string[] = [];
-
-  const maskedJoin = maskJoinCode(s.join_code);
-
-  lines.push(`# ${mdEscape(s.name || "Session")}`);
-  lines.push("");
-  lines.push(`- **Session ID:** ${mdEscape(s.id)}`);
-  lines.push(`- **Status:** ${mdEscape(s.status || "")}`);
-  lines.push(`- **Join code:** ${mdEscape(maskedJoin)}`);
-  lines.push(`- **Created:** ${new Date(s.created_at).toISOString()}`);
-  lines.push(`- **Exported:** ${new Date().toISOString()}`);
-  lines.push(`- **Participants:** ${participantsRows.length}`);
-  lines.push(`- **Activities:** ${activities.length}`);
-  lines.push("");
-  lines.push("---");
-  lines.push("");
-  lines.push("## Activities Overview");
-  lines.push("");
-
-  activities.forEach((A) => {
-    const title =
-      A.title || (A.type === "brainstorm" ? "Standard" : A.type === "stocktake" ? "Process stocktake" : "Assignment");
-    lines.push(`- ${mdEscape(title)} — ${A.type} — ${A.status}`);
-  });
-
-  for (const A of activities) {
-    const title =
-      A.title || (A.type === "brainstorm" ? "Standard" : A.type === "stocktake" ? "Process stocktake" : "Assignment");
-
-    lines.push("");
-    lines.push("---");
-    lines.push("");
-    lines.push(`## ${mdEscape(title)}`);
-    lines.push(`**Type:** ${A.type}  `);
-    lines.push(`**Status:** ${A.status}`);
-
-    if (A.instructions) {
-      lines.push("");
-      lines.push(`_Instructions:_ ${mdEscape(A.instructions)}`);
-    }
-
-    if (A.description) {
-      lines.push("");
-      lines.push(mdEscape(A.description));
-    }
-
-    if (A.type === "brainstorm") {
-      const rowsForActivity: SubmissionSummary[] = (byActivity.get(A.id) || []).sort(
-        (x, y) => y.total - x.total
-      );
-
-      if (rowsForActivity.length === 0) {
-        lines.push("");
-        lines.push("_No submissions._");
-      } else {
-        lines.push("");
-        lines.push("| # | Submission | By | Votes | Avg | Total |");
-        lines.push("|---:|---|---|---:|---:|---:|");
-
-        rowsForActivity.forEach((r, idx) => {
-          const by =
-            r.participant_name ||
-            (r.participant_id ? `#${String(r.participant_id).slice(0, 6)}` : "") ||
-            "—";
-
-          lines.push(
-            `| ${idx + 1} | ${mdEscape(r.text)} | ${mdEscape(by)} | ${r.n} | ${
-              r.n ? r.avg.toFixed(2) : ""
-            } | ${r.total} |`
-          );
-        });
-      }
-    } else if (A.type === "stocktake") {
-      lines.push("");
-      lines.push("_(Stocktake activity summary)_");
-      // If later you wire up aggregateResults for stocktake:
-      // - Fetch and render counts/order like your vibrant results panel.
-    } else {
-      lines.push("");
-      lines.push("_(Assignment activity)_");
-      // Optionally render assignment prompts per group from A.config if desired.
-    }
-  }
-
-  const md = lines.join("\n") + "\n";
+  const md = buildDeckMarkdown(sessCheck as any, activities as any, participantsRows as any, submissions as any, votes as any);
 
   const filename = `deck_${sanitizeForFilename(s.name || "session")}_${sanitizeForFilename(s.id)}.md`;
 
@@ -292,19 +212,4 @@ export async function GET(
   return res;
 }
 
-// escape pipes/markdown control chars so table formatting doesn't break
-function mdEscape(v: string): string {
-  if (!v) return "";
-  return v.replace(/[|*_`\\]/g, (m) => `\\${m}`);
-}
-
-function sanitizeForFilename(s: string): string {
-  return s.replace(/[\\\/:*?"<>|]+/g, "_").slice(0, 80).trim() || "export";
-}
-
-function maskJoinCode(code: string): string {
-  const c = (code || "").toString();
-  if (c.length <= 2) return "**";
-  const tail = c.slice(-2);
-  return `${"*".repeat(Math.max(2, c.length - 2))}${tail}`;
-}
+// helpers moved to server/exports/deckBuilder

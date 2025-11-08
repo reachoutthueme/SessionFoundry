@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { getUserFromRequest, userOwnsSession } from "@/app/api/_util/auth";
+import { rateLimit } from "@/server/rateLimit";
 
 // Types used locally to keep TS happy when Supabase returns arrays/objects
 type JoinedParticipantObj = { id: string; group_id: string | null } | null;
@@ -35,6 +36,12 @@ export async function GET(req: Request) {
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   const owns = await userOwnsSession(user.id, session_id);
   if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // rate limit counts computation per user+session
+  const rl = rateLimit(`submission_counts:${user.id}:${session_id}`, { limit: 30, windowMs: 5 * 60 * 1000 });
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": String(Math.ceil((rl.reset - Date.now()) / 1000)) } });
+  }
 
   // Activities for this session (we need their ids and max_submissions from config)
   const { data: activities, error: ae } = await supabaseAdmin

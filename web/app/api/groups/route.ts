@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../lib/supabaseAdmin";
 import { getUserFromRequest, userOwnsSession, getParticipantInSession } from "@/app/api/_util/auth";
-import { z } from "zod";
+import { GroupCreate } from "@/contracts";
+import { rateLimit } from "@/server/rateLimit";
 
 /** GET /api/groups?session_id=...&limit=&cursor= */
 export async function GET(req: Request) {
@@ -54,17 +55,6 @@ export async function GET(req: Request) {
 }
 
 /** POST /api/groups  { session_id, name } */
-const BodySchema = z.object({
-  session_id: z.string().min(1, "session_id required"),
-  // Do all string constraints while itÃ¢â‚¬â„¢s still a ZodString, then normalize
-  name: z
-    .string()
-    .trim()
-    .min(1, "name required")
-    .max(80, "name too long")
-    .transform((s) => s.replace(/\s+/g, " ")),
-});
-
 export async function POST(req: Request) {
   try {
     if (req.headers.get("content-type")?.includes("application/json") !== true) {
@@ -72,7 +62,7 @@ export async function POST(req: Request) {
     }
 
     const json = await req.json().catch(() => ({}));
-    const parsed = BodySchema.safeParse(json);
+    const parsed = GroupCreate.safeParse(json);
     if (!parsed.success) {
       const msg = parsed.error.issues?.[0]?.message ?? "Invalid request";
       return NextResponse.json({ error: msg }, { status: 400 });
@@ -80,14 +70,30 @@ export async function POST(req: Request) {
 
     const { session_id, name } = parsed.data;
 
+    // Allow either facilitator-owner OR a participant in the session
     const user = await getUserFromRequest(req);
+    let allowed = false;
+    let limiterKey = "";
     if (user) {
-      const owns = await userOwnsSession(user.id, session_id);
-      if (!owns) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    } else {
-      const part = await getParticipantInSession(req as any, session_id);
-      if (!part) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      allowed = await userOwnsSession(user.id, session_id);
+      if (allowed) limiterKey = `group:create:user:${user.id}`;
     }
+    if (!allowed) {
+      const participant = await getParticipantInSession(req as any, session_id);
+      if (!participant) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      allowed = true;
+      limiterKey = `group:create:participant:${participant.id}`;
+    }
+
+    // Basic rate limit to prevent abuse
+    const rl = rateLimit(limiterKey, { limit: 20, windowMs: 10 * 60 * 1000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many group creations. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(Math.ceil((rl.reset - Date.now()) / 1000)) } }
+      );
+    }
+
     const { data, error } = await supabaseAdmin
       .from("groups")
       .insert({ session_id, name })
@@ -113,3 +119,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
+

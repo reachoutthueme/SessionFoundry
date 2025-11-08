@@ -4,21 +4,23 @@ import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import { getUserFromRequest, userOwnsActivity } from "@/app/api/_util/auth";
 
 // --- Schemas ---
-const getQuerySchema = z.object({
-  activity_id: z.string().min(1, "activity_id required"),
-});
+const getQuerySchema = z
+  .object({
+    activity_id: z.string().min(1, "activity_id required"),
+  })
+  .strict();
 
 // Normalize (trim + collapse spaces) BEFORE validating lengths
-const createSchema = z.object({
-  activity_id: z.string().min(1),
-  title: z.preprocess(
-    (val) =>
-      typeof val === "string"
-        ? val.trim().replace(/\s+/g, " ")
-        : "",
-    z.string().min(1, "title required").max(200, "title max 200 chars")
-  ),
-});
+const createSchema = z
+  .object({
+    activity_id: z.string().min(1),
+    title: z.preprocess(
+      (val) =>
+        typeof val === "string" ? val.trim().replace(/\s+/g, " ") : "",
+      z.string().min(1, "title required").max(200, "title max 200 chars")
+    ),
+  })
+  .strict();
 
 // GET /api/stocktake/initiatives?activity_id=...
 export async function GET(req: Request) {

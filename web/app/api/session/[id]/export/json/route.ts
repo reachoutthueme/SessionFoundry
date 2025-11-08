@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../../../lib/supabaseAdmin";
 import { getUserFromRequest } from "@/app/api/_util/auth";
+import { canExportSession } from "@/server/policies";
+import { rateLimit } from "@/server/rateLimit";
+import { sanitizeForFilename, maskJoinCode } from "@/server/exports/deckBuilder";
 
 type SessionRow = {
   id: string;
@@ -17,26 +20,28 @@ export async function GET(
 ) {
   const { id: session_id } = await params;
 
-  // Auth + plan check
+  // AuthZ + plan
   const user = await getUserFromRequest(req);
-  if (!user) {
-    return NextResponse.json({ error: "Sign in required" }, { status: 401 });
-  }
-  if (user.plan !== "pro") {
-    return NextResponse.json({ error: "Pro plan required for exports" }, { status: 403 });
+  if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  const can = await canExportSession(user, session_id);
+  if (!can) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const rl = rateLimit(`export:json:${user.id}`);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many export requests" }, {
+      status: 429,
+      headers: { "Retry-After": String(Math.ceil((rl.reset - Date.now()) / 1000)) },
+    });
   }
 
-  // Verify ownership
+  // Load session (without exposing facilitator id)
   const { data: sess, error: se0 } = await supabaseAdmin
     .from("sessions")
-    .select("id,facilitator_user_id,name,status,join_code,created_at")
+    .select("id,name,status,join_code,created_at")
     .eq("id", session_id)
-    .maybeSingle<Pick<SessionRow, "id" | "facilitator_user_id" | "name" | "status" | "join_code" | "created_at">>();
-
+    .maybeSingle<Pick<SessionRow, "id" | "name" | "status" | "join_code" | "created_at">>();
   if (se0) return NextResponse.json({ error: se0.message }, { status: 500 });
-  if (!sess || sess.facilitator_user_id !== user.id) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
+  if (!sess) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Fetch related data in parallel
   const [actsRes, partsRes] = await Promise.all([
@@ -104,13 +109,4 @@ export async function GET(
   });
 }
 
-function sanitizeForFilename(s: string): string {
-  return (s || "").replace(/[\\\/:*?"<>|]+/g, "_").slice(0, 80).trim() || "export";
-}
-
-function maskJoinCode(code: string): string {
-  const c = (code || "").toString();
-  if (c.length <= 2) return "**";
-  const tail = c.slice(-2);
-  return `${"*".repeat(Math.max(2, c.length - 2))}${tail}`;
-}
+// helpers imported from deckBuilder
