@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Button from "@/components/ui/Button";
@@ -12,6 +12,7 @@ import StocktakeInitiativesManager from "@/components/session/StocktakeInitiativ
 import Timer from "@/components/ui/Timer";
 import FacilitatorConfig from "@/components/activities/facilitator";
 import { validateConfig } from "@/lib/activities/schemas";
+import { StatusPill } from "@/components/ui/StatusPill";
 
 type Activity = {
   id: string;
@@ -47,7 +48,7 @@ export default function ActivitiesManager({
     >
   >({});
 
-  // "Add Activity" modal state
+  // "Add step" modal state
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<Activity["type"]>("brainstorm");
   const [title, setTitle] = useState("");
@@ -201,6 +202,30 @@ export default function ActivitiesManager({
     [sorted]
   );
 
+  // Track which step is focused in the UI (for navigation/scrolling)
+  const [focusedId, setFocusedId] = useState<string | null>(null);
+  useEffect(() => {
+    if (current?.id) setFocusedId(current.id);
+  }, [current?.id]);
+
+  // Sticky footer visibility: show when stepper is out of view
+  const stepperRef = useRef<HTMLDivElement | null>(null);
+  const [showFooter, setShowFooter] = useState(false);
+  useEffect(() => {
+    const el = stepperRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        // when stepper is not visible, show footer
+        const e = entries[0];
+        setShowFooter(!(e?.isIntersecting ?? true));
+      },
+      { root: null, threshold: 0.01 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   // Timer helpers for UI state (expiry, etc.)
   const [nowTs, setNowTs] = useState(() => Date.now());
   useEffect(() => {
@@ -212,6 +237,9 @@ export default function ActivitiesManager({
     const ms = new Date(current.ends_at).getTime() - nowTs;
     return Number.isFinite(ms) && ms <= 0;
   }, [current?.ends_at, nowTs]);
+
+  // Per-activity tab state for expanded view
+  const [tabById, setTabById] = useState<Record<string, 'Overview'|'Submissions'|'Settings'>>({});
 
   // create new activity
   async function create() {
@@ -438,7 +466,7 @@ export default function ActivitiesManager({
           title="Activities"
           subtitle="Create and control workshop flow"
           rightSlot={
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-2 py-1 text-xs text-[var(--muted)]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-2 py-1 text-xs text-MUTEDVAR">
               <span
                 className={`inline-block h-2 w-2 rounded-full ${statusColor} animate-pulse`}
               />
@@ -451,50 +479,19 @@ export default function ActivitiesManager({
           <div className="sticky top-0 z-10 -mx-3 -mt-2 mb-4 px-3 pt-2 backdrop-blur-sm">
             <div className="rounded-md border border-white/12 bg-white/6 px-3 py-2 flex flex-wrap items-center gap-3">
               <div className="min-w-0 text-xs flex items-center gap-2">
-                <span className="opacity-70">Now:</span>
+                <span className="opacity-70"></span>
                 <span className="font-medium truncate max-w-[40ch]">{current ? (current.title || getActivityDisplayName(current.type)) : 'Nothing live'}</span>
                 {current?.ends_at ? (
                   isExpired ? (
-                    <details className="relative group">
-                      <summary className="list-none">
-                        <button className="timer-pill timer-red" aria-live="polite"><IconTimer size={12} /> Time's up</button>
-                      </summary>
-                      <div className="absolute left-0 mt-1 rounded-md border border-white/12 bg-[var(--panel)] shadow-lg overflow-hidden">
-                        {[
-                          { m: 1, label: '+1 minute' },
-                          { m: 3, label: '+3 minutes' },
-                          { m: 5, label: '+5 minutes' },
-                        ].map(({m,label}) => (
-                          <button key={m} className="block w-full text-left px-3 py-1.5 text-sm hover:bg-white/5" onClick={(e) => { const d = (e.currentTarget.closest('details') as HTMLDetailsElement | null); if (current) extendTimer(current.id, m); if (d) d.open = false; }}>{label}</button>
-                        ))}
-                        <button className="block w-full text-left px-3 py-1.5 text-sm hover:bg-white/5" onClick={(e)=>{ const d=(e.currentTarget.closest('details') as HTMLDetailsElement|null); if(current) resetTimer(current.id); if(d) d.open=false; }}>Reset</button>
-                      </div>
-                    </details>
+                    <StatusPill status="Overdue" label="Overdue" />
                   ) : (
-                    <span className="timer-pill timer-brand" aria-live="polite"><IconTimer size={12} /> <Timer endsAt={current.ends_at} /></span>
+                    <span className="inline-flex items-center gap-1 text-xs text-MUTEDVAR" aria-live="polite"><IconTimer size={12} /> <Timer endsAt={current.ends_at} /></span>
                   )
                 ) : null}
               </div>
               <div className="flex items-center gap-0 ml-auto">
                 <div className="inline-flex items-stretch rounded-md border border-white/12">
-                  <div className={`relative ${!current ? 'opacity-60 pointer-events-none' : ''}`}>
-                    <details className="group">
-                      <summary className="list-none">
-                        <Button size="sm" variant="outline" className="rounded-none border-0">Add time</Button>
-                      </summary>
-                      <div className="absolute right-0 mt-1 rounded-md border border-white/12 bg-[var(--panel)] shadow-lg overflow-hidden">
-                        {[
-                          { m: 1, label: '+1 minute' },
-                          { m: 3, label: '+3 minutes' },
-                          { m: 5, label: '+5 minutes' },
-                        ].map(({m,label}) => (
-                          <button key={m} className="block w-full text-left px-3 py-1.5 text-sm hover:bg-white/5" onClick={(e) => { const d = (e.currentTarget.closest('details') as HTMLDetailsElement | null); if (current) extendTimer(current.id, m); if (d) d.open = false; }}>{label}</button>
-                        ))}
-                        <button className="block w-full text-left px-3 py-1.5 text-sm hover:bg-white/5" onClick={(e)=>{ const d=(e.currentTarget.closest('details') as HTMLDetailsElement|null); if(current) resetTimer(current.id); if(d) d.open=false; }}>Reset</button>
-                      </div>
-                    </details>
-                  </div>
-                  <Button size="sm" className="rounded-none border-l border-white/12" onClick={async () => {
+                  <Button size="sm" className="rounded-none border-0" onClick={async () => {
                     const idx = current ? sorted.findIndex(x => x.id === current.id) : -1;
                     const next = sorted.slice(Math.max(idx + 1, 0)).find(x => x.status === 'Draft' || x.status === 'Voting');
                     if (current) await setStatus(current.id, 'Closed');
@@ -510,70 +507,42 @@ export default function ActivitiesManager({
 
           {/* Header row: count + add */}
           <div className="mb-3 flex items-center justify-between">
-            <div className="text-sm text-[var(--muted)]">
-              {items.length} activities
+            <div className="text-sm text-MUTEDVAR">
+              {items.length} steps
             </div>
-            <Button onClick={() => setOpen(true)}>Add Activity</Button>
+            <Button onClick={() => setOpen(true)}>Add step</Button>
           </div>
 
-          {/* Progress + Now panel */}
-          <div className="mb-6 rounded-lg border border-white/15 bg-white/7 p-4 shadow-[0_8px_30px_rgba(0,0,0,.12)]">
-            {/* Progress bar */}
-            <div className="mb-2 flex items-center justify-between">
-              <div className="text-sm">{summary.closed}/{summary.total} completed {'\u2022'} {summary.pct}%</div>
+          {/* Stepper + compact progress */}
+          <div ref={stepperRef} className="mb-6 rounded-lg border border-white/15 bg-white/7 p-4 shadow-[0_8px_30px_rgba(0,0,0,.12)]">
+            <div className="mb-3 flex items-center justify-between text-sm">
+              <div>Progress: {summary.closed} of {summary.total} steps complete</div>
+              {current?.ends_at && (current.status === "Active" || current.status === "Voting") && (
+                <div className="flex items-center gap-2 text-xs text-MUTEDVAR"><IconTimer size={12} /> <Timer endsAt={current.ends_at} /></div>
+              )}
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-white/10">
-              <div
-                className={"h-full bg-[var(--brand)] " + (sessionStatus === "Active" ? "progress-striped progress-animate" : "") }
-                style={{ width: `${summary.pct}%` }}
-              />
-            </div>
-            {/* Current activity row */}
-            {current && (
-              <div className="mt-3 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="text-[var(--muted)]">Now:</span>
-                  <span className="font-medium">{current.title}</span>
-                  <span className="rounded border border-white/10 px-2 py-0.5 text-[var(--muted)]">{current.status}</span>
-                </div>
-                {(current.status === "Active" || current.status === "Voting") && current.ends_at ? (
-                  <div className="flex items-center gap-2 text-[var(--muted)]">
-                    <span className="timer-pill timer-brand" aria-live="polite"><IconTimer size={12} /> <Timer endsAt={current.ends_at} /></span>
-                  </div>
-                ) : null}
-              </div>
-            )}
-
-            {/* mini activity chips */}
             {sorted.length > 0 && (
-              <div className="mt-4">
-                <div className="mb-2 text-xs text-[var(--muted)]">
-                  Activities
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {sorted.map((a, i) => {
-                    const tone =
-                      a.status === "Closed"
-                        ? "bg-green-500/15 text-[var(--text)] border-green-500/30"
-                        : a.status === "Voting"
-                        ? "bg-blue-500/15 text-[var(--text)] border-blue-400/30"
-                        : a.status === "Active"
-                        ? "bg-[var(--brand)]/20 text-[var(--text)] border-white/20"
-                        : "bg-white/5 text-[var(--muted)] border-white/10"; // Draft
-
-                    return (
-                      <div
-                        key={a.id}
-                        className={`rounded border px-2 py-1 text-xs ${tone}`}
-                      >
-                        <span className="mr-1 opacity-70">
-                          {i + 1}.
-                        </span>
-                        {a.title || getActivityDisplayName(a.type)}
-                      </div>
-                    );
-                  })}
-                </div>
+              <div className="flex flex-wrap gap-2">
+                {sorted.map((a, i) => {
+                  const isCur = a.status === "Active" || a.status === "Voting";
+                  const tone = isCur
+                    ? "border-[var(--brand)] bg-white/6 ring-1 ring-[var(--brand)]/50"
+                    : a.status === "Closed"
+                    ? "border-green-500/30 bg-green-500/10"
+                    : "border-white/10 bg-white/5";
+                  return (
+                    <button
+                      key={a.id}
+                      className={`rounded-md border px-2 py-1 text-xs transition-colors hover:border-white/30 ${tone}`}
+                      onClick={() => setFocusedId(a.id)}
+                      title={a.title}
+                    >
+                      <span className="mr-1 opacity-70">{i + 1}.</span>
+                      <span className="mr-2 truncate max-w-[24ch] align-middle">{a.title || getActivityDisplayName(a.type)}</span>
+                      <span className="align-middle"><StatusPill status={(a.status === 'Draft' ? 'Queued' : a.status) as any} /></span>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -586,16 +555,18 @@ export default function ActivitiesManager({
                 <div className="h-12 animate-pulse rounded bg-white/10" />
               </div>
             ) : items.length === 0 ? (
-              <div className="text-sm text-[var(--muted)]">
+              <div className="text-sm text-MUTEDVAR">
                 No activities yet.
               </div>
             ) : (
               <div className="space-y-2">
-                {items.map((a) => {
+                {items.map((a, idx) => {
                   const status =
                     a.status === "Draft"
                       ? "Inactive"
                       : a.status;
+                  const isCur = status === "Active" || status === "Voting";
+                  const isExpanded = isCur || focusedId === a.id;
                   const tone =
                     status === "Inactive"
                       ? "border-white/10 bg-white/5"
@@ -612,15 +583,40 @@ export default function ActivitiesManager({
                   };
                   const max = Number(cc.max || 0);
                   const byGroup = cc.byGroup || {};
-                  const groupList =
-                    groups.length > 0 ? groups : [];
+                   const groupList =
+                     groups.length > 0 ? groups : [];
 
                    const expired = a.ends_at ? (new Date(a.ends_at).getTime() - nowTs) <= 0 : false;
-                   return (
-                     <div
-                       key={a.id}
-                       className={`rounded-2xl border p-3 ${tone}`}
-                     >
+
+                   // Collapsed one-liner for non-current, non-focused steps
+                   if (!isExpanded) {
+                     const denom = (max > 0 && groupList.length > 0) ? max * groupList.length : 0;
+                     const remainSec = a.ends_at ? Math.max(0, Math.floor((new Date(a.ends_at).getTime() - nowTs)/1000)) : 0;
+                     const mm = String(Math.floor(remainSec/60)).padStart(2,'0');
+                     const ss = String(remainSec%60).padStart(2,'0');
+                     return (
+                       <div key={a.id} className={`rounded-md border px-3 py-2 ${tone}`}>
+                         <div className="flex items-center justify-between gap-2">
+                           <div className="min-w-0 flex items-center gap-2 text-sm">
+                             <span className="opacity-70">{idx+1}.</span>
+                             <span className="truncate max-w-[32ch]">{a.title || getActivityDisplayName(a.type)}</span>
+                             <span className="text-xs text-MUTEDVAR">[{a.type}]</span>
+                           </div>
+                           <div className="flex items-center gap-3 text-xs">
+                             <StatusPill status={(status as any) === 'Inactive' ? 'Queued' : (status as any)} />
+                             {a.ends_at && <span className="opacity-80">{mm}:{ss}</span>}
+                             {denom > 0 && <span className="opacity-80">{cc.total}/{denom}</span>}
+                             <button className="rounded px-2 py-1 hover:bg-white/5" onClick={()=>setFocusedId(a.id)}>Open</button>
+                           </div>
+                         </div>
+                       </div>
+                     );
+                  }
+
+                  const tab = tabById[a.id] ?? (isCur ? 'Submissions' : 'Overview');
+
+                  return (
+                     <div key={a.id} className={`rounded-2xl border p-3 ${tone}`}>
                        {status === 'Active' ? (
                          <div className="absolute -ml-3 mt-[-12px] mb-[-12px] inset-y-0 left-0 w-[3px] rounded-l-xl bg-gradient-to-b from-[var(--brand)] to-transparent" aria-hidden="true" />
                        ) : null}
@@ -629,13 +625,13 @@ export default function ActivitiesManager({
                         <div>
                           <div className="flex items-center gap-2 font-medium">
                             {a.title || getActivityDisplayName(a.type)}
-                            <span className="ml-1 text-xs text-[var(--muted)]">
+                            <span className="ml-1 text-xs text-MUTEDVAR">
                               [{a.type === "brainstorm"
                                 ? "standard"
                                 : a.type}]
                             </span>
                             {a.config?.skipped && (
-                              <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] text-[var(--muted)]">
+                              <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] text-MUTEDVAR">
                                 Skipped
                               </span>
                             )}
@@ -644,27 +640,30 @@ export default function ActivitiesManager({
                           <div className="text-xs flex items-center gap-2">
                             {status === 'Active' && a.ends_at ? (
                               expired ? (
-                                <span className="timer-pill timer-red"><IconTimer size={12} /> Time's up</span>
+                                <StatusPill status="Overdue" label="Overdue" />
                               ) : (
-                                <span className="timer-pill timer-brand"><IconTimer size={12} /> <Timer endsAt={a.ends_at} /></span>
+                                <>
+                                  <span className="inline-flex items-center gap-1 text-MUTEDVAR"><IconTimer size={12} /> <Timer endsAt={a.ends_at} /></span>
+                                  <Button size="xs" variant="outline" onClick={() => extendTimer(a.id, 1)}>+1m</Button>
+                                  <Button size="xs" variant="outline" onClick={() => extendTimer(a.id, 5)}>+5m</Button>
+                                </>
                               )
                             ) : (
-                              <span className={`px-2 py-0.5 rounded-full border ${
-                                status === 'Voting' ? 'border-amber-400/30 text-amber-200 bg-amber-500/10' :
-                                status === 'Inactive' ? 'border-white/20 text-[var(--muted)]' : 'border-rose-400/30 text-rose-200 bg-rose-500/10'
-                              }`}>
-                                {status}
-                              </span>
+                              <StatusPill status={(status as any) === 'Inactive' ? 'Queued' : (status as any)} />
                             )}
                           </div>
 
-                          {(a.type === "brainstorm" ||
-                            a.type ===
-                              "assignment") && (
+                          <div className="mt-2 inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1 text-xs">
+                            {(['Overview','Submissions','Settings'] as const).map(t => (
+                              <button key={t} onClick={()=>setTabById(prev=>({...prev,[a.id]:t}))} className={`px-2 py-0.5 rounded-full ${tab===t ? 'bg-[var(--brand)] text-[var(--btn-on-brand)]' : 'text-MUTEDVAR hover:bg-white/5'}`}>{t}</button>
+                            ))}
+                          </div>
+
+                          {tab === 'Submissions' && (a.type === 'brainstorm' || a.type === 'assignment') && (
                             <div className="mt-2 text-xs">
                               {groupList.length ===
                               0 ? (
-                                <span className="text-[var(--muted)]">
+                                <span className="text-MUTEDVAR">
                                   No groups
                                 </span>
                               ) : (
@@ -672,8 +671,8 @@ export default function ActivitiesManager({
                                   {max > 0 && (
                                     <div className="mb-2">
                                       <div className="flex items-center justify-between">
-                                        <span className="text-[var(--muted)]">Submissions</span>
-                                        <span className="text-[var(--muted)]">
+                                        <span className="text-MUTEDVAR">Submissions</span>
+                                        <span className="text-MUTEDVAR">
                                           {cc.total}/
                                           {max *
                                             groupList.length}
@@ -759,6 +758,18 @@ export default function ActivitiesManager({
                                   </div>
                                 </>
                               )}
+                            </div>
+                          )}
+
+                          {tab === 'Overview' && (
+                            <div className="mt-3 text-xs text-MUTEDVAR">
+                              {a.description ? a.description : a.instructions}
+                            </div>
+                          )}
+
+                          {tab === 'Settings' && (
+                            <div className="mt-3">
+                              <Button size="sm" variant="outline" onClick={() => setEditId(a.id)}>Edit settings</Button>
                             </div>
                           )}
                         </div>
@@ -977,11 +988,54 @@ export default function ActivitiesManager({
             )}
           </div>
 
-          {/* "Add Activity" modal */}
+          {/* Sticky footer controls */}
+          {showFooter && (
+            <div className="pointer-events-none fixed inset-x-0 bottom-2 z-20 flex justify-center">
+              <div className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-white/12 bg-[var(--panel)]/95 px-3 py-2 shadow-lg backdrop-blur">
+                <Button size="sm" variant="outline" onClick={async ()=>{
+                  // Move to previous: find sorted index before current focused
+                  const arr = [...sorted];
+                  const i = focusedId ? arr.findIndex(a=>a.id===focusedId) : -1;
+                  const prev = i>0 ? arr[i-1] : null;
+                  if (prev) setFocusedId(prev.id);
+                }}>Previous</Button>
+                <Button size="sm" onClick={async ()=>{
+                  // Close current active and activate next draft/inactive
+                  try {
+                    const arr = [...sorted];
+                    const curIdx = arr.findIndex(a=>a.status==='Active' || a.status==='Voting');
+                    const nxt = arr.find((a,ix)=> ix>curIdx && (a.status==='Draft' || (a.status as any)==='Inactive'));
+                    if (curIdx>=0) await setStatus(arr[curIdx].id,'Closed');
+                    if (nxt) await setStatus(nxt.id,'Active');
+                    else toast('No more steps','info');
+                  } catch { toast('Failed to advance','error'); }
+                }}>Next</Button>
+                <details className="relative">
+                  <summary className="list-none inline-flex"><Button size="sm" variant="outline">Add time</Button></summary>
+                  <div className="absolute right-0 mt-1 w-36 rounded-md border border-white/12 bg-[var(--panel)] p-1 shadow-lg">
+                    {[{m:1,label:'+1 minute'},{m:5,label:'+5 minutes'}].map(({m,label})=> (
+                      <button key={m} className="block w-full rounded px-2 py-1 text-left text-sm hover:bg-white/5" onClick={(e)=>{
+                        const cur = sorted.find(a=>a.status==='Active' || a.status==='Voting');
+                        if (!cur) { toast('No active step','info'); const d=(e.currentTarget.closest('details') as HTMLDetailsElement|null); if(d) d.open=false; return; }
+                        extendTimer(cur.id, m);
+                        const d=(e.currentTarget.closest('details') as HTMLDetailsElement|null); if(d) d.open=false;
+                      }}>{label}</button>
+                    ))}
+                  </div>
+                </details>
+                <Button size="sm" variant="outline" onClick={async ()=>{ await fetch(`/api/session/${sessionId}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status:'Completed' }) }); toast('Session ended','success'); }}>End</Button>
+                {current && (
+                  <span className="ml-2 text-xs text-MUTEDVAR">Current: <span className="text-[var(--text)]">{current.title || getActivityDisplayName(current.type)}</span> {(() => { const cc = counts[current.id]||{total:0,max:0,byGroup:{}}; const groupCount = groups.length; const denom = (cc.max||0)* (groupCount||0); return denom>0 ? `(${cc.total}/${denom})` : ''; })()}</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* "Add step" modal */}
           <Modal
             open={open}
             onClose={() => setOpen(false)}
-            title="Add Activity"
+            title="Add step"
             footer={
               <>
                 <Button
@@ -1025,7 +1079,7 @@ export default function ActivitiesManager({
               </div>
 
               {/* Help text for type */}
-              <div className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs text-[var(--muted)]">
+              <div className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-xs text-MUTEDVAR">
                 {type === "brainstorm" && (
                   <div>
                     Standard activity: capture one
@@ -1204,7 +1258,7 @@ export default function ActivitiesManager({
                 );
                 if (!a) {
                   return (
-                    <div className="text-sm text-[var(--muted)]">
+                    <div className="text-sm text-MUTEDVAR">
                       This activity no longer
                       exists.
                     </div>
@@ -1213,7 +1267,7 @@ export default function ActivitiesManager({
 
                 return (
                   <div className="space-y-3">
-                    <div className="text-xs text-[var(--muted)]">
+                    <div className="text-xs text-MUTEDVAR">
                       Type: {a.type}
                     </div>
 

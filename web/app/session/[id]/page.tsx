@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
@@ -11,6 +11,7 @@ import ResultsPanel from "@/components/session/ResultsPanel.vibrant";
 import ActivitiesManager from "@/components/session/ActivitiesManager";
 import GroupsManager from "@/components/session/GroupsManager";
 import FacilitatorNotes from "@/components/session/FacilitatorNotes";
+import { StatusPill } from "@/components/ui/StatusPill";
 
 type Sess = {
   id: string;
@@ -223,13 +224,14 @@ export default function Page() {
               </span>
             ) : (
               <span>
-                <span className="text-[var(--brand)]">Session:</span>{" "}
+                
                 {s.name}
               </span>
             )}
           </h1>
 
           <div className="text-xs text-[var(--muted)] flex items-center gap-1">
+            <StatusPill status={(s.status as any) === 'Active' ? 'Active' : (s.status as any) === 'Completed' ? 'Closed' : 'Queued'} label={s.status} />
             <span>ID {id?.slice(0, 8)}</span>
             {s.join_code && (
               <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-1.5 py-[1px] text-[var(--text)]">
@@ -258,6 +260,59 @@ export default function Page() {
         </div>
 
         <div className="relative flex items-center gap-2">
+          {/* Primary actions */}
+          <Button
+            onClick={async () => {
+              try {
+                const r = await fetch(`/api/activities?session_id=${id}`, { cache: 'no-store' });
+                const j = await r.json();
+                const acts = Array.isArray(j.activities) ? j.activities : [];
+                const sorted = [...acts].sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0));
+                const currentIdx = sorted.findIndex((a: any) => a.status === 'Active' || a.status === 'Voting');
+                const next = sorted.find((a: any, i: number) => i > currentIdx && (a.status === 'Draft' || a.status === 'Inactive')) || null;
+                if (currentIdx >= 0) {
+                  const cur = sorted[currentIdx];
+                  await fetch(`/api/activities/${cur.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'Closed' }) });
+                }
+                if (next) {
+                  await fetch(`/api/activities/${next.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'Active' }) });
+                }
+                toast(next ? 'Moved to next step' : 'No more steps', next ? 'success' : 'info');
+              } catch (e) {
+                toast('Failed to advance', 'error');
+              }
+            }}
+          >
+            Next
+          </Button>
+          <div className="relative">
+            <details>
+              <summary className="list-none">
+                <Button variant="outline">Add time</Button>
+              </summary>
+              <div className="absolute right-0 z-10 mt-1 w-36 rounded-md border border-white/12 bg-[var(--panel)] p-1 shadow-lg">
+                {[{m:1,label:'+1 minute'},{m:5,label:'+5 minutes'}].map(({m,label})=> (
+                  <button key={m} className="block w-full rounded px-2 py-1 text-left text-sm hover:bg-white/5" onClick={async (e)=>{
+                    try {
+                      const r = await fetch(`/api/activities?session_id=${id}`, { cache: 'no-store' });
+                      const j = await r.json();
+                      const acts = Array.isArray(j.activities) ? j.activities : [];
+                      const cur = acts.find((a: any) => a.status === 'Active' || a.status === 'Voting');
+                      if (!cur) { toast('No active step', 'info'); return; }
+                      const prev = cur.ends_at ? new Date(cur.ends_at).getTime() : Date.now();
+                      const base = Number.isFinite(prev) ? Math.max(prev, Date.now()) : Date.now();
+                      const next = new Date(base + m*60_000).toISOString();
+                      const starts = cur.starts_at || new Date().toISOString();
+                      await fetch(`/api/activities/${cur.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'Active', starts_at: starts, ends_at: next }) });
+                      toast(`+${m} min added`, 'success');
+                    } catch { toast('Failed to add time','error'); }
+                    const d = (e.currentTarget.closest('details') as HTMLDetailsElement | null); if (d) d.open=false;
+                  }}>{label}</button>
+                ))}
+              </div>
+            </details>
+          </div>
+          <Button variant="outline" onClick={async ()=>{ await updateSession({ status: 'Completed' }); }}>End</Button>
           {!editing && (
             <Button
               variant="outline"
@@ -306,7 +361,7 @@ export default function Page() {
               onClick={() => setExportOpen((o) => !o)}
             >
               <span className="inline-flex items-center gap-1">
-                Export <span className="opacity-80">▾</span>
+                Export <span className="opacity-80">?</span>
               </span>{" "}
               <ProTag />
             </Button>
