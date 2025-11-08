@@ -47,6 +47,17 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   const res = NextResponse.json({ session: s });
   // small private cache can help when navigating
   res.headers.set("Cache-Control", "private, max-age=10, s-maxage=0");
+  // Best-effort recent tracking (ignore if table missing)
+  try {
+    await supabaseAdmin
+      .from("recent_sessions")
+      .upsert(
+        { user_id: user.id, session_id: id, last_viewed_at: new Date().toISOString() },
+        { onConflict: "user_id,session_id" } as any
+      );
+  } catch {
+    // ignore
+  }
   return res;
 }
 
@@ -105,6 +116,18 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // Record edit as a recent interaction
+  try {
+    await supabaseAdmin
+      .from("recent_sessions")
+      .upsert(
+        { user_id: user.id, session_id: id, last_viewed_at: new Date().toISOString() },
+        { onConflict: "user_id,session_id" } as any
+      );
+  } catch {
+    // ignore
+  }
 
   return NextResponse.json({ session: data });
 }

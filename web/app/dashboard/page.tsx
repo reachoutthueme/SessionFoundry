@@ -4,6 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
+import TemplateRail from "@/components/dashboard/TemplateRail";
+import RecentSessions from "@/components/dashboard/RecentSessions";
+import SuggestedActions from "@/components/dashboard/SuggestedActions";
 
 type Sess = {
   id: string;
@@ -162,6 +165,12 @@ export default function Page() {
         />
       </div>
 
+      {/* Templates rail */}
+      <TemplateRail />
+
+      {/* Suggestions */}
+      <SuggestedActions sessions={(data?.sessions ?? []) as any} stats={data?.stats ?? { participants: 0, brainstorm: 0, stocktake: 0 }} />
+
       {/* Sessions in last 14 days */}
       <Card>
         <CardHeader
@@ -177,64 +186,7 @@ export default function Page() {
       </Card>
 
       {/* Recent sessions */}
-      <Card>
-        <CardHeader
-          title="Recent sessions"
-          subtitle="Your latest workshops"
-        />
-        <CardBody className="p-0">
-          {loading ? (
-            <div className="space-y-2 p-4">
-              <div className="h-10 animate-pulse rounded bg-white/10" />
-              <div className="h-10 animate-pulse rounded bg-white/10" />
-            </div>
-          ) : error ? (
-            <div className="p-4 text-sm text-[var(--muted)]">{error}</div>
-          ) : !data || data.sessions.length === 0 ? (
-            <div className="p-4 text-sm text-[var(--muted)]">
-              No sessions yet.
-            </div>
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="text-left text-[var(--muted)]">
-                <tr>
-                  <th className="px-4 py-3">Name</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Join code</th>
-                  <th className="px-4 py-3">Created</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.sessions.map((s) => (
-                  <tr
-                    key={s.id}
-                    className="border-t border-white/10 hover:bg-white/5"
-                  >
-                    <td className="px-4 py-3">{s.name}</td>
-                    <td className="px-4 py-3">{s.status}</td>
-                    <td className="px-4 py-3 font-mono text-xs">
-                      {s.join_code}
-                    </td>
-                    <td className="px-4 py-3">
-                      {new Date(s.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Button
-                        variant="ghost"
-                        onClick={() => router.push(`/session/${s.id}`)}
-                        aria-label={`Open session ${s.name}`}
-                      >
-                        Open
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </CardBody>
-      </Card>
+      <RecentSessions />
     </div>
   );
 }

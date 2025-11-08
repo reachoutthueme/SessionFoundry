@@ -90,6 +90,29 @@ export default function Page() {
 
         const json = await res.json();
         setS(json.session ?? null);
+
+        // Client-side recent tracking fallback (localStorage)
+        try {
+          const key = "sf_recent_sessions";
+          const raw = localStorage.getItem(key);
+          const arr: any[] = raw ? JSON.parse(raw) : [];
+          const now = new Date().toISOString();
+          const existingIdx = arr.findIndex((x) => x && x.id === json.session?.id);
+          const entry = {
+            id: json.session?.id,
+            name: json.session?.name ?? "Untitled",
+            status: json.session?.status ?? "Inactive",
+            viewed_at: now,
+          };
+          if (existingIdx >= 0) {
+            arr.splice(existingIdx, 1);
+          }
+          arr.unshift(entry);
+          const deduped = arr
+            .filter((x) => x && x.id)
+            .slice(0, 12);
+          localStorage.setItem(key, JSON.stringify(deduped));
+        } catch {}
       } catch (err) {
         console.error("Failed to fetch session", err);
         setLoadError("Network error loading session");
