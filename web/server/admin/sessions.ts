@@ -10,10 +10,10 @@ export type AdminSessionRow = {
   created_at: string;
 };
 
-export async function searchAdminSessions(params: { status?: string; owner?: string; from?: string; to?: string; page?: number; per_page?: number; }): Promise<{ sessions: AdminSessionRow[]; count: number; page: number; per_page: number }>
+export async function searchAdminSessions(params: { status?: string; owner?: string; from?: string; to?: string; page?: number; per_page?: number; sort?: string; dir?: "asc"|"desc"; }): Promise<{ sessions: AdminSessionRow[]; count: number; page: number; per_page: number }>
 {
   if (!isSupabaseAdminConfigured()) return { sessions: [], count: 0, page: 1, per_page: 50 };
-  const { status = "", owner = "", from, to, page = 1, per_page = 50 } = params || {};
+  const { status = "", owner = "", from, to, page = 1, per_page = 50, sort = "created_at", dir = "desc" } = params || {};
 
   // Count total first
   let qc = supabaseAdmin
@@ -33,7 +33,7 @@ export async function searchAdminSessions(params: { status?: string; owner?: str
   let q = supabaseAdmin
     .from("sessions")
     .select("id,name,status,join_code,facilitator_user_id,created_at")
-    .order("created_at", { ascending: false })
+    .order((() => { const allowed: Record<string,string> = { name: "name", status: "status", facilitator_user_id: "facilitator_user_id", join_code: "join_code", created_at: "created_at" }; return allowed[sort] || "created_at"; })(), { ascending: dir === "asc" })
     .range(fromIdx, toIdx);
 
   if (status) q = q.eq("status", status);
@@ -45,3 +45,7 @@ export async function searchAdminSessions(params: { status?: string; owner?: str
   if (error) return { sessions: [], count: 0, page, per_page };
   return { sessions: rows || [], count: Number(count || 0), page, per_page };
 }
+
+
+
+

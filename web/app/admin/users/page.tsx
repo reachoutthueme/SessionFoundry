@@ -63,6 +63,14 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
     return <Link className="inline-flex items-center gap-1" href={sortLink(key)}>{text}<span aria-hidden>{arrow}</span></Link>;
   }
 
+  const sortLabel = (k: string) => (
+    k === 'email' ? 'Email' :
+    k === 'id' ? 'User ID' :
+    k === 'created_at' ? 'Created' :
+    k === 'last_sign_in_at' ? 'Last sign-in' :
+    k === 'sessions_count' ? 'Sessions' : k
+  );
+
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Users</h1>
@@ -76,15 +84,17 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
         <button className="rounded-md border border-white/10 bg-white/5 px-3 text-sm">Search</button>
       </form>
 
+      <div className="text-xs text-[var(--muted)]">Sorted by <span className="font-medium text-[var(--text)]">{sortLabel(sort)}</span> • {dir.toUpperCase()}</div>
+
       <div className="rounded-md border border-white/10 overflow-auto">
         <table className="w-full text-sm">
           <thead className="bg-[var(--panel)] text-[var(--muted)] sticky top-0">
             <tr>
-              <th className="px-3 py-2 text-left">{hdr('email', 'Email')}</th>
-              <th className="px-3 py-2 text-left">{hdr('id', 'User ID')}</th>
-              <th className="px-3 py-2 text-left">{hdr('created_at', 'Created')}</th>
-              <th className="px-3 py-2 text-left">{hdr('last_sign_in_at', 'Last sign-in')}</th>
-              <th className="px-3 py-2 text-left">{hdr('sessions_count', 'Sessions')}</th>
+              <th aria-sort={sort==='email'? (dir==='asc'?'ascending':'descending') : 'none'} className={`px-3 py-2 text-left ${sort==='email'?'text-[var(--text)]':''}`}>{hdr('email', 'Email')}</th>
+              <th aria-sort={sort==='id'? (dir==='asc'?'ascending':'descending') : 'none'} className={`px-3 py-2 text-left ${sort==='id'?'text-[var(--text)]':''}`}>{hdr('id', 'User ID')}</th>
+              <th aria-sort={sort==='created_at'? (dir==='asc'?'ascending':'descending') : 'none'} className={`px-3 py-2 text-left ${sort==='created_at'?'text-[var(--text)]':''}`}>{hdr('created_at', 'Created')}</th>
+              <th aria-sort={sort==='last_sign_in_at'? (dir==='asc'?'ascending':'descending') : 'none'} className={`px-3 py-2 text-left ${sort==='last_sign_in_at'?'text-[var(--text)]':''}`}>{hdr('last_sign_in_at', 'Last sign-in')}</th>
+              <th aria-sort={sort==='sessions_count'? (dir==='asc'?'ascending':'descending') : 'none'} className={`px-3 py-2 text-left ${sort==='sessions_count'?'text-[var(--text)]':''}`}>{hdr('sessions_count', 'Sessions')}</th>
             </tr>
           </thead>
           <tbody>

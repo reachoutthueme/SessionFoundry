@@ -36,7 +36,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams?: 
 
   const page = Math.max(1, Number(searchParams?.page || 1) || 1);
   const per_page = Math.min(200, Math.max(1, Number(searchParams?.per_page || 50) || 50));
-  const { logs: rows, count } = await getAuditLogs({ actor, entity_type, entity_id, action, from, to, page, per_page });
+  const { logs: rows, count } = await getAuditLogs({ actor, entity_type, entity_id, action, from, to, page, per_page, sort, dir });
   const sort = typeof searchParams?.sort === 'string' ? searchParams.sort : 'created_at';
   const dir = (typeof searchParams?.dir === 'string' && (searchParams.dir === 'asc' || searchParams.dir === 'desc')) ? (searchParams.dir as 'asc'|'desc') : 'desc';
   const sorted = [...rows].sort((a: any, b: any) => {
@@ -71,6 +71,13 @@ export default async function AdminAuditPage({ searchParams }: { searchParams?: 
     return <Link className="inline-flex items-center gap-1" href={sortLink(key)}>{text}<span aria-hidden>{arrow}</span></Link>;
   }
 
+  const sortLabel = (k: string) => (
+    k === 'created_at' ? 'Time' :
+    k === 'actor_user_id' ? 'Actor' :
+    k === 'action' ? 'Action' :
+    k === 'entity_type' ? 'Entity' : k
+  );
+
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Audit Log</h1>
@@ -84,14 +91,16 @@ export default async function AdminAuditPage({ searchParams }: { searchParams?: 
         <button className="rounded-md border border-white/10 bg-white/5 px-3 text-sm">Filter</button>
       </form>
 
+      <div className="text-xs text-[var(--muted)]">Sorted by <span className="font-medium text-[var(--text)]">{sortLabel(sort)}</span> • {dir.toUpperCase()}</div>
+
       <div className="rounded-md border border-white/10 overflow-auto">
         <table className="w-full text-sm">
           <thead className="bg-[var(--panel)] text-[var(--muted)] sticky top-0">
             <tr>
-              <th className="px-3 py-2 text-left">{hdr('created_at', 'Time')}</th>
-              <th className="px-3 py-2 text-left">{hdr('actor_user_id', 'Actor')}</th>
-              <th className="px-3 py-2 text-left">{hdr('action', 'Action')}</th>
-              <th className="px-3 py-2 text-left">{hdr('entity_type', 'Entity')}</th>
+              <th aria-sort={sort==='created_at'? (dir==='asc'?'ascending':'descending') : 'none'} className={`px-3 py-2 text-left ${sort==='created_at'?'text-[var(--text)]':''}`}>{hdr('created_at', 'Time')}</th>
+              <th aria-sort={sort==='actor_user_id'? (dir==='asc'?'ascending':'descending') : 'none'} className={`px-3 py-2 text-left ${sort==='actor_user_id'?'text-[var(--text)]':''}`}>{hdr('actor_user_id', 'Actor')}</th>
+              <th aria-sort={sort==='action'? (dir==='asc'?'ascending':'descending') : 'none'} className={`px-3 py-2 text-left ${sort==='action'?'text-[var(--text)]':''}`}>{hdr('action', 'Action')}</th>
+              <th aria-sort={sort==='entity_type'? (dir==='asc'?'ascending':'descending') : 'none'} className={`px-3 py-2 text-left ${sort==='entity_type'?'text-[var(--text)]':''}`}>{hdr('entity_type', 'Entity')}</th>
             </tr>
           </thead>
           <tbody>
@@ -135,3 +144,4 @@ export default async function AdminAuditPage({ searchParams }: { searchParams?: 
 
 function s(v: unknown): string { return typeof v === 'string' ? v : ''; }
 function fmt(v?: string) { if (!v) return '-'; const d = new Date(v); return isNaN(d.getTime()) ? '-' : d.toLocaleString(); }
+

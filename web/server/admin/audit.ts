@@ -10,10 +10,10 @@ export type AuditRow = {
   created_at: string;
 };
 
-export async function getAuditLogs(params: { actor?: string; entity_type?: string; entity_id?: string; action?: string; from?: string; to?: string; page?: number; per_page?: number; }): Promise<{ logs: AuditRow[]; count: number; page: number; per_page: number }>
+export async function getAuditLogs(params: { actor?: string; entity_type?: string; entity_id?: string; action?: string; from?: string; to?: string; page?: number; per_page?: number; sort?: string; dir?: "asc"|"desc"; }): Promise<{ logs: AuditRow[]; count: number; page: number; per_page: number }>
 {
   if (!isSupabaseAdminConfigured()) return { logs: [], count: 0, page: 1, per_page: 50 };
-  const { actor = "", entity_type = "", entity_id = "", action = "", from, to, page = 1, per_page = 50 } = params || {};
+  const { actor = "", entity_type = "", entity_id = "", action = "", from, to, page = 1, per_page = 50, sort = "created_at", dir = "desc" } = params || {};
 
   // Count
   let qc = supabaseAdmin
@@ -35,7 +35,7 @@ export async function getAuditLogs(params: { actor?: string; entity_type?: strin
   let q = supabaseAdmin
     .from("audit_log")
     .select("id, actor_user_id, action, entity_type, entity_id, created_at")
-    .order("created_at", { ascending: false })
+     .order((() => { const allowed: Record<string,string> = { created_at: "created_at", actor_user_id: "actor_user_id", action: "action", entity_type: "entity_type" }; return allowed[sort] || "created_at"; })(), { ascending: dir === "asc" })
     .range(fromIdx, toIdx);
 
   if (actor) q = q.eq("actor_user_id", actor);
@@ -49,3 +49,6 @@ export async function getAuditLogs(params: { actor?: string; entity_type?: strin
   if (error) return { logs: [], count: 0, page, per_page };
   return { logs: rows || [], count: Number(count || 0), page, per_page };
 }
+
+
+

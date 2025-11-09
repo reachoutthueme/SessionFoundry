@@ -34,7 +34,7 @@ export default async function AdminSessionsPage({ searchParams }: { searchParams
   const pageNum = Math.max(1, Number(searchParams?.page || 1) || 1);
   const perPage = Math.min(200, Math.max(1, Number(searchParams?.per_page || 50) || 50));
 
-  const { sessions: rows, count } = await searchAdminSessions({ status, owner, from, to, page: pageNum, per_page: perPage });
+  const { sessions: rows, count } = await searchAdminSessions({ status, owner, from, to, page: pageNum, per_page: perPage, sort, dir });
   const sort = typeof searchParams?.sort === 'string' ? searchParams.sort : 'created_at';
   const dir = (typeof searchParams?.dir === 'string' && (searchParams.dir === 'asc' || searchParams.dir === 'desc')) ? (searchParams.dir as 'asc'|'desc') : 'desc';
   const sorted = [...rows].sort((a: any, b: any) => {
@@ -67,6 +67,14 @@ export default async function AdminSessionsPage({ searchParams }: { searchParams
     return <Link className="inline-flex items-center gap-1" href={sortLink(key)}>{text}<span aria-hidden>{arrow}</span></Link>;
   }
 
+  const sortLabel = (k: string) => (
+    k === 'name' ? 'Name' :
+    k === 'status' ? 'Status' :
+    k === 'facilitator_user_id' ? 'Owner' :
+    k === 'join_code' ? 'Join code' :
+    k === 'created_at' ? 'Created' : k
+  );
+
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Sessions</h1>
@@ -84,15 +92,17 @@ export default async function AdminSessionsPage({ searchParams }: { searchParams
         <button className="rounded-md border border-white/10 bg-white/5 px-3 text-sm">Filter</button>
       </form>
 
+      <div className="text-xs text-[var(--muted)]">Sorted by <span className="font-medium text-[var(--text)]">{sortLabel(sort)}</span> • {dir.toUpperCase()}</div>
+
       <div className="rounded-md border border-white/10 overflow-auto">
         <table className="w-full text-sm">
           <thead className="bg-[var(--panel)] text-[var(--muted)] sticky top-0">
             <tr>
-              <th className="px-3 py-2 text-left">{hdr('name', 'Name')}</th>
-              <th className="px-3 py-2 text-left">{hdr('status', 'Status')}</th>
-              <th className="px-3 py-2 text-left">{hdr('facilitator_user_id', 'Owner')}</th>
-              <th className="px-3 py-2 text-left">{hdr('join_code', 'Join code')}</th>
-              <th className="px-3 py-2 text-left">{hdr('created_at', 'Created')}</th>
+              <th aria-sort={sort==='name'? (dir==='asc'?'ascending':'descending') : 'none'} className={`px-3 py-2 text-left ${sort==='name'?'text-[var(--text)]':''}`}>{hdr('name', 'Name')}</th>
+              <th aria-sort={sort==='status'? (dir==='asc'?'ascending':'descending') : 'none'} className={`px-3 py-2 text-left ${sort==='status'?'text-[var(--text)]':''}`}>{hdr('status', 'Status')}</th>
+              <th aria-sort={sort==='facilitator_user_id'? (dir==='asc'?'ascending':'descending') : 'none'} className={`px-3 py-2 text-left ${sort==='facilitator_user_id'?'text-[var(--text)]':''}`}>{hdr('facilitator_user_id', 'Owner')}</th>
+              <th aria-sort={sort==='join_code'? (dir==='asc'?'ascending':'descending') : 'none'} className={`px-3 py-2 text-left ${sort==='join_code'?'text-[var(--text)]':''}`}>{hdr('join_code', 'Join code')}</th>
+              <th aria-sort={sort==='created_at'? (dir==='asc'?'ascending':'descending') : 'none'} className={`px-3 py-2 text-left ${sort==='created_at'?'text-[var(--text)]':''}`}>{hdr('created_at', 'Created')}</th>
             </tr>
           </thead>
           <tbody>
@@ -141,3 +151,4 @@ function fmt(v?: string) {
   if (isNaN(d.getTime())) return '-';
   return d.toLocaleString();
 }
+
