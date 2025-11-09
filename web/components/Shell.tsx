@@ -40,6 +40,7 @@ interface NavLinkProps {
   label: ReactNode;
   icon?: ReactNode;
   collapsed?: boolean;
+  exact?: boolean;
 }
 
 // Constants
@@ -86,9 +87,9 @@ function Section({ label, children, collapsed }: SectionProps) {
   );
 }
 
-function NavLink({ href, label, icon, collapsed }: NavLinkProps) {
+function NavLink({ href, label, icon, collapsed, exact }: NavLinkProps) {
   const pathname = usePathname();
-  const isActive = href === "/" ? pathname === "/" : (pathname === href || pathname?.startsWith(`${href}/`));
+  const isActive = exact ? pathname === href : (href === "/" ? pathname === "/" : (pathname === href || pathname?.startsWith(`${href}/`)));
 
   return (
     <Link
@@ -372,26 +373,31 @@ function ShellBody({ children }: PropsWithChildren) {
                       <NavLink
                         collapsed={false}
                         href="/admin"
+                        exact
                         label={<span className="flex items-center gap-2"><span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0" aria-hidden="true" />Overview</span>}
                       />
                       <NavLink
                         collapsed={false}
                         href="/admin/users"
+                        exact
                         label={<span className="flex items-center gap-2"><span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0" aria-hidden="true" />Users</span>}
                       />
                       <NavLink
                         collapsed={false}
                         href="/admin/sessions"
+                        exact
                         label={<span className="flex items-center gap-2"><span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0" aria-hidden="true" />Sessions</span>}
                       />
                       <NavLink
                         collapsed={false}
                         href="/admin/system"
+                        exact
                         label={<span className="flex items-center gap-2"><span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0" aria-hidden="true" />System</span>}
                       />
                       <NavLink
                         collapsed={false}
                         href="/admin/system/audit"
+                        exact
                         label={<span className="flex items-center gap-2"><span className="inline-block h-1.5 w-1.5 rounded-full bg-white/40 flex-shrink-0" aria-hidden="true" />Audit Log</span>}
                       />
                     </div>
@@ -539,3 +545,10 @@ export default function Shell(props: PropsWithChildren) {
     </Suspense>
   );
 }
+
+
+
+
+
+
+

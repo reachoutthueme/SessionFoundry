@@ -1,0 +1,20 @@
+*** Begin Patch
+*** Update File: web/components/Shell.tsx
+@@
+-interface NavLinkProps {
++interface NavLinkProps {
+   href: string;
+   label: ReactNode;
+   icon?: ReactNode;
+   collapsed?: boolean;
++  exact?: boolean;
+ }
+@@
+-function NavLink({ href, label, icon, collapsed }: NavLinkProps) {
++function NavLink({ href, label, icon, collapsed, exact }: NavLinkProps) {
+   const pathname = usePathname();
+-  const isActive = href === "/" ? pathname === "/" : (pathname === href || pathname?.startsWith(`${href}/`));
++  const isActive = exact
++    ? pathname === href
++    : (href === "/" ? pathname === "/" : (pathname === href || pathname?.startsWith(`${href}/`)));
+*** End Patch

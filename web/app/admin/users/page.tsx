@@ -60,7 +60,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
   function hdr(key: string, text: string) {
     const is = sort === key;
     const arrow = is ? (dir === 'asc' ? ' ▲' : ' ▼') : '';
-    return <Link href={sortLink(key)}>{text}{arrow}</Link>;
+    return <Link className="inline-flex items-center gap-1" href={sortLink(key)}>{text}<span aria-hidden>{arrow}</span></Link>;
   }
 
   return (
