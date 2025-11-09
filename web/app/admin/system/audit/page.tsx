@@ -36,9 +36,9 @@ export default async function AdminAuditPage({ searchParams }: { searchParams?: 
 
   const page = Math.max(1, Number(searchParams?.page || 1) || 1);
   const per_page = Math.min(200, Math.max(1, Number(searchParams?.per_page || 50) || 50));
-  const { logs: rows, count } = await getAuditLogs({ actor, entity_type, entity_id, action, from, to, page, per_page, sort, dir });
   const sort = typeof searchParams?.sort === 'string' ? searchParams.sort : 'created_at';
   const dir = (typeof searchParams?.dir === 'string' && (searchParams.dir === 'asc' || searchParams.dir === 'desc')) ? (searchParams.dir as 'asc'|'desc') : 'desc';
+  const { logs: rows, count } = await getAuditLogs({ actor, entity_type, entity_id, action, from, to, page, per_page, sort, dir });
   const sorted = [...rows].sort((a: any, b: any) => {
     const val = (k: string, x: any) => (x?.[k] ?? '');
     const av = val(sort, a);
