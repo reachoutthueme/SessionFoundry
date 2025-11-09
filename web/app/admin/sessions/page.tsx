@@ -34,9 +34,9 @@ export default async function AdminSessionsPage({ searchParams }: { searchParams
   const pageNum = Math.max(1, Number(searchParams?.page || 1) || 1);
   const perPage = Math.min(200, Math.max(1, Number(searchParams?.per_page || 50) || 50));
 
-  const { sessions: rows, count } = await searchAdminSessions({ status, owner, from, to, page: pageNum, per_page: perPage, sort, dir });
   const sort = typeof searchParams?.sort === 'string' ? searchParams.sort : 'created_at';
   const dir = (typeof searchParams?.dir === 'string' && (searchParams.dir === 'asc' || searchParams.dir === 'desc')) ? (searchParams.dir as 'asc'|'desc') : 'desc';
+  const { sessions: rows, count } = await searchAdminSessions({ status, owner, from, to, page: pageNum, per_page: perPage, sort, dir });
   const sorted = [...rows].sort((a: any, b: any) => {
     const val = (k: string, x: any) => (x?.[k] ?? '');
     const av = val(sort, a);
@@ -151,4 +151,5 @@ function fmt(v?: string) {
   if (isNaN(d.getTime())) return '-';
   return d.toLocaleString();
 }
+
 
