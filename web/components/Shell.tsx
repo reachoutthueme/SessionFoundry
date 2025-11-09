@@ -161,10 +161,13 @@ function ShellBody({ children }: PropsWithChildren) {
     };
   }, []);
 
-  // Auth protection
+  // Auth protection with small post-login grace period to avoid loops
   useEffect(() => {
     if (meLoading) return;
-    if (!me && isRestrictedRoute(pathname)) {
+    let recent = 0;
+    try { recent = Number(sessionStorage.getItem('sf_recent_login_redirect') || '0'); } catch {}
+    const withinGrace = recent > 0 && (Date.now() - recent) < 5000; // 5s
+    if (!me && isRestrictedRoute(pathname) && !withinGrace) {
       const full = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : "");
       router.replace("/login?redirect=" + encodeURIComponent(full));
     }

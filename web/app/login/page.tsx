@@ -85,6 +85,7 @@ function LoginForm() {
         if (response.ok) {
           const data: SessionResponse = await response.json();
           if (data?.user) {
+            try { sessionStorage.setItem('sf_recent_login_redirect', String(Date.now())); } catch {}
             router.replace(redirectUrl);
             return;
           }
