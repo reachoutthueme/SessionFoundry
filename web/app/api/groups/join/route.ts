@@ -72,9 +72,10 @@ export async function POST(req: Request) {
       return noStore(NextResponse.json({ error: "participant/session mismatch" }, { status: 400 }));
     }
 
-    // Session must be Active (or adjust to allow 'Draft' if you want pre-assignment)
+    // Session must be Active to change groups during a live run; allow Inactive/Draft for pre-assignment
     const sStatus = await getSessionStatus(session_id);
-    if (sStatus !== "Active") {
+    const allowed = sStatus === "Active" || sStatus === "Inactive" || sStatus === "Draft";
+    if (!allowed) {
       return noStore(NextResponse.json({ error: "Session not accepting group changes" }, { status: 409 }));
     }
 

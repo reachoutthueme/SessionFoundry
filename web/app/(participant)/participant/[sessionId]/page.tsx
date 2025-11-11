@@ -97,6 +97,9 @@ export default function ParticipantPage() {
   // Shortcuts: Enter opens active, '?' help, 'g' focuses group
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      const isTyping = tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target as any)?.isContentEditable;
+      if (isTyping) return;
       if (selected) return;
       if (e.key === 'Enter' && (active && (active.status === 'Active' || active.status === 'Voting'))) {
         e.preventDefault();
@@ -458,6 +461,9 @@ function GroupJoinScreen({
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      const isTyping = tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target as any)?.isContentEditable;
+      if (isTyping || createOpen || editNameOpen) return;
       if (!groups?.length) return;
       const cols = 2;
       if (e.key === "ArrowRight") { e.preventDefault(); setFocusIdx(i => Math.min(groups.length - 1, i + 1)); }
@@ -466,6 +472,8 @@ function GroupJoinScreen({
       if (e.key === "ArrowUp")    { e.preventDefault(); setFocusIdx(i => Math.max(0, i - cols)); }
       // Do not bind Enter to avoid accidental joins
       if (e.key.toLowerCase() === "n") setCreateOpen(true);
+      // Convenience: 'g' focuses the first group card in the grid
+      if (e.key.toLowerCase() === "g") { e.preventDefault(); setFocusIdx(0); }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
