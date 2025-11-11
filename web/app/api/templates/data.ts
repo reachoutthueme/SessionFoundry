@@ -35,28 +35,47 @@ export type Template = z.infer<typeof TemplateSchema>;
 
 // ========= Normalizer =========
 export function normalizeActivity(a: TemplateActivity): TemplateActivity {
-  const voting = a.config?.voting_enabled ?? false;
-  const points = a.config?.points_budget ?? 0;
-  const maxSubs = a.config?.max_submissions ?? 0;
+  const c = a.config ?? {};
+  const voting = !!c.voting_enabled;
+
+  // Build config by only overriding provided values and keeping schema defaults intact.
+  const normalizedConfig: Record<string, any> = { ...c };
+
+  if (typeof c.time_limit_sec === "number") {
+    normalizedConfig.time_limit_sec = Math.max(0, Math.min(3600, c.time_limit_sec));
+  }
+
+  if (typeof c.max_submissions === "number") {
+    // Let schema defaults apply if not provided; if provided, clamp to >=1
+    normalizedConfig.max_submissions = Math.max(1, Math.min(50, c.max_submissions));
+  }
+
+  // Handle points budget only when voting is enabled; otherwise omit it so schema defaulting works
+  if (voting) {
+    if (typeof c.points_budget === "number") {
+      normalizedConfig.points_budget = Math.max(1, c.points_budget);
+    } else {
+      // leave undefined to allow schema default
+      delete normalizedConfig.points_budget;
+    }
+  } else {
+    delete normalizedConfig.points_budget;
+  }
+
+  // Remove prompts when not assignment
+  if (a.type !== "assignment") {
+    delete normalizedConfig.prompts;
+  }
 
   const cleaned: TemplateActivity = {
     ...a,
     title: a.title.trim(),
     instructions: a.instructions?.trim(),
     description: a.description?.trim(),
-    config: {
-      ...a.config,
-      // clamp bounds / clear mismatches
-      points_budget: voting ? Math.max(0, points) : 0,
-      max_submissions: Math.max(0, maxSubs),
-      time_limit_sec: Math.max(0, Math.min(3600, a.config?.time_limit_sec ?? 0)),
-      ...(a.type === "assignment" ? {} : { prompts: undefined }),
-    },
+    config: normalizedConfig,
     initiatives:
       a.type === "stocktake"
-        ? Array.from(
-            new Set((a.initiatives ?? []).map((s) => s.trim()).filter(Boolean))
-          )
+        ? Array.from(new Set((a.initiatives ?? []).map((s) => s.trim()).filter(Boolean)))
         : undefined,
   };
 
