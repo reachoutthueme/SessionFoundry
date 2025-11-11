@@ -80,7 +80,33 @@ function JoinForm() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col p-6">
+    <div className="relative min-h-dvh flex flex-col p-6 overflow-hidden">
+      {/* Background layers */}
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,.6) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.6) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(600px 380px at 50% 55%, rgba(155,107,255,.10), transparent 60%)",
+          }}
+        />
+        <div
+          className="absolute inset-0 opacity-20 animate-gradient-drift"
+          style={{
+            background:
+              "linear-gradient(120deg, rgba(155,107,255,.25), rgba(90,168,255,.18), rgba(99,62,214,.22))",
+            filter: "blur(40px)",
+          }}
+        />
+      </div>
       <div className="flex-1" />
       <div className="text-center mb-2">
         <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight">

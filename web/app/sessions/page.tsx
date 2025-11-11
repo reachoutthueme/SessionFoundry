@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
+import { StatusPill } from "@/components/ui/StatusPill";
 import Button from "@/components/ui/Button";
 import Empty from "@/components/ui/Empty";
 import Modal from "@/components/ui/Modal";
@@ -335,7 +336,12 @@ export default function Page() {
                         <div className="mt-0.5 text-xs text-[var(--muted)]">You</div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-block rounded-full border px-2 py-0.5 text-xs ${s.status==='Active' ? 'status-chip-active border-green-400/30 text-green-200 bg-green-500/10' : s.status==='Completed' ? 'border-rose-400/30 text-rose-200 bg-rose-500/10' : 'border-white/20 text-[var(--muted)]'}`}>{s.status==='Draft'?'Inactive':s.status}</span>
+                        {(() => {
+                          const raw = s.status as any;
+                          const status = raw === 'Active' ? 'Active' : raw === 'Completed' ? 'Closed' : (raw === 'Draft' || raw === 'Inactive') ? 'Inactive' : 'Queued';
+                          const label = raw === 'Draft' ? 'Inactive' : String(raw);
+                          return <StatusPill status={status as any} label={label} />;
+                        })()}
                       </td>
                       <td className="px-4 py-3">{new Date(s.created_at).toLocaleDateString()}</td>
                       <td className="px-4 py-3">

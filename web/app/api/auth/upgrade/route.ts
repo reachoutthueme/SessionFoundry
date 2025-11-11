@@ -1,5 +1,4 @@
-import { NextResponse } from "next/server";
-import { getUserFromRequest } from "@/app/api/_util/auth";
+import { NextResponse } from "next/server";`nimport { getUserFromRequest } from "@/app/api/_util/auth";`nimport { isAdminUser } from "@/server/policies";
 import { supabaseAdmin } from "@/app/lib/supabaseAdmin";
 
 export async function POST(req: Request) {
@@ -15,4 +14,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e?.message || "Failed to upgrade" }, { status: 500 });
   }
 }
+
 

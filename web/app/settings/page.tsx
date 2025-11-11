@@ -6,11 +6,7 @@ import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { apiFetch } from "@/app/lib/apiFetch";
 
-type Me = {
-  id: string;
-  email?: string | null;
-  plan: "free" | "pro";
-} | null;
+type Me = { id: string; email?: string | null; plan: "free" | "pro"; is_admin?: boolean; } | null;
 
 export default function SettingsPage() {
   const toast = useToast();
@@ -20,6 +16,7 @@ export default function SettingsPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [upgradeBusy, setUpgradeBusy] = useState(false);
+  const [downgradeBusy, setDowngradeBusy] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -118,7 +115,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {me.plan === "free" && (
+              {me?.is_admin && me.plan === "free" && (
                 <Button
                   onClick={upgrade}
                   disabled={upgradeBusy}
@@ -293,3 +290,8 @@ function ChangePasswordForm() {
     </form>
   );
 }
+
+
+
+
+

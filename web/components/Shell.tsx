@@ -131,36 +131,61 @@ function ShellBody({ children }: PropsWithChildren) {
   const isPublicHome = isPublicRoute(pathname);
   const showFullChrome = !isParticipant && !isPublicHome;
 
-  // Fetch user session once on mount and on visibility/focus changes (avoid per-route fetches)
-  useEffect(() => {
-    let isMounted = true;
-    const load = async () => {
-      setMeLoading(true);
-      try {
-        const response = await apiFetch("/api/auth/session", { cache: "no-store" });
-        if (!isMounted) return;
-        if (response.ok) {
-          const data = await response.json();
-          setMe(data.user || null);
-        } else {
-          setMe(null);
-        }
-      } catch (e) {
-        if (isMounted) setMe(null);
-      } finally {
-        if (isMounted) setMeLoading(false);
+  // Fetch user session (reusable)
+  const fetchSession = useCallback(async () => {
+    setMeLoading(true);
+    try {
+      const response = await apiFetch("/api/auth/session", { cache: "no-store" });
+      if (response.ok) {
+        const data = await response.json();
+        setMe(data.user || null);
+      } else {
+        setMe(null);
       }
-    };
-    load();
+    } catch (e) {
+      setMe(null);
+    } finally {
+      setMeLoading(false);
+    }
+  }, []);
+
+  // Load session on mount and when tab becomes visible
+  useEffect(() => {
+    let mounted = true;
+    fetchSession();
     const onVis = () => {
-      if (document.visibilityState === "visible") load();
+      if (document.visibilityState === "visible") fetchSession();
     };
     window.addEventListener("visibilitychange", onVis);
     return () => {
-      isMounted = false;
+      mounted = false;
       window.removeEventListener("visibilitychange", onVis);
     };
-  }, []);
+  }, [fetchSession]);
+
+  // React to auth sync across tabs (BroadcastChannel + localStorage)
+  useEffect(() => {
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel("sf-auth-sync");
+      const onMsg = (e: MessageEvent) => {
+        if (e?.data?.type === "sync") fetchSession();
+      };
+      bc.addEventListener("message", onMsg as any);
+    } catch {
+      bc = null;
+    }
+
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "sf_auth_last_sync") fetchSession();
+    };
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      try { bc?.close(); } catch {}
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [fetchSession]);
 
   // Auth protection with small post-login grace period to avoid loops
   useEffect(() => {
@@ -258,17 +283,19 @@ function ShellBody({ children }: PropsWithChildren) {
 
             {meLoading ? (
               <div className="h-8 w-20 animate-pulse rounded-md bg-white/5" />
-            ) : me ? (
+            ) : (me || isRestrictedRoute(pathname)) ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-[var(--muted)] select-none">
-                  {me.plan.toUpperCase()}
-                </span>
+                {me && (
+                  <span className="text-xs font-medium text-[var(--muted)] select-none">
+                    {me.plan.toUpperCase()}
+                  </span>
+                )}
 
                 <Link
                   href="/pricing"
                   className="rounded-md border border-white/10 px-3 py-1.5 text-sm transition-colors hover:bg-white/5"
                 >
-                  {me.plan === "free" ? "Upgrade to Pro" : "Manage Plan"}
+                  {me ? (me.plan === "free" ? "Upgrade to Pro" : "Manage Plan") : "Manage Plan"}
                 </Link>
 
                 <LogoutButton />

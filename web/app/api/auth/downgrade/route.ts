@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/app/api/_util/auth";
 import { supabaseAdmin } from "@/app/lib/supabaseAdmin";
+import { isAdminUser } from "@/server/policies";
 
 export async function POST(req: Request) {
   const user = await getUserFromRequest(req);
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  if (!isAdminUser(user)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   try {
     const { data, error } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
       user_metadata: { plan: "free" },
@@ -15,4 +17,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e?.message || "Failed to downgrade" }, { status: 500 });
   }
 }
-

@@ -12,6 +12,8 @@ import OverallLeaderboard from "@/components/session/OverallLeaderboard";
 import ActivityLeaderboard from "@/components/session/ActivityLeaderboard";
 import { useMemo, useRef } from "react";
 import Modal from "@/components/ui/Modal";
+import { apiFetch } from "@/app/lib/apiFetch";
+import { StatusPill } from "@/components/ui/StatusPill";
 
 type Activity = { id: string; type: "brainstorm"|"stocktake"|"assignment"; status: string; title?: string; instructions?: string; description?: string; ends_at?: string|null; config?: any };
 type Part = { id: string; display_name?: string|null; group_id?: string|null };
@@ -139,10 +141,9 @@ export default function ParticipantPage() {
   }, [active?.id]);
 
   async function join(group_id: string) {
-    const r = await fetch("/api/groups/join", {
+    const r = await apiFetch("/api/groups/join", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({ session_id: sessionId, group_id })
     });
     const text = await r.text();
@@ -167,7 +168,35 @@ export default function ParticipantPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6 relative">
+    <div className="relative min-h-dvh overflow-hidden">
+      {/* Background layers */}
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,.6) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.6) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(600px 380px at 50% 55%, rgba(155,107,255,.10), transparent 60%)",
+          }}
+        />
+        <div
+          className="absolute inset-0 opacity-20 animate-gradient-drift"
+          style={{
+            background:
+              "linear-gradient(120deg, rgba(155,107,255,.25), rgba(90,168,255,.18), rgba(99,62,214,.22))",
+            filter: "blur(40px)",
+          }}
+        />
+      </div>
+
+      <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6 relative">
       {/* Theme toggle is shown inside the header card */}
       {/* Header / Hero */}
       {!selected && (
@@ -235,7 +264,7 @@ export default function ParticipantPage() {
                               <div className={`font-semibold leading-tight truncate`}>{title}</div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className={`text-xs px-2 py-1 rounded-full border ${isActive ? 'border-green-400/30 text-green-200 bg-green-500/10' : isClosed ? 'border-white/20 text-[var(--muted)]' : 'border-white/20 text-[var(--muted)]'}`}>{isActive ? 'Active' : isClosed ? 'Closed' : 'Inactive'}</span>
+                              <StatusPill status={isActive ? 'Active' : isClosed ? 'Closed' : 'Inactive'} />
                               {isActive && a.ends_at ? (
                                 <span className={`timer-pill ${timerPillClass(a.ends_at)}`}><IconTimer size={12} /> <Timer endsAt={a.ends_at} /></span>
                               ) : null}
@@ -377,6 +406,7 @@ export default function ParticipantPage() {
           )}
         </aside>
       </div>
+      </div>
     </div>
   );
 }
@@ -455,7 +485,7 @@ function GroupJoinScreen({
     if (!t) return;
     setCreateBusy(true);
     try {
-      const r = await fetch(`/api/groups`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: String(sessionId), name: t }) });
+      const r = await apiFetch(`/api/groups`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: String(sessionId), name: t }) });
       const j = await r.json().catch(()=>({} as any));
       if (!r.ok) { alert(j.error || 'Failed to create group'); return; }
       setNewGroupName("");
@@ -467,7 +497,7 @@ function GroupJoinScreen({
 
   async function saveName() {
     const clean = editName.trim();
-    const r = await fetch(`/api/participant?session_id=${sessionId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ display_name: clean || null }) });
+    const r = await apiFetch(`/api/participant?session_id=${sessionId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ display_name: clean || null }) });
     const j = await r.json().catch(()=>({} as any));
     if (!r.ok) { alert(j.error || 'Failed to update name'); return; }
     try { if (clean) localStorage.setItem('sf_display_name', clean); } catch {}
@@ -476,7 +506,35 @@ function GroupJoinScreen({
   }
 
   return (
-    <div className="min-h-dvh grid place-items-center p-6">
+    <div className="relative min-h-dvh overflow-hidden">
+      {/* Background layers */}
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,.6) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.6) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(600px 380px at 50% 55%, rgba(155,107,255,.10), transparent 60%)",
+          }}
+        />
+        <div
+          className="absolute inset-0 opacity-20 animate-gradient-drift"
+          style={{
+            background:
+              "linear-gradient(120deg, rgba(155,107,255,.25), rgba(90,168,255,.18), rgba(99,62,214,.22))",
+            filter: "blur(40px)",
+          }}
+        />
+      </div>
+
+      <div className="min-h-dvh grid place-items-center p-6">
       <div className="w-full max-w-xl sm:max-w-2xl animate-fade-up">
         <div className="mb-3 text-center text-xs uppercase tracking-wide text-[var(--muted)]">Step 2 of 3 - Join a group</div>
         <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,.35)] p-6">
@@ -573,6 +631,7 @@ function GroupJoinScreen({
           </div>
         </div>
       </Modal>
+      </div>
     </div>
   );
 }
