@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";`nimport { getUserFromRequest } from "@/app/api/_util/auth";`nimport { isAdminUser } from "@/server/policies";
+import { NextResponse } from "next/server";
+import { getUserFromRequest } from "@/app/api/_util/auth";
 import { supabaseAdmin } from "@/app/lib/supabaseAdmin";
 
 export async function POST(req: Request) {
