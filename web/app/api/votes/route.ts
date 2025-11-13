@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   }
   const { submission_id, value } = parsed.data as { submission_id: string; value: number };
   let activity_id = (parsed.data as any).activity_id as string | undefined;
-  const session_id = (parsed.data as any).session_id as string | undefined;
+  let session_id = (parsed.data as any).session_id as string | undefined;
 
   if (!activity_id && session_id) {
     const { data: acts, error: ae } = await supabaseAdmin
@@ -33,6 +33,17 @@ export async function POST(req: Request) {
 
   if (!activity_id) {
     return NextResponse.json({ error: "activity_id or session_id required" }, { status: 400 });
+  }
+
+  // Resolve session_id from activity when not provided by client
+  if (!session_id) {
+    const { data: act, error: aerr } = await supabaseAdmin
+      .from('activities')
+      .select('session_id')
+      .eq('id', activity_id)
+      .maybeSingle();
+    if (aerr) return NextResponse.json({ error: aerr.message }, { status: 500 });
+    session_id = (act as any)?.session_id as string | undefined;
   }
 
   // participant from cookie (required) and group

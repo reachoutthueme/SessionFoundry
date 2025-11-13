@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: msg }, { status: 400 });
   }
   let activity_id = (parsed.data as any).activity_id as string | undefined;
-  const session_id = (parsed.data as any).session_id as string | undefined;
+  let session_id = (parsed.data as any).session_id as string | undefined;
   const items = (parsed.data as any).items as { submission_id: string; value: number }[];
 
   if (!activity_id && session_id) {
@@ -32,6 +32,17 @@ export async function POST(req: Request) {
     activity_id = acts?.[0]?.id ?? "";
   }
   if (!activity_id) return NextResponse.json({ error: "activity_id required" }, { status: 400 });
+
+  // Resolve session_id from activity when not provided by client
+  if (!session_id) {
+    const { data: act, error: aerr } = await supabaseAdmin
+      .from('activities')
+      .select('session_id')
+      .eq('id', activity_id)
+      .maybeSingle();
+    if (aerr) return NextResponse.json({ error: aerr.message }, { status: 500 });
+    session_id = (act as any)?.session_id as string | undefined;
+  }
 
   const participant = await getParticipantInSession(req, session_id || "");
   if (!participant) return NextResponse.json({ error: "Forbidden" }, { status: 403 });

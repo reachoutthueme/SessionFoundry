@@ -38,7 +38,10 @@ export default function VotingPanel({ sessionId, activityId }: { sessionId: stri
       list.forEach(s => v[s.id] = 0);
       setValues(v);
       const act = (ja.activities ?? []).find((a: any) => a.id === activityId) || (ja.activities ?? [])[0] || null;
-      setBudget(Number(act?.config?.points_budget ?? 0));
+      const cfg = act?.config || {};
+      const cfgBudget = Number(cfg?.points_budget ?? 0);
+      const computedBudget = cfgBudget > 0 ? cfgBudget : (cfg?.voting_enabled ? 100 : 0);
+      setBudget(computedBudget);
       setResolvedActivityId(activityId || act?.id || null);
       setLoading(false);
     })();
@@ -48,7 +51,7 @@ export default function VotingPanel({ sessionId, activityId }: { sessionId: stri
   const remaining = budget > 0 ? Math.max(0, budget - total) : 0;
 
   function updateValue(id: string, next: number) {
-    const cap = budget > 0 ? budget : 10;
+    const cap = budget > 0 ? budget : 0;
     next = Math.max(0, Math.min(cap, Math.round(next)));
     const prev = values[id] ?? 0;
     const currentSumExcluding = total - prev;
@@ -66,6 +69,7 @@ export default function VotingPanel({ sessionId, activityId }: { sessionId: stri
       toast(`Use up to ${budget} points (currently ${total})`, "error");
       return;
     }
+    if (budget <= 0) { toast('Voting not configured for points budget', 'error'); return; }
     setSubmitting(true);
     const items = Object.entries(values).map(([submission_id, value]) => ({ submission_id, value }));
     const r = await apiFetch("/api/votes/bulk", {
@@ -120,7 +124,7 @@ export default function VotingPanel({ sessionId, activityId }: { sessionId: stri
 
   return (
     <Card>
-      <CardHeader title={<><IconVote className="text-[var(--brand)]" /><span>Voting</span></>} subtitle={budget>0?`Distribute ${budget} points across items`:'Rate each item (0–10)'} />
+      <CardHeader title={<><IconVote className="text-[var(--brand)]" /><span>Voting</span></>} subtitle={budget>0?`Distribute ${budget} points across items`:'Voting not configured (no points budget)'} />
       <CardBody className="space-y-4">
         <div>
           <Button
@@ -152,10 +156,10 @@ export default function VotingPanel({ sessionId, activityId }: { sessionId: stri
                   <input
                     type="range"
                     min={0}
-                    max={budget > 0 ? budget : 10}
+                    max={budget > 0 ? budget : 0}
                     value={values[s.id] ?? 0}
-                    onChange={(e) => { if (!submitted) updateValue(s.id, Number(e.target.value)); }}
-                    disabled={submitted}
+                    onChange={(e) => { if (!submitted && budget>0) updateValue(s.id, Number(e.target.value)); }}
+                    disabled={submitted || budget<=0}
                     className="w-64"
                   />
                   <span className="w-8 text-center">{values[s.id] ?? 0}</span>
@@ -211,3 +215,4 @@ export default function VotingPanel({ sessionId, activityId }: { sessionId: stri
     </Card>
   );
 }
+
