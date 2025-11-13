@@ -75,9 +75,19 @@ export default function Modal({
   const titleId = title ? 'modal-title-' + Math.random().toString(36).slice(2) : undefined;
 
   return (
-    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+    <div className="fixed inset-0 z-50 overflow-hidden" role="dialog" aria-modal="true" aria-labelledby={titleId}>
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="absolute inset-0 flex items-center justify-center p-4 md:p-6">
+      <div
+        className="absolute inset-0 flex items-center justify-center p-4 md:p-6 overflow-hidden"
+        onMouseDown={(e) => {
+          // Close when clicking anywhere outside the modal container
+          const c = containerRef.current;
+          if (c && !c.contains(e.target as Node)) {
+            e.stopPropagation();
+            onCloseRef.current?.();
+          }
+        }}
+      >
         <div
           ref={containerRef}
           className={`w-full ${size === 'xl' ? 'max-w-5xl' : size === 'lg' ? 'max-w-3xl' : 'max-w-md'} my-6 md:my-10 max-h-[85vh] flex flex-col overflow-hidden rounded-[var(--radius)] bg-[var(--panel-2)] border border-white/10 shadow-2xl animate-modal-in`}
