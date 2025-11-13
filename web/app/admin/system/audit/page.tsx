@@ -145,6 +145,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams?: 
         </div>
       </div>
     </div>
+    </div>
   );
 }
 
