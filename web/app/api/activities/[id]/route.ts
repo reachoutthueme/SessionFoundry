@@ -83,6 +83,11 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     }
   }
 
+  // If transitioning out of an intake phase, clear any countdown so it’s not shown anywhere
+  if (body.status === "Voting" || body.status === "Closed") {
+    patch.ends_at = null;
+  }
+
   // Validate and merge config if provided
   if (body.config !== undefined) {
     const v = validateConfig(activityType, body.config);

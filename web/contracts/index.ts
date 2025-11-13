@@ -47,7 +47,8 @@ export const SubmissionCreate = z
 export const VoteCreate = z
   .object({
     submission_id: z.string().min(1),
-    value: z.number().int().min(1).max(10),
+    // Allow zero-or-more points; UI will clamp based on mode/budget
+    value: z.number().int().min(0),
     activity_id: z.string().min(1).optional(),
     session_id: z.string().min(1).optional(),
   })
@@ -64,7 +65,8 @@ export const VoteBulkCreate = z
       .array(
         z.object({
           submission_id: z.string().min(1),
-          value: z.number().int().min(1).max(10),
+          // Support larger budgets per item when configured
+          value: z.number().int().min(0),
         }).strict()
       )
       .min(1),

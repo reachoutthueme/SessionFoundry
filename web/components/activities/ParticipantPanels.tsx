@@ -47,7 +47,7 @@ export function StocktakeParticipantPanel({
 }) {
   return (
     <div className="space-y-2">
-      {activity.ends_at && (activity.status === "Active" || activity.status === "Voting") && (
+      {activity.ends_at && activity.status === "Active" && (
         <div className="mt-1">
           <Timer endsAt={activity.ends_at} />
         </div>
@@ -60,4 +60,3 @@ export function StocktakeParticipantPanel({
     </div>
   );
 }
-

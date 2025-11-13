@@ -30,7 +30,8 @@ const Button = forwardRef<HTMLButtonElement, Props>(function Button(
 
   // Size styles
   const sizes =
-    size === "sm" ? "h-8 px-3 text-sm" : "h-10 px-4 text-sm";
+    // Slightly taller small buttons for better vertical padding
+    size === "sm" ? "h-9 px-3 text-sm" : "h-10 px-4 text-sm";
 
   // Variant styles
   const styles =

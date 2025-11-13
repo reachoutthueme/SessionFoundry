@@ -94,6 +94,11 @@ export default function ParticipantPage() {
   }
 
   useEffect(() => { load(); }, [sessionId]);
+  // Periodically refresh to reflect facilitator actions (start/vote/end)
+  useEffect(() => {
+    const iv = setInterval(() => { void load(); }, 3000);
+    return () => clearInterval(iv);
+  }, [sessionId]);
   // Shortcuts: Enter opens active, '?' help, 'g' focuses group
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -268,7 +273,7 @@ export default function ParticipantPage() {
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               <StatusPill status={isActive ? 'Active' : isClosed ? 'Closed' : 'Inactive'} />
-                              {isActive && a.ends_at ? (
+                              {a.status === 'Active' && a.ends_at ? (
                                 <span className={`timer-pill ${timerPillClass(a.ends_at)}`}><IconTimer size={12} /> <Timer endsAt={a.ends_at} /></span>
                               ) : null}
                             </div>
@@ -324,7 +329,7 @@ export default function ParticipantPage() {
                     {selected.instructions && (
                       <div className="text-sm text-[var(--muted)] mt-0.5">{selected.instructions}</div>
                     )}
-                    {selected.ends_at && (
+                    {selected.ends_at && selected.status === "Active" && (
                       <div className="mt-1 flex items-center gap-2 text-xs">
                         <span className="opacity-70">Time left:</span>
                         <span className={`timer-pill ${selected.ends_at ? timerPillClass(selected.ends_at) : ''}`}>
@@ -337,13 +342,15 @@ export default function ParticipantPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="px-4"
+                      aria-label="Back to activities"
+                      className="px-3"
                       onClick={() => {
                         setShowActLb(false);
                         setSelected(null);
                       }}
                     >
-                      Back to activities
+                      {/* Chevron-only back to reduce header crowding */}
+                      <IconChevronRight className="rotate-180" />
                     </Button>
                     <Button
                       size="sm"

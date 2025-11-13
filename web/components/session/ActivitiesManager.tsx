@@ -344,8 +344,12 @@ export default function ActivitiesManager({
         return;
       }
 
+      // Optimistically merge the updated activity to avoid UI flicker
+      const updated = j.activity as Activity | undefined;
+      if (updated) {
+        setItems((prev) => prev.map((a) => (a.id === updated.id ? { ...a, ...updated } : a)));
+      }
       toast("Status updated", "success");
-      await load();
     } catch (err) {
       console.error("[ActivitiesManager] setStatus() failed:", err);
       toast("Failed to update status", "error");
@@ -498,7 +502,7 @@ export default function ActivitiesManager({
                     const next = sorted.slice(Math.max(idx + 1, 0)).find(x => x.status === 'Draft' || x.status === 'Voting');
                     if (current) await setStatus(current.id, 'Closed');
                     if (next) await setStatus(next.id, 'Active');
-                  }}>Next</Button>
+                  }}>{current ? 'Next activity' : 'Start first activity'}</Button>
                   {current ? (
                     <Button size="sm" variant="outline" className="rounded-none border-l border-white/12" onClick={() => setStatus(current.id, 'Closed')}>End</Button>
                   ) : null}

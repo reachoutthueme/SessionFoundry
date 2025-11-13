@@ -95,6 +95,7 @@ export async function POST(req: Request) {
     const user = await getUserFromRequest(req);
     let allowed = false;
     let limiterKey = "";
+    let creatorParticipantId: string | null = null;
     if (user) {
       allowed = await userOwnsSession(user.id, session_id);
       if (allowed) limiterKey = `group:create:user:${user.id}`;
@@ -104,6 +105,7 @@ export async function POST(req: Request) {
       if (!participant) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       allowed = true;
       limiterKey = `group:create:participant:${participant.id}`;
+      creatorParticipantId = participant.id;
     }
 
     // Basic rate limit to prevent abuse
@@ -129,6 +131,15 @@ export async function POST(req: Request) {
       }
       console.error("POST /groups insert error", { error });
       return NextResponse.json({ error: "Failed to create group" }, { status: 500 });
+    }
+
+    // If a participant created the group, automatically join them to that group
+    if (creatorParticipantId && data?.id) {
+      await supabaseAdmin
+        .from("participants")
+        .update({ group_id: data.id })
+        .eq("id", creatorParticipantId)
+        .eq("session_id", session_id);
     }
 
     const res = NextResponse.json({ group: data }, { status: 201 });
