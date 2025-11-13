@@ -142,6 +142,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
         </div>
       </div>
     </div>
+    </div>
   );
 }
 

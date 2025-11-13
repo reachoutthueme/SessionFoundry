@@ -1,5 +1,4 @@
 import { cookies } from "next/headers";
-import { cookies } from "next/headers";
 import BackgroundDecor from "@/components/ui/BackgroundDecor";
 import { redirect } from "next/navigation";
 import Link from "next/link";
