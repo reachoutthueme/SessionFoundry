@@ -179,7 +179,7 @@ export default function ParticipantPage() {
 
   return (
     <div className="relative min-h-dvh overflow-hidden">
-      {<div className="min-h-dvh grid place-items-center p-6">
+      <div className="min-h-dvh grid place-items-center p-6">
       <div className="w-full max-w-xl sm:max-w-2xl animate-fade-up">
         <div className="mb-3 text-center text-xs uppercase tracking-wide text-[var(--muted)]">Step 2 of 3 - Join a group</div>
         <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,.35)] p-6">
