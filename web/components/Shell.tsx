@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState, useCallback, type PropsWithChildren, type ReactNode } from "react";
+import BackgroundDecor from "@/components/ui/BackgroundDecor";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -226,7 +227,8 @@ function ShellBody({ children }: PropsWithChildren) {
   // Strip chrome entirely on participant/public entry pages
   if (!showFullChrome) {
     return (
-      <main className="min-h-dvh bg-[var(--bg)]">
+      <main className="relative min-h-dvh overflow-hidden bg-[var(--bg)]">
+        <BackgroundDecor />
         <div className={isPublicHome ? "" : "p-6"}>{children}</div>
       </main>
     );
@@ -237,12 +239,13 @@ function ShellBody({ children }: PropsWithChildren) {
 
   return (
     <div
-      className="min-h-dvh grid overflow-x-hidden"
+      className="relative min-h-dvh grid overflow-x-hidden"
       style={{
         gridTemplateRows: "56px 1fr",
         gridTemplateColumns: `${sidebarWidth} 1fr`,
       }}
     >
+      <BackgroundDecor />
       {/* HEADER */}
       <header className="col-[1_/_span_2] row-[1] border-b border-white/10 bg-[var(--panel-2)]">
         <div className="flex h-14 w-full items-center justify-between pl-3 pr-4 md:pr-6">
