@@ -11,7 +11,7 @@ import {
   IconChevronRight,
 } from "@/components/ui/Icons";
 
-import BackgroundDecor from "@/components/ui/BackgroundDecor";
+ 
 
 export default function HomeLandingPage() {
   const primaryCtaRef = useRef<HTMLAnchorElement | null>(null);
@@ -30,7 +30,6 @@ export default function HomeLandingPage() {
   return (
     <main className="min-h-dvh bg-[var(--bg)]">
       <div className="relative min-h-dvh overflow-hidden" aria-label="Marketing hero background">
-        <BackgroundDecor />
         <div className="relative mx-auto flex min-h-dvh max-w-5xl flex-col px-6">
           {/* Center hero */}
           <div className="grid flex-1 place-items-center text-center">

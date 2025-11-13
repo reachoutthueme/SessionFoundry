@@ -5,12 +5,11 @@ export const metadata = {
   description: "How SessionFoundry handles and protects your data.",
 };
 
-import BackgroundDecor from "@/components/ui/BackgroundDecor";
+ 
 
 export default function PrivacyPage() {
   return (
     <div className="relative min-h-dvh overflow-hidden">
-      <BackgroundDecor />
       <div className="mx-auto max-w-3xl p-6">
       <header className="mb-6">
         <div className="flex items-center justify-between gap-3">

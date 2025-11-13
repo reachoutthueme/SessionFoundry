@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { supabaseAdmin, isSupabaseAdminConfigured } from "@/app/lib/supabaseAdmin";
 import { isAdminUser } from "@/server/policies";
 import { getSystemHealth } from "@/server/admin/system";
-import BackgroundDecor from "@/components/ui/BackgroundDecor";
+ 
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +36,6 @@ export default async function AdminSystemPage() {
 
   return (
     <div className="relative min-h-dvh overflow-hidden">
-      <BackgroundDecor />
       <div className="space-y-6">
         <h1 className="text-xl font-semibold">System</h1>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -86,4 +85,3 @@ function Status({ ok, title }: { ok: boolean; title?: string }) {
     </span>
   );
 }
-

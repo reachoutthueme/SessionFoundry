@@ -12,7 +12,6 @@ import ActivitiesManager from "@/components/session/ActivitiesManager";
 import GroupsManager from "@/components/session/GroupsManager";
 import FacilitatorNotes from "@/components/session/FacilitatorNotes";
 import { StatusPill } from "@/components/ui/StatusPill";
-import BackgroundDecor from "@/components/ui/BackgroundDecor";
 
 type Sess = {
   id: string;
@@ -188,7 +187,6 @@ export default function Page() {
 
   return (
     <div className="relative min-h-dvh overflow-hidden">
-      <BackgroundDecor />
       <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>

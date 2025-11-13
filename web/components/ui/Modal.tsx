@@ -23,8 +23,10 @@ export default function Modal({
     if (open) {
       document.addEventListener("keydown", esc);
       // lock body scroll
-      const prevOverflow = document.body.style.overflow;
+      const prevBodyOverflow = document.body.style.overflow;
+      const prevHtmlOverflow = (document.documentElement as HTMLElement).style.overflow;
       document.body.style.overflow = "hidden";
+      (document.documentElement as HTMLElement).style.overflow = "hidden";
       // remember focus and focus first focusable
       lastActiveRef.current = document.activeElement;
       const c = containerRef.current;
@@ -36,7 +38,8 @@ export default function Modal({
       }
       return () => {
         document.removeEventListener("keydown", esc);
-        document.body.style.overflow = prevOverflow;
+        document.body.style.overflow = prevBodyOverflow;
+        (document.documentElement as HTMLElement).style.overflow = prevHtmlOverflow;
         // restore focus
         const last = lastActiveRef.current as HTMLElement | null;
         if (last && typeof last.focus === 'function') {
@@ -77,7 +80,7 @@ export default function Modal({
       <div className="absolute inset-0 flex items-center justify-center p-4 md:p-6">
         <div
           ref={containerRef}
-          className={`w-full ${size === 'xl' ? 'max-w-5xl' : size === 'lg' ? 'max-w-3xl' : 'max-w-md'} my-6 md:my-10 max-h-[85vh] flex flex-col rounded-[var(--radius)] bg-[var(--panel-2)] border border-white/10 shadow-2xl animate-modal-in`}
+          className={`w-full ${size === 'xl' ? 'max-w-5xl' : size === 'lg' ? 'max-w-3xl' : 'max-w-md'} my-6 md:my-10 max-h-[85vh] flex flex-col overflow-hidden rounded-[var(--radius)] bg-[var(--panel-2)] border border-white/10 shadow-2xl animate-modal-in`}
         >
           {title && (
             <div

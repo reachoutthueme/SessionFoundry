@@ -8,7 +8,7 @@ import { apiFetch } from "@/app/lib/apiFetch";
 
 type Me = { id: string; email?: string | null; plan: "free" | "pro"; is_admin?: boolean; } | null;
 
-import BackgroundDecor from "@/components/ui/BackgroundDecor";
+ 
 
 export default function SettingsPage() {
   const toast = useToast();
@@ -81,7 +81,6 @@ export default function SettingsPage() {
 
   return (
     <div className="relative min-h-dvh overflow-hidden">
-      <BackgroundDecor />
       <div className="space-y-6">
       <div>
         <h1 className="text-xl font-semibold">Settings</h1>

@@ -23,7 +23,7 @@ type Sess = {
 
 type Me = { id: string; plan: "free" | "pro" } | null;
 
-import BackgroundDecor from "@/components/ui/BackgroundDecor";
+ 
 
 export default function Page() {
   const toast = useToast();
@@ -232,7 +232,6 @@ export default function Page() {
 
   return (
     <div className="relative min-h-dvh overflow-hidden">
-      <BackgroundDecor />
       <div className="space-y-6">
       {/* Header panel */}
       <div className="rounded-[var(--radius)] border border-white/10 bg-white/5 p-4">

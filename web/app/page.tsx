@@ -6,7 +6,7 @@ import Button from "@/components/ui/Button";
 import Link from "next/link";
 import pkg from "@/package.json";
 import Modal from "@/components/ui/Modal";
-import BackgroundDecor from "@/components/ui/BackgroundDecor";
+ 
 import { apiFetch } from "@/app/lib/apiFetch";
 
 export default function RootJoinPage() {
@@ -86,7 +86,6 @@ export default function RootJoinPage() {
 
   return (
     <div className="relative min-h-dvh flex flex-col p-6 overflow-hidden">
-      <BackgroundDecor />
       {/* spacer above heading */}
       <div className="flex-1" />
 

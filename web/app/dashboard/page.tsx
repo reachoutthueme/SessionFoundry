@@ -25,7 +25,6 @@ type DashboardPayload = {
   };
 };
 
-import BackgroundDecor from "@/components/ui/BackgroundDecor";
 
 export default function Page() {
   const router = useRouter();
@@ -86,7 +85,6 @@ export default function Page() {
 
   return (
     <div className="relative min-h-dvh overflow-hidden">
-      <BackgroundDecor />
       <div className="space-y-6">
       {/* Hero */}
       <div className="dashboard-hero relative overflow-hidden rounded-[var(--radius)] border border-white/10 bg-gradient-to-r from-[var(--panel-2)]/90 to-[var(--panel)]/90 p-5">

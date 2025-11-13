@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import BackgroundDecor from "@/components/ui/BackgroundDecor";
+ 
 import { apiFetch } from "@/app/lib/apiFetch";
 
 export default function PricingPage() {
@@ -95,7 +95,6 @@ export default function PricingPage() {
 
   return (
     <div className="relative min-h-dvh overflow-hidden">
-      <BackgroundDecor />
       <div className="space-y-6">
       {/* Hero / intro */}
       <div className="rounded-[var(--radius)] border border-white/10 bg-[var(--panel-2)] p-5">

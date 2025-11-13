@@ -10,7 +10,7 @@ import { apiFetch } from "@/app/lib/apiFetch";
 import Button from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { useToast } from "@/components/ui/Toast";
-import BackgroundDecor from "@/components/ui/BackgroundDecor";
+ 
 
 // Types
 type AuthMode = "signin" | "signup";
@@ -276,7 +276,6 @@ function LoginForm() {
   if (!sessionChecked) {
     return (
       <div className="relative min-h-dvh overflow-hidden">
-        <BackgroundDecor />
         <div className="fixed inset-0 z-10 grid place-items-center px-4">
           <div className="text-[var(--muted)]">Loading...</div>
         </div>
@@ -286,7 +285,6 @@ function LoginForm() {
 
   return (
     <div className="relative min-h-dvh overflow-hidden">
-      <BackgroundDecor />
       <div className="fixed inset-0 z-10 grid place-items-center px-4">
         <div className="w-full max-w-sm">
           <Card>

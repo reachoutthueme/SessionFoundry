@@ -5,12 +5,11 @@ export const metadata = {
   description: "Terms and conditions for using SessionFoundry.",
 };
 
-import BackgroundDecor from "@/components/ui/BackgroundDecor";
+ 
 
 export default function TermsPage() {
   return (
     <div className="relative min-h-dvh overflow-hidden">
-      <BackgroundDecor />
       <div className="mx-auto max-w-3xl p-6">
       <header className="mb-6">
         <div className="flex items-center justify-between gap-3">
