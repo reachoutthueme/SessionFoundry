@@ -10,6 +10,7 @@ import { apiFetch } from "@/app/lib/apiFetch";
 import Button from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { useToast } from "@/components/ui/Toast";
+import BackgroundDecor from "@/components/ui/BackgroundDecor";
 
 // Types
 type AuthMode = "signin" | "signup";
