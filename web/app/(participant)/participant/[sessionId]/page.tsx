@@ -96,9 +96,11 @@ export default function ParticipantPage() {
   useEffect(() => { load(); }, [sessionId]);
   // Periodically refresh to reflect facilitator actions (start/vote/end)
   useEffect(() => {
-    const iv = setInterval(() => { void load(); }, 3000);
+    const iv = setInterval(() => {
+      if (!createOpen && !editNameOpen) void load();
+    }, 3000);
     return () => clearInterval(iv);
-  }, [sessionId]);
+  }, [sessionId, createOpen, editNameOpen]);
   // Shortcuts: Enter opens active, '?' help, 'g' focuses group
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -299,11 +301,11 @@ export default function ParticipantPage() {
                               </button>
                             </div>
                           ) : null}
-                           <div className="mt-3 flex items-center justify-between">
+                          <div className="mt-3 flex items-center justify-between">
                             {isActive ? (
                               <>
                                 <Button onClick={() => setSelected(a)} className="px-4">Open activity</Button>
-                                <div className="text-[11px] text-[var(--muted)]">1 idea per line | Undo supported</div>
+                                {/* Removed helper text that was confusing */}
                               </>
                             ) : isClosed ? (
                               <button className="text-sm underline opacity-80 hover:opacity-100" onClick={() => setSelected(a)}>View results</button>
@@ -352,16 +354,19 @@ export default function ParticipantPage() {
                       {/* Chevron-only back to reduce header crowding */}
                       <IconChevronRight className="rotate-180" />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="px-4"
-                      onClick={() => setShowActLb((s) => !s)}
-                    >
-                      {showActLb ? "Hide leaderboard" : "View leaderboard"}
-                    </Button>
                   </div>
                 </div>
+              </div>
+
+              {/* Wider leaderboard toggle below header to avoid wrapping */}
+              <div className="-mt-2">
+                <Button
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  onClick={() => setShowActLb((s) => !s)}
+                >
+                  {showActLb ? "Hide leaderboard" : "View leaderboard"}
+                </Button>
               </div>
 
               {showActLb && (
@@ -462,9 +467,9 @@ function GroupJoinScreen({
   useEffect(() => {
     const needs = !participant || !participant.group_id;
     if (!needs) return;
-    const t = setInterval(() => { void reload(); }, 3000);
+    const t = setInterval(() => { if (!createOpen && !editNameOpen) void reload(); }, 3000);
     return () => clearInterval(t);
-  }, [participant, reload]);
+  }, [participant, reload, createOpen, editNameOpen]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -487,9 +492,14 @@ function GroupJoinScreen({
   }, [groups]);
 
   useEffect(() => {
+    // Avoid stealing focus from inputs/modals while typing or editing
+    if (createOpen || editNameOpen) return;
+    const active = (typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null);
+    const isTyping = !!active && (active.tagName?.toLowerCase() === 'input' || active.tagName?.toLowerCase() === 'textarea' || (active as any)?.isContentEditable);
+    if (isTyping) return;
     const el = cardRefs.current[focusIdx];
     if (el) el.focus();
-  }, [focusIdx, groups]);
+  }, [focusIdx, groups, createOpen, editNameOpen]);
 
   function membersFor(gid: string) {
     return participants.filter(p => p.group_id === gid);

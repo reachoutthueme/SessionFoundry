@@ -8,6 +8,8 @@ import { apiFetch } from "@/app/lib/apiFetch";
 
 type Me = { id: string; email?: string | null; plan: "free" | "pro"; is_admin?: boolean; } | null;
 
+import BackgroundDecor from "@/components/ui/BackgroundDecor";
+
 export default function SettingsPage() {
   const toast = useToast();
 
@@ -78,7 +80,9 @@ export default function SettingsPage() {
       : "Free: 1 session, no exports. Upgrade to unlock unlimited sessions and exports.";
 
   return (
-    <div className="space-y-6">
+    <div className="relative min-h-dvh overflow-hidden">
+      <BackgroundDecor />
+      <div className="space-y-6">
       <div>
         <h1 className="text-xl font-semibold">Settings</h1>
         <p className="text-sm text-[var(--muted)]">
@@ -185,6 +189,7 @@ export default function SettingsPage() {
           )}
         </CardBody>
       </Card>
+      </div>
     </div>
   );
 }

@@ -122,6 +122,15 @@ export default function VotingPanel({ sessionId, activityId }: { sessionId: stri
     <Card>
       <CardHeader title={<><IconVote className="text-[var(--brand)]" /><span>Voting</span></>} subtitle={budget>0?`Distribute ${budget} points across items`:'Rate each item (0–10)'} />
       <CardBody className="space-y-4">
+        <div>
+          <Button
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={() => setShowLeaderboard(s => !s)}
+          >
+            {showLeaderboard ? 'Hide leaderboard' : 'View leaderboard'}
+          </Button>
+        </div>
         {loading ? (
           <>
             <div className="h-12 rounded bg-white/10 animate-pulse" />
@@ -153,8 +162,8 @@ export default function VotingPanel({ sessionId, activityId }: { sessionId: stri
                 </div>
               </div>
             ))}
-            <div className="flex justify-between mt-3">
-              <button className="text-xs text-[var(--muted)] hover:underline" onClick={() => setShowLeaderboard(s => !s)}>
+            <div className="flex justify-end mt-3">
+              <button className="hidden" onClick={() => setShowLeaderboard(s => !s)}>
                 {showLeaderboard ? 'Hide leaderboard' : 'View leaderboard'}
               </button>
               {!submitted && (

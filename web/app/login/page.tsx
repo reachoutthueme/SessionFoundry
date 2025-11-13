@@ -274,19 +274,24 @@ function LoginForm() {
   // Show loading state while checking session
   if (!sessionChecked) {
     return (
-      <div className="fixed inset-0 z-10 grid place-items-center bg-[var(--bg)]">
-        <div className="text-[var(--muted)]">Loading...</div>
+      <div className="relative min-h-dvh overflow-hidden">
+        <BackgroundDecor />
+        <div className="fixed inset-0 z-10 grid place-items-center px-4">
+          <div className="text-[var(--muted)]">Loading...</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-10 grid place-items-center bg-[var(--bg)] px-4">
-      <div className="w-full max-w-sm">
-        <Card>
-          <CardHeader title={title} subtitle={subtitle} />
-          <CardBody>
-            <form className="space-y-3" onSubmit={handleSubmit}>
+    <div className="relative min-h-dvh overflow-hidden">
+      <BackgroundDecor />
+      <div className="fixed inset-0 z-10 grid place-items-center px-4">
+        <div className="w-full max-w-sm">
+          <Card>
+            <CardHeader title={title} subtitle={subtitle} />
+            <CardBody>
+              <form className="space-y-3" onSubmit={handleSubmit}>
               {/* Email */}
               <div className="space-y-1">
                 <label htmlFor="email" className="sr-only">
@@ -450,6 +455,7 @@ function LoginForm() {
             </form>
           </CardBody>
         </Card>
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import BackgroundDecor from "@/components/ui/BackgroundDecor";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { supabaseAdmin, isSupabaseAdminConfigured } from "@/app/lib/supabaseAdmin";
@@ -14,10 +15,13 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
   if (!token) redirect("/login?redirect=/admin/users");
   if (!isSupabaseAdminConfigured()) {
     return (
-      <div className="space-y-4">
+      <div className="relative min-h-dvh overflow-hidden">
+        <BackgroundDecor />
+        <div className="space-y-4">
         <h1 className="text-xl font-semibold">Users</h1>
         <div className="rounded-md border border-white/10 bg-white/5 p-4 text-sm">
           Admin backend is not configured. Set SUPABASE_SERVICE_ROLE_KEY and SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL, then redeploy.
+        </div>
         </div>
       </div>
     );
@@ -72,7 +76,9 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
   );
 
   return (
-    <div className="space-y-4">
+    <div className="relative min-h-dvh overflow-hidden">
+      <BackgroundDecor />
+      <div className="space-y-4">
       <h1 className="text-xl font-semibold">Users</h1>
       <form className="flex gap-2" action="/admin/users" method="get">
         <input

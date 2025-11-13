@@ -6,6 +6,8 @@ import { getAdminOverviewMetrics } from "@/server/admin/metrics";
 
 export const dynamic = "force-dynamic";
 
+import BackgroundDecor from "@/components/ui/BackgroundDecor";
+
 export default async function AdminPage() {
   // Server-side auth: verify current user via access token cookie
   const store = await cookies();
@@ -33,7 +35,9 @@ export default async function AdminPage() {
   const { kpis: k, health } = await getAdminOverviewMetrics();
 
   return (
-    <div className="space-y-6">
+    <div className="relative min-h-dvh overflow-hidden">
+      <BackgroundDecor />
+      <div className="space-y-6">
       <h1 className="text-xl font-semibold">Admin Dashboard</h1>
       <p className="text-sm text-[var(--muted)]">Only visible to admins.</p>
 
@@ -72,6 +76,7 @@ export default async function AdminPage() {
             } />
           </li>
         </ul>
+      </div>
       </div>
     </div>
   );

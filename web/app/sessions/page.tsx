@@ -23,6 +23,8 @@ type Sess = {
 
 type Me = { id: string; plan: "free" | "pro" } | null;
 
+import BackgroundDecor from "@/components/ui/BackgroundDecor";
+
 export default function Page() {
   const toast = useToast();
   const router = useRouter();
@@ -229,7 +231,9 @@ export default function Page() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="relative min-h-dvh overflow-hidden">
+      <BackgroundDecor />
+      <div className="space-y-6">
       {/* Header panel */}
       <div className="rounded-[var(--radius)] border border-white/10 bg-white/5 p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -422,6 +426,7 @@ export default function Page() {
           </div>
         )}
       </Modal>
+      </div>
     </div>
   );
 }

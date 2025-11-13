@@ -5,9 +5,13 @@ export const metadata = {
   description: "How SessionFoundry handles and protects your data.",
 };
 
+import BackgroundDecor from "@/components/ui/BackgroundDecor";
+
 export default function PrivacyPage() {
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="relative min-h-dvh overflow-hidden">
+      <BackgroundDecor />
+      <div className="mx-auto max-w-3xl p-6">
       <header className="mb-6">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -21,7 +25,7 @@ export default function PrivacyPage() {
 
       <article className="prose-sm leading-6 text-[var(--muted)]">
         <section className="space-y-2">
-          <h2 className="text-base font-medium text-white">1. Who we are</h2>
+          <h2 className="text-base font-medium text-[var(--text)]">1. Who we are</h2>
           <p>
             SessionFoundry ("we", "us", "our") is a web app for planning and
             running workshops, collecting input from participants, voting on
@@ -41,7 +45,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">2. What data we collect</h2>
+          <h2 className="text-base font-medium text-[var(--text)]">2. What data we collect</h2>
           <p>We collect only what we need to run the service.</p>
 
           <h3 className="font-medium">2.1 Facilitator account data</h3>
@@ -137,7 +141,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">
+          <h2 className="text-base font-medium text-[var(--text)]">
             3. Why we process your data (legal bases)
           </h2>
           <p>Under GDPR we must tell you the legal basis for processing.</p>
@@ -164,7 +168,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">
+          <h2 className="text-base font-medium text-[var(--text)]">
             4. How we use (and share) data
           </h2>
           <p>We use your data to:</p>
@@ -198,7 +202,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">
+          <h2 className="text-base font-medium text-[var(--text)]">
             5. How long we keep data
           </h2>
           <ul className="list-disc pl-6">
@@ -223,7 +227,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">
+          <h2 className="text-base font-medium text-[var(--text)]">
             6. Your rights under GDPR
           </h2>
           <ol className="list-decimal pl-6 space-y-2">
@@ -268,7 +272,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">7. Children's data</h2>
+          <h2 className="text-base font-medium text-[var(--text)]">7. Children's data</h2>
           <p>
             SessionFoundry is not designed for children under 16 to create
             facilitator accounts. Facilitators are responsible for how they
@@ -283,7 +287,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">8. Security</h2>
+          <h2 className="text-base font-medium text-[var(--text)]">8. Security</h2>
           <p>We take reasonable technical and organizational measures to protect data, including:</p>
           <ul className="list-disc pl-6">
             <li>Authentication through Supabase (passwords are hashed)</li>
@@ -296,7 +300,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">
+          <h2 className="text-base font-medium text-[var(--text)]">
             9. Data retention for exported reports
           </h2>
           <p>
@@ -316,7 +320,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">
+          <h2 className="text-base font-medium text-[var(--text)]">
             10. Changes to this policy
           </h2>
           <p>
@@ -329,7 +333,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">11. Contact</h2>
+          <h2 className="text-base font-medium text-[var(--text)]">11. Contact</h2>
           <p>
             To ask questions or exercise your GDPR rights, contact us at
             {' '}<a className="underline" href="mailto:reachoutthueme@gmail.com">reachoutthueme@gmail.com</a>.
@@ -339,6 +343,8 @@ export default function PrivacyPage() {
           </p>
         </section>
       </article>
+      </div>
     </div>
   );
 }
+

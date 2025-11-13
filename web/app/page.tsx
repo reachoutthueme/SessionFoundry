@@ -6,6 +6,7 @@ import Button from "@/components/ui/Button";
 import Link from "next/link";
 import pkg from "@/package.json";
 import Modal from "@/components/ui/Modal";
+import BackgroundDecor from "@/components/ui/BackgroundDecor";
 import { apiFetch } from "@/app/lib/apiFetch";
 
 export default function RootJoinPage() {
@@ -85,42 +86,14 @@ export default function RootJoinPage() {
 
   return (
     <div className="relative min-h-dvh flex flex-col p-6 overflow-hidden">
-      {/* Background layers */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        {/* subtle grid */}
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, rgba(255,255,255,.6) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.6) 1px, transparent 1px)",
-            backgroundSize: "28px 28px",
-          }}
-        />
-        {/* soft radial vignette behind card */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(600px 380px at 50% 55%, rgba(155,107,255,.14), transparent 60%)",
-          }}
-        />
-        {/* gentle brand gradient sweep */}
-        <div
-          className="absolute inset-0 opacity-20 animate-gradient-drift"
-          style={{
-            background:
-              "linear-gradient(120deg, rgba(155,107,255,.25), rgba(90,168,255,.18), rgba(99,62,214,.22))",
-            filter: "blur(40px)",
-          }}
-        />
-      </div>
+      <BackgroundDecor />
       {/* spacer above heading */}
       <div className="flex-1" />
 
       {/* logo / hero */}
       <div className="mb-2 text-center">
-        <h1 className="whitespace-nowrap text-3xl font-semibold tracking-tight text-white md:text-5xl">
-          <span className="text-white">Session</span>
+        <h1 className="whitespace-nowrap text-3xl font-semibold tracking-tight text-[var(--text)] md:text-5xl">
+          <span className="text-[var(--text)]">Session</span>
           <span className="text-[var(--brand)] drop-shadow-[0_0_24px_rgba(155,107,255,.35)]">Foundry</span>
         </h1>
         <div className="mt-2 text-[15px] text-[var(--muted)]">

@@ -7,6 +7,8 @@ import { searchAdminSessions } from "@/server/admin/sessions";
 
 export const dynamic = "force-dynamic";
 
+import BackgroundDecor from "@/components/ui/BackgroundDecor";
+
 export default async function AdminSessionsPage({ searchParams }: { searchParams?: Record<string, string | string[]> }) {
   const store = await cookies();
   const token = store.get("sf_at")?.value || "";
@@ -76,7 +78,9 @@ export default async function AdminSessionsPage({ searchParams }: { searchParams
   );
 
   return (
-    <div className="space-y-4">
+    <div className="relative min-h-dvh overflow-hidden">
+      <BackgroundDecor />
+      <div className="space-y-4">
       <h1 className="text-xl font-semibold">Sessions</h1>
       <form className="flex flex-wrap gap-2" action="/admin/sessions" method="get">
         <select name="status" defaultValue={status} className="h-9 rounded-md border border-white/10 bg-[var(--panel)] px-2 text-sm">
@@ -140,6 +144,7 @@ export default async function AdminSessionsPage({ searchParams }: { searchParams
             Next
           </Link>
         </div>
+      </div>
       </div>
     </div>
   );

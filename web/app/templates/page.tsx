@@ -13,6 +13,8 @@ type T = { id: string; name: string; blurb: string; activities: number };
 type Sess = { id: string; name: string };
 type Me = { id: string; plan: "free" | "pro" } | null;
 
+import BackgroundDecor from "@/components/ui/BackgroundDecor";
+
 export default function TemplatesPage() {
   const toast = useToast();
   const router = useRouter();
@@ -213,7 +215,9 @@ export default function TemplatesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="relative min-h-dvh overflow-hidden">
+      <BackgroundDecor />
+      <div className="space-y-6">
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
@@ -397,6 +401,7 @@ export default function TemplatesPage() {
           </div>
         </div>
       </Modal>
+      </div>
     </div>
   );
 }

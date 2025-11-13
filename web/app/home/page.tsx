@@ -11,6 +11,8 @@ import {
   IconChevronRight,
 } from "@/components/ui/Icons";
 
+import BackgroundDecor from "@/components/ui/BackgroundDecor";
+
 export default function HomeLandingPage() {
   const primaryCtaRef = useRef<HTMLAnchorElement | null>(null);
 
@@ -27,43 +29,8 @@ export default function HomeLandingPage() {
   }, []);
   return (
     <main className="min-h-dvh bg-[var(--bg)]">
-      <div
-        className="relative min-h-dvh overflow-hidden"
-        aria-label="Marketing hero background"
-      >
-        {/* Background depth layers */}
-        <div className="pointer-events-none absolute inset-0 -z-10">
-          {/* faint grid/grain */}
-          <div
-            className="absolute inset-0 opacity-[0.02]"
-            style={{
-              backgroundImage:
-                "linear-gradient(to right, rgba(255,255,255,.7) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.7) 1px, transparent 1px)",
-              backgroundSize: "26px 26px",
-            }}
-            aria-hidden
-          />
-          {/* soft radial behind hero */}
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "radial-gradient(700px 460px at 45% 40%, rgba(155,107,255,.10), transparent 60%)",
-            }}
-            aria-hidden
-          />
-          {/* gentle brand sweep */}
-          <div
-            className="absolute inset-0 opacity-[.06] animate-gradient-drift"
-            style={{
-              background:
-                "linear-gradient(120deg, rgba(155,107,255,.35), rgba(90,168,255,.25), rgba(99,62,214,.28))",
-              filter: "blur(50px)",
-            }}
-            aria-hidden
-          />
-        </div>
-
+      <div className="relative min-h-dvh overflow-hidden" aria-label="Marketing hero background">
+        <BackgroundDecor />
         <div className="relative mx-auto flex min-h-dvh max-w-5xl flex-col px-6">
           {/* Center hero */}
           <div className="grid flex-1 place-items-center text-center">

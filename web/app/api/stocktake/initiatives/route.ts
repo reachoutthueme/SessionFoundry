@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
-import { getUserFromRequest, userOwnsActivity } from "@/app/api/_util/auth";
+import { getUserFromRequest, userOwnsActivity, getParticipantInSession } from "@/app/api/_util/auth";
 
 // --- Schemas ---
 const getQuerySchema = z
@@ -38,15 +38,26 @@ export async function GET(req: Request) {
 
     const { activity_id } = parsed.data;
 
-    const user = await getUserFromRequest(req);
-    if (!user) {
-      return NextResponse.json({ error: "Sign in required" }, { status: 401 });
-    }
+    // Resolve activity -> session for participant access
+    const { data: act, error: ae } = await supabaseAdmin
+      .from("activities")
+      .select("id, session_id")
+      .eq("id", activity_id)
+      .maybeSingle();
+    if (ae) return NextResponse.json({ error: ae.message }, { status: 500 });
+    if (!act) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    const owns = await userOwnsActivity(user.id, activity_id);
-    if (!owns) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    let allowed = false;
+    const user = await getUserFromRequest(req);
+    if (user) {
+      const owns = await userOwnsActivity(user.id, activity_id);
+      allowed = allowed || owns;
     }
+    if (!allowed && (act as any)?.session_id) {
+      const participant = await getParticipantInSession(req as any, (act as any).session_id as string);
+      if (participant) allowed = true;
+    }
+    if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { data, error } = await supabaseAdmin
       .from("stocktake_initiatives")

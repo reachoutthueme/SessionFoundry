@@ -5,9 +5,13 @@ export const metadata = {
   description: "Terms and conditions for using SessionFoundry.",
 };
 
+import BackgroundDecor from "@/components/ui/BackgroundDecor";
+
 export default function TermsPage() {
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="relative min-h-dvh overflow-hidden">
+      <BackgroundDecor />
+      <div className="mx-auto max-w-3xl p-6">
       <header className="mb-6">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -32,7 +36,7 @@ export default function TermsPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">1. What SessionFoundry is</h2>
+          <h2 className="text-base font-medium text-[var(--text)]">1. What SessionFoundry is</h2>
           <p>
             SessionFoundry is a web-based tool for planning and facilitating
             workshops. Facilitators can create sessions and activities, invite
@@ -44,7 +48,7 @@ export default function TermsPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">2. Accounts and access</h2>
+          <h2 className="text-base font-medium text-[var(--text)]">2. Accounts and access</h2>
           <h3 className="font-medium">2.1 Facilitator accounts</h3>
           <p>
             You create an account with an email and password. You are
@@ -71,7 +75,7 @@ export default function TermsPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">3. Your content and data</h2>
+          <h2 className="text-base font-medium text-[var(--text)]">3. Your content and data</h2>
           <h3 className="font-medium">3.1 Your content</h3>
           <p>
             "Content" means anything input into the Service by you or your
@@ -110,7 +114,7 @@ export default function TermsPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">4. Privacy and data protection</h2>
+          <h2 className="text-base font-medium text-[var(--text)]">4. Privacy and data protection</h2>
           <p>
             See our <a className="underline" href="/privacy">Privacy Policy</a>
             {' '}for details on what personal data we collect, how we use it,
@@ -119,7 +123,7 @@ export default function TermsPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">5. Acceptable use</h2>
+          <h2 className="text-base font-medium text-[var(--text)]">5. Acceptable use</h2>
           <ul className="list-disc pl-6">
             <li>No illegal, infringing, or harmful content.</li>
             <li>No harassment, abuse, discrimination, or doxxing.</li>
@@ -129,7 +133,7 @@ export default function TermsPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">6. Plans, billing, refunds</h2>
+          <h2 className="text-base font-medium text-[var(--text)]">6. Plans, billing, refunds</h2>
           <p>
             Free plan: limited usage. Pro plan: extended features (e.g.,
             exports). Fees are prepaid for the period shown. Except where
@@ -138,7 +142,7 @@ export default function TermsPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">7. Intellectual property</h2>
+          <h2 className="text-base font-medium text-[var(--text)]">7. Intellectual property</h2>
           <p>
             We retain all rights in and to the Service, software, and branding.
             These Terms do not grant you ownership of the Service. You retain
@@ -147,7 +151,7 @@ export default function TermsPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">8. Service changes and availability</h2>
+          <h2 className="text-base font-medium text-[var(--text)]">8. Service changes and availability</h2>
           <p>
             We may change or discontinue features. We aim for high availability
             but do not guarantee uninterrupted Service.
@@ -155,7 +159,7 @@ export default function TermsPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">9. Disclaimers</h2>
+          <h2 className="text-base font-medium text-[var(--text)]">9. Disclaimers</h2>
           <p>
             The Service is provided “as is” without warranties of any kind,
             express or implied (including merchantability, fitness for a
@@ -164,7 +168,7 @@ export default function TermsPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">10. Limitation of liability</h2>
+          <h2 className="text-base font-medium text-[var(--text)]">10. Limitation of liability</h2>
           <p>
             To the maximum extent permitted by law, we are not liable for
             indirect, incidental, special, consequential, or punitive damages,
@@ -175,7 +179,7 @@ export default function TermsPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">11. Indemnity</h2>
+          <h2 className="text-base font-medium text-[var(--text)]">11. Indemnity</h2>
           <p>
             You agree to indemnify and hold us harmless from claims arising out
             of your use of the Service, your content, or your violation of
@@ -184,7 +188,7 @@ export default function TermsPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">12. Termination</h2>
+          <h2 className="text-base font-medium text-[var(--text)]">12. Termination</h2>
           <p>
             You may stop using the Service at any time. We may suspend or
             terminate access if you violate these Terms or if required by law.
@@ -192,7 +196,7 @@ export default function TermsPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">13. Governing law</h2>
+          <h2 className="text-base font-medium text-[var(--text)]">13. Governing law</h2>
           <p>
             These Terms are governed by the laws of Denmark, without regard to
             conflict of laws. Courts of Denmark shall have jurisdiction, unless
@@ -201,7 +205,7 @@ export default function TermsPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">14. Changes to these Terms</h2>
+          <h2 className="text-base font-medium text-[var(--text)]">14. Changes to these Terms</h2>
           <p>
             We may update these Terms as we add features. If we make material
             changes, we will update the “Last updated” date and, where
@@ -210,13 +214,15 @@ export default function TermsPage() {
         </section>
 
         <section className="mt-6 space-y-2">
-          <h2 className="text-base font-medium text-white">15. Contact</h2>
+          <h2 className="text-base font-medium text-[var(--text)]">15. Contact</h2>
           <p>
             Questions about these Terms: reach us at
             {' '}<a className="underline" href="mailto:reachoutthueme@gmail.com">reachoutthueme@gmail.com</a>.
           </p>
         </section>
       </article>
+      </div>
     </div>
   );
 }
+

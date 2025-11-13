@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import { IconCopy, IconChevronRight, IconEdit } from "@/components/ui/Icons";
+import { IconCopy, IconChevronRight, IconEdit, IconList, IconGroup, IconResults } from "@/components/ui/Icons";
 import ProTag from "@/components/ui/ProTag";
 import { Tabs } from "@/components/ui/Tabs";
 import ResultsPanel from "@/components/session/ResultsPanel.vibrant";
@@ -12,6 +12,7 @@ import ActivitiesManager from "@/components/session/ActivitiesManager";
 import GroupsManager from "@/components/session/GroupsManager";
 import FacilitatorNotes from "@/components/session/FacilitatorNotes";
 import { StatusPill } from "@/components/ui/StatusPill";
+import BackgroundDecor from "@/components/ui/BackgroundDecor";
 
 type Sess = {
   id: string;
@@ -186,7 +187,9 @@ export default function Page() {
   // --- Main content ---------------------------------------------------------
 
   return (
-    <div className="space-y-4">
+    <div className="relative min-h-dvh overflow-hidden">
+      <BackgroundDecor />
+      <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">
@@ -381,6 +384,7 @@ export default function Page() {
         tabs={[
           {
             label: "Activities",
+            icon: <IconList />,
             content: (
               <ActivitiesManager
                 sessionId={id}
@@ -390,18 +394,22 @@ export default function Page() {
           },
           {
             label: "Participants",
+            icon: <IconGroup />,
             content: <GroupsManager sessionId={id} />,
           },
           {
             label: "Results",
+            icon: <IconResults />,
             content: <ResultsPanel sessionId={id} />,
           },
           {
             label: "Notes",
+            icon: <IconEdit />,
             content: <FacilitatorNotes sessionId={id} />,
           },
         ]}
       />
+      </div>
     </div>
   );
 }
