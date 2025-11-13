@@ -16,7 +16,6 @@ export default async function AdminSystemPage() {
   if (!isSupabaseAdminConfigured()) {
     return (
       <div className="relative min-h-dvh overflow-hidden">
-        <BackgroundDecor />
         <div className="space-y-4">
           <h1 className="text-xl font-semibold">System</h1>
           <div className="rounded-md border border-white/10 bg-white/5 p-4 text-sm">
