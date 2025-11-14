@@ -216,7 +216,7 @@ export default function ParticipantPage() {
                   subtitle={active.description || active.instructions || ""}
                   rightSlot={
                     <div className="flex items-center gap-2 text-xs">
-                      <StatusPill status={active.status} label={active.status} />
+                      <StatusPill status={(active.status === "Draft" ? "Queued" : active.status) as any} label={active.status} />
                       {active.ends_at ? (
                         <div className={timerPillClass(active.ends_at)}>
                           <Timer end={active.ends_at} />
