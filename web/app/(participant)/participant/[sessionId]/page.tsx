@@ -199,10 +199,22 @@ export default function ParticipantPage() {
             {active && (
               <Card>
                 <CardHeader
-                  title={active.title || getActivityDisplayName(active.type)}
+                  title={(
+                    <span className="inline-flex items-center gap-2">
+                      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/10">
+                        {active.type === "brainstorm" ? (
+                          <IconBrain size={16} />
+                        ) : active.type === "stocktake" ? (
+                          <IconList size={16} />
+                        ) : (
+                          <IconVote size={16} />
+                        )}
+                      </span>
+                      <span>{active.title || getActivityDisplayName(active.type)}</span>
+                    </span>
+                  )}
                   subtitle={active.description || active.instructions || ""}
-                  icon={active.type === "brainstorm" ? IconBrain : active.type === "stocktake" ? IconList : IconVote}
-                  aside={
+                  rightSlot={
                     <div className="flex items-center gap-2 text-xs">
                       <StatusPill status={active.status} label={active.status} />
                       {active.ends_at ? (
