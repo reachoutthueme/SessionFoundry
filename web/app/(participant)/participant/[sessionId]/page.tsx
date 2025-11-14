@@ -178,71 +178,227 @@ export default function ParticipantPage() {
 
   return (
     <div className="relative min-h-dvh overflow-hidden">
-      <div className="min-h-dvh grid place-items-center p-6">
-        <div className="w-full max-w-xl sm:max-w-2xl animate-fade-up">
-          <div className="mb-3 text-center text-xs uppercase tracking-wide text-[var(--muted)]">
-            Participant view
-          </div>
-          <div className="rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,.35)] p-6">
-            <div className="text-center mb-4">
-              <div className="text-sm text-[var(--muted)]">{sessionName}</div>
-              <div className="mt-1 text-2xl font-semibold">
-                {groupName ? `You're in ${groupName}` : "You're not in a group yet"}
-              </div>
-              <div className="mt-1 text-sm text-[var(--muted)]">
-                {active
-                  ? "When you're ready, open the active activity below."
-                  : "Waiting for your facilitator to start an activity."}
-              </div>
+      <div className="mx-auto max-w-6xl px-4 py-6 space-y-4">
+        {/* Header with session + active status */}
+        <header className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-xs uppercase tracking-wide text-[var(--muted)]">
+              Session
             </div>
-
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <h1 className="text-lg font-semibold tracking-tight">
+                {sessionName}
+              </h1>
+              {groupName && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-[var(--muted)]">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  In group {groupName}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
             {active && (
-              <Card>
-                <CardHeader
-                  title={(
-                    <span className="inline-flex items-center gap-2">
-                      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/10">
-                        {active.type === "brainstorm" ? (
-                          <IconBrain size={16} />
-                        ) : active.type === "stocktake" ? (
-                          <IconList size={16} />
-                        ) : (
-                          <IconVote size={16} />
-                        )}
-                      </span>
-                      <span>{active.title || getActivityDisplayName(active.type)}</span>
-                    </span>
-                  )}
-                  subtitle={active.description || active.instructions || ""}
-                  rightSlot={
-                    <div className="flex items-center gap-2 text-xs">
-                      <StatusPill status={(active.status === "Draft" ? "Queued" : active.status) as any} label={active.status} />
-                      {active.ends_at ? (
-                        <div className={timerPillClass(active.ends_at)}>
-                          <Timer endsAt={active.ends_at} />
-                        </div>
-                      ) : null}
-                    </div>
-                  }
+              <div className="flex items-center gap-2 text-xs">
+                <StatusPill
+                  status={(active.status === "Draft" ? "Queued" : active.status) as any}
+                  label={active.status}
                 />
-                <CardBody>
-                  <Button onClick={() => setSelected(active)} className="w-full inline-flex items-center justify-center gap-2">
-                    <span>Open activity</span>
+                {active.ends_at ? (
+                  <div className={timerPillClass(active.ends_at)}>
+                    <Timer endsAt={active.ends_at} />
+                  </div>
+                ) : null}
+              </div>
+            )}
+            <ThemeToggle />
+          </div>
+        </header>
+
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,1.4fr)]">
+          {/* Left column: activities */}
+          <div className="space-y-3">
+            <Card>
+              <CardHeader
+                title="Activities"
+                subtitle={
+                  active
+                    ? "Open the step your facilitator just started."
+                    : "Waiting for your facilitator to start an activity."
+                }
+              />
+              <CardBody className="space-y-2">
+                {activities.length === 0 ? (
+                  <div className="text-sm text-[var(--muted)]">
+                    No activities have been added yet.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {activities.map((a) => {
+                      const isCurrent = active && active.id === a.id;
+                      const isLocked = a.status !== "Active" && a.status !== "Voting";
+                      const pillStatus =
+                        (a.status === "Draft"
+                          ? "Queued"
+                          : a.status === "Completed"
+                          ? "Closed"
+                          : a.status) as any;
+                      return (
+                        <button
+                          key={a.id}
+                          onClick={() => {
+                            if (!isLocked) setSelected(a);
+                          }}
+                          className={`w-full rounded-md border border-white/10 bg-white/5 px-3 py-3 text-left transition hover:bg-white/10 ${
+                            isCurrent ? "ring-1 ring-[var(--brand)]" : ""
+                          } ${isLocked ? "opacity-70" : ""}`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start gap-3">
+                              <span className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10">
+                                {a.type === "brainstorm" ? (
+                                  <IconBrain size={16} />
+                                ) : a.type === "stocktake" ? (
+                                  <IconList size={16} />
+                                ) : (
+                                  <IconVote size={16} />
+                                )}
+                              </span>
+                              <div>
+                                <div className="font-medium">
+                                  {a.title || getActivityDisplayName(a.type)}
+                                </div>
+                                {a.description || a.instructions ? (
+                                  <div className="mt-0.5 line-clamp-2 text-xs text-[var(--muted)]">
+                                    {a.description || a.instructions}
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-1 text-xs">
+                              <StatusPill status={pillStatus} label={a.status} />
+                              {a.ends_at && (a.status === "Active" || a.status === "Voting") && (
+                                <div className={timerPillClass(a.ends_at)}>
+                                  <span className="inline-flex items-center gap-1">
+                                    <IconTimer size={12} />
+                                    <Timer endsAt={a.ends_at} />
+                                  </span>
+                                </div>
+                              )}
+                              {isLocked ? (
+                                <span className="inline-flex items-center gap-1 text-[var(--muted)]">
+                                  <IconLock size={12} />
+                                  Locked
+                                </span>
+                              ) : isCurrent ? (
+                                <span className="inline-flex items-center gap-1 text-[var(--muted)]">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                  Active now
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+          </div>
+
+          {/* Right column: group + leaderboards */}
+          <div className="space-y-3">
+            {/* Group members */}
+            <Card>
+              <CardHeader
+                title="Your group"
+                subtitle={
+                  groupName
+                    ? groupName
+                    : "You haven't joined a group in this session."
+                }
+              />
+              <CardBody>
+                {participant?.group_id ? (
+                  (() => {
+                    const gid = participant.group_id as string;
+                    const members = participants.filter((p) => p.group_id === gid);
+                    if (!members.length) {
+                      return (
+                        <div className="text-sm text-[var(--muted)]">
+                          No one else has joined your group yet.
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          {members.map((m) => (
+                            <div
+                              key={m.id}
+                              className="inline-flex items-center gap-2 rounded-full bg-white/5 px-2 py-1 text-xs"
+                            >
+                              <span className="grid h-6 w-6 place-items-center rounded-full bg-white/10 text-[10px] font-semibold">
+                                {(m.display_name || "?")
+                                  .slice(0, 1)
+                                  .toUpperCase()}
+                              </span>
+                              <span className="max-w-[130px] truncate">
+                                {m.display_name || `Anon ${m.id.slice(0, 4)}`}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="text-xs text-[var(--muted)]">
+                          {members.length}{" "}
+                          {members.length === 1 ? "person in your group" : "people in your group"}
+                        </div>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <div className="text-sm text-[var(--muted)]">
+                    Join a group first to see your teammates here.
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+
+            {/* Leaderboard shortcuts */}
+            <Card>
+              <CardHeader
+                title="Leaderboards"
+                subtitle="See how groups are scoring"
+              />
+              <CardBody>
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-between"
+                    disabled={!active}
+                    onClick={() => setShowActLb(true)}
+                  >
+                    <span>Current activity</span>
                     <IconChevronRight size={14} />
                   </Button>
-                </CardBody>
-              </Card>
-            )}
-
-            {!active && (
-              <div className="mt-4 text-sm text-[var(--muted)] text-center">
-                No active activity right now.
-              </div>
-            )}
-
-            <div ref={liveRef} aria-live="polite" className="sr-only" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-between"
+                    onClick={() => setShowOverall(true)}
+                  >
+                    <span>Overall workshop</span>
+                    <IconChevronRight size={14} />
+                  </Button>
+                </div>
+              </CardBody>
+            </Card>
           </div>
         </div>
+
+        <div ref={liveRef} aria-live="polite" className="sr-only" />
       </div>
 
       {selected && (
@@ -271,6 +427,32 @@ export default function ParticipantPage() {
               />
             );
           })()}
+        </Modal>
+      )}
+
+      {showActLb && active && (
+        <Modal
+          open
+          onClose={() => setShowActLb(false)}
+          title="Activity leaderboard"
+        >
+          <ActivityLeaderboard
+            activityId={active.id}
+            onClose={() => setShowActLb(false)}
+          />
+        </Modal>
+      )}
+
+      {showOverall && (
+        <Modal
+          open
+          onClose={() => setShowOverall(false)}
+          title="Overall leaderboard"
+        >
+          <OverallLeaderboard
+            sessionId={sessionId as string}
+            onClose={() => setShowOverall(false)}
+          />
         </Modal>
       )}
     </div>
