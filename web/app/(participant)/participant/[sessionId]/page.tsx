@@ -219,7 +219,7 @@ export default function ParticipantPage() {
                       <StatusPill status={(active.status === "Draft" ? "Queued" : active.status) as any} label={active.status} />
                       {active.ends_at ? (
                         <div className={timerPillClass(active.ends_at)}>
-                          <Timer end={active.ends_at} />
+                          <Timer endsAt={active.ends_at} />
                         </div>
                       ) : null}
                     </div>
