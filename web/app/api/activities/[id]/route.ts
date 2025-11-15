@@ -27,6 +27,41 @@ function noStore<T>(payload: T, init?: number | ResponseInit) {
   return res;
 }
 
+// GET /api/activities/:id - load a single activity
+export async function GET(req: NextRequest, ctx: Ctx) {
+  const { id: activityId } = await ctx.params;
+  if (!activityId) {
+    return noStore({ error: "Invalid activity id" }, { status: 400 });
+  }
+
+  const user = await getUserFromRequest(req);
+  if (!user) {
+    return noStore({ error: "Sign in required" }, { status: 401 });
+  }
+
+  const owns = await userOwnsActivity(user.id, activityId);
+  if (!owns) {
+    return noStore({ error: "Not found" }, { status: 404 });
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("activities")
+    .select(
+      "id, session_id, type, title, instructions, description, config, order_index, status, starts_at, ends_at, created_at"
+    )
+    .eq("id", activityId)
+    .maybeSingle();
+
+  if (error) {
+    return noStore({ error: error.message }, { status: 500 });
+  }
+  if (!data) {
+    return noStore({ error: "Not found" }, { status: 404 });
+  }
+
+  return noStore({ activity: data }, { status: 200 });
+}
+
 export async function PATCH(req: NextRequest, ctx: Ctx) {
   const { id: activityId } = await ctx.params;
   if (!activityId) return noStore({ error: "Invalid activity id" }, { status: 400 });

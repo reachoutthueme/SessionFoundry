@@ -210,6 +210,56 @@ export function useSessionActivities(sessionId: string) {
     }
   }
 
+  // reorder activities within this session
+  async function moveActivity(id: string, delta: number) {
+    const arr = [...items].sort(
+      (a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)
+    );
+    const idx = arr.findIndex((a) => a.id === id);
+    if (idx < 0) return;
+    const target = idx + delta;
+    if (target < 0 || target >= arr.length) return;
+
+    const a = arr[idx];
+    const b = arr[target];
+
+    try {
+      const [r1, r2] = await Promise.all([
+        apiFetch(`/api/activities/${a.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order_index: target }),
+        }),
+        apiFetch(`/api/activities/${b.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order_index: idx }),
+        }),
+      ]);
+
+      if (!r1.ok || !r2.ok) {
+        console.error("[useSessionActivities] moveActivity failed:", {
+          r1Status: r1.status,
+          r2Status: r2.status,
+        });
+        return;
+      }
+
+      // Optimistically update local order_index values
+      setItems((prev) => {
+        const next = [...prev];
+        const i1 = next.findIndex((x) => x.id === a.id);
+        const i2 = next.findIndex((x) => x.id === b.id);
+        if (i1 < 0 || i2 < 0) return next;
+        next[i1] = { ...next[i1], order_index: target };
+        next[i2] = { ...next[i2], order_index: idx };
+        return next;
+      });
+    } catch (err) {
+      console.error("[useSessionActivities] moveActivity() failed:", err);
+    }
+  }
+
   return {
     activities: sorted,
     rawActivities: items,
@@ -221,6 +271,6 @@ export function useSessionActivities(sessionId: string) {
     current,
     setStatus,
     extendTimer,
+    moveActivity,
   };
 }
-
