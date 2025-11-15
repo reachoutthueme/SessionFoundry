@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/app/lib/apiFetch";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { getActivityDisplayName } from "@/lib/activities/registry";
@@ -228,7 +228,7 @@ export default function ResultsPanel({
             const rr = getResultsRenderer(a.type);
             if (!rr) return null;
 
-            let content: JSX.Element | null = null;
+            let content: React.ReactNode = null;
             if (rr.kind === "stocktake" && !Array.isArray(payload)) {
               const Comp: any = rr.Component;
               content = <Comp stocktake={payload} mode={viewMode} />;
