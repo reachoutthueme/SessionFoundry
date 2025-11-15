@@ -480,8 +480,17 @@ export default function ActivitiesManager({
   }
 
   const list = (
-    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-            {loading ? (
+    <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-3">
+      <div className="flex items-center justify-between text-xs text-[var(--muted)]">
+        <div>
+          {summary.total} {activitiesLabel} · {summary.closed} closed ·{" "}
+          {summary.active + summary.voting} in progress
+        </div>
+        <Button size="sm" onClick={() => setOpen(true)}>
+          Add activity
+        </Button>
+      </div>
+      {loading ? (
               <div className="space-y-2">
                 <div className="h-12 animate-pulse rounded bg-white/10" />
                 <div className="h-12 animate-pulse rounded bg-white/10" />

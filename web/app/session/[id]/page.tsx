@@ -8,6 +8,7 @@ import { IconCopy, IconChevronRight, IconEdit } from "@/components/ui/Icons";
 import ProTag from "@/components/ui/ProTag";
 import ResultsPanel from "@/components/session/ResultsPanel.vibrant";
 import ActivityRail from "@/components/session/ActivityRail";
+import ActivityControls from "@/components/session/ActivityControls";
 import GroupsRail from "@/components/session/GroupsRail";
 import ActivitySummary from "@/components/session/ActivitySummary";
 import { StatusPill } from "@/components/ui/StatusPill";
@@ -283,13 +284,14 @@ export default function Page() {
           <div className="relative flex items-center gap-2">
             {s.status === "Draft" || s.status === "Inactive" ? (
               <Button
-                variant="outline"
+                variant="primary"
                 disabled={saving}
+                title="Start this session for participants"
                 onClick={async () => {
                   await updateSession({ status: "Active" });
                 }}
               >
-                Activate
+                Start session
               </Button>
             ) : null}
 
@@ -396,8 +398,14 @@ export default function Page() {
             />
           </div>
 
-          {/* Center: settings + live submissions / results for current activity */}
-          <div className="min-h-[60vh]">
+          {/* Center: controls + settings + live submissions / results for current activity */}
+          <div className="min-h-[60vh] space-y-3">
+            <ActivityControls
+              sessionId={id}
+              sessionStatus={s.status}
+              currentActivityId={currentActivityId}
+              onCurrentActivityChange={setCurrentActivityId}
+            />
             <div className="grid gap-4 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] h-full">
               <div className="min-h-[40vh]">
                 <ActivitySummary activityId={currentActivityId} />
