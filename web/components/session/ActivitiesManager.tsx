@@ -921,9 +921,7 @@ export default function ActivitiesManager({
               </div>
             )}
           </div>
-    </div>
-  );
-          /* Sticky footer controls (temporarily disabled)
+  /* Sticky footer controls (temporarily disabled)
           {showFooter && (
             <div className="pointer-events-none fixed inset-x-0 bottom-2 z-20 flex justify-center">
               <div className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-white/12 bg-[var(--panel)]/95 px-3 py-2 shadow-lg backdrop-blur">
