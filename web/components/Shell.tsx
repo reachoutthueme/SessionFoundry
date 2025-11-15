@@ -524,6 +524,7 @@ function ShellBody({ children }: PropsWithChildren) {
         onClose={() => setShowPrivacy(false)}
         title="Privacy Policy"
         size="lg"
+        scroll={false}
         footer={
           <button
             className="rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm transition-colors hover:bg-white/10 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"
@@ -547,6 +548,7 @@ function ShellBody({ children }: PropsWithChildren) {
         onClose={() => setShowTerms(false)}
         title="Terms & Conditions"
         size="lg"
+        scroll={false}
         footer={
           <button
             className="rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm transition-colors hover:bg-white/10 focus:outline-none focus:ring-1 focus:ring-[var(--ring)]"

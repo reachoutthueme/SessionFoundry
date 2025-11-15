@@ -2,7 +2,7 @@
 import { useEffect, useRef } from "react";
 
 export default function Modal({
-  open, onClose, title, children, footer, size = "md",
+  open, onClose, title, children, footer, size = "md", scroll = true,
 }: {
   open: boolean;
   onClose: () => void;
@@ -10,6 +10,7 @@ export default function Modal({
   children?: React.ReactNode;
   footer?: React.ReactNode;
   size?: "md" | "lg" | "xl";
+  scroll?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const lastActiveRef = useRef<Element | null>(null);
@@ -100,7 +101,7 @@ export default function Modal({
               {title}
             </div>
           )}
-          <div className="p-4 overflow-auto">{children}</div>
+          <div className={`p-4 ${scroll ? "overflow-auto" : ""}`}>{children}</div>
           {footer && (
             <div className="sticky bottom-0 z-10 p-3 border-t border-white/10 bg-[var(--panel-2)]/95 backdrop-blur flex justify-end gap-2">
               {footer}

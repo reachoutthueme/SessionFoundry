@@ -192,6 +192,11 @@ export default function ActivitiesManager({
     };
   }, [items]);
 
+  const activitiesLabel = useMemo(
+    () => (items.length === 1 ? "activity" : "activities"),
+    [items.length]
+  );
+
   const current = useMemo(
     () =>
       sorted.find(
@@ -514,15 +519,18 @@ export default function ActivitiesManager({
           {/* Header row: count + add */}
           <div className="mb-3 flex items-center justify-between">
             <div className="text-sm text-[var(--muted)]">
-              {items.length} steps
+              {items.length} {activitiesLabel}
             </div>
-            <Button onClick={() => setOpen(true)}>Add step</Button>
+            <Button onClick={() => setOpen(true)}>Add activity</Button>
           </div>
 
           {/* Stepper + compact progress */}
           <div ref={stepperRef} className="mb-6 rounded-lg border border-white/15 bg-white/7 p-4 shadow-[0_8px_30px_rgba(0,0,0,.12)]">
             <div className="mb-3 flex items-center justify-between text-sm">
-              <div>Progress: {summary.closed} of {summary.total} steps complete</div>
+              <div>
+                Progress: {summary.closed} of {summary.total}{" "}
+                {summary.total === 1 ? "activity" : "activities"} complete
+              </div>
               {current?.ends_at && (current.status === "Active" || current.status === "Voting") && (
                 <div className="flex items-center gap-2 text-xs text-[var(--muted)]"><IconTimer size={12} /> <Timer endsAt={current.ends_at} /></div>
               )}
@@ -1009,7 +1017,7 @@ export default function ActivitiesManager({
                     const nxt = arr.find((a,ix)=> ix>curIdx && (a.status==='Draft' || (a.status as any)==='Inactive'));
                     if (curIdx>=0) await setStatus(arr[curIdx].id,'Closed');
                     if (nxt) await setStatus(nxt.id,'Active');
-                    else toast('No more steps','info');
+                    else toast('No more activities','info');
                   } catch { toast('Failed to advance','error'); }
                 }}>Next</Button>
                 <details className="relative">
@@ -1018,7 +1026,7 @@ export default function ActivitiesManager({
                     {[{m:1,label:'+1 minute'},{m:5,label:'+5 minutes'}].map(({m,label})=> (
                       <button key={m} className="block w-full rounded px-2 py-1 text-left text-sm hover:bg-white/5" onClick={(e)=>{
                         const cur = sorted.find(a=>a.status==='Active' || a.status==='Voting');
-                        if (!cur) { toast('No active step','info'); const d=(e.currentTarget.closest('details') as HTMLDetailsElement|null); if(d) d.open=false; return; }
+                        if (!cur) { toast('No active activity','info'); const d=(e.currentTarget.closest('details') as HTMLDetailsElement|null); if(d) d.open=false; return; }
                         extendTimer(cur.id, m);
                         const d=(e.currentTarget.closest('details') as HTMLDetailsElement|null); if(d) d.open=false;
                       }}>{label}</button>
@@ -1033,11 +1041,11 @@ export default function ActivitiesManager({
             </div>
           )}
 
-          {/* "Add step" modal */}
+          {/* "Add activity" modal */}
           <Modal
             open={open}
             onClose={() => setOpen(false)}
-            title="Add step"
+            title="Add activity"
             size="xl"
             footer={
               <>

@@ -4,9 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import { IconCopy, IconChevronRight, IconEdit, IconList, IconGroup, IconResults } from "@/components/ui/Icons";
+import { IconCopy, IconChevronRight, IconEdit } from "@/components/ui/Icons";
 import ProTag from "@/components/ui/ProTag";
-import { Tabs } from "@/components/ui/Tabs";
 import ResultsPanel from "@/components/session/ResultsPanel.vibrant";
 import ActivitiesManager from "@/components/session/ActivitiesManager";
 import GroupsManager from "@/components/session/GroupsManager";
@@ -188,225 +187,224 @@ export default function Page() {
   return (
     <div className="relative min-h-dvh overflow-hidden">
       <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold tracking-tight">
-            {editing ? (
-              <span className="inline-flex items-center gap-2">
-                <input
-                  value={nameInput}
-                  onChange={(e) => setNameInput(e.target.value)}
-                  className="h-9 rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
-                />
-                <Button
-                  variant="outline"
-                  disabled={saving}
-                  onClick={async () => {
-                    const n = nameInput.trim();
-                    if (!n || !s) return;
-                    const updated = await updateSession({ name: n });
-                    if (updated) {
+        {/* Top bar: session info + actions */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-semibold tracking-tight">
+              {editing ? (
+                <span className="inline-flex items-center gap-2">
+                  <input
+                    value={nameInput}
+                    onChange={(e) => setNameInput(e.target.value)}
+                    className="h-9 rounded-md border border-white/10 bg-[var(--panel)] px-3 outline-none"
+                  />
+                  <Button
+                    variant="outline"
+                    disabled={saving}
+                    onClick={async () => {
+                      const n = nameInput.trim();
+                      if (!n || !s) return;
+                      const updated = await updateSession({ name: n });
+                      if (updated) {
+                        setEditing(false);
+                      }
+                    }}
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    variant="outline"
+                    disabled={saving}
+                    onClick={() => {
                       setEditing(false);
-                    }
-                  }}
-                >
-                  Save
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={saving}
-                  onClick={() => {
-                    setEditing(false);
-                    setNameInput(s?.name || "");
-                  }}
-                >
-                  Cancel
-                </Button>
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-2">
-                {s.name}
-                <button
-                  className="rounded p-1 hover:bg-white/5"
-                  title="Rename session"
-                  aria-label="Rename session"
-                  onClick={() => { setEditing(true); setNameInput(s.name); }}
-                >
-                  <IconEdit size={14} />
-                </button>
-              </span>
-            )}
-          </h1>
-
-          <div className="text-xs text-[var(--muted)] flex items-center gap-1">
-            <StatusPill status={(s.status as any) === 'Active' ? 'Active' : (s.status as any) === 'Completed' ? 'Closed' : 'Queued'} label={s.status} />
-            <span>ID {id?.slice(0, 8)}</span>
-            {s.join_code && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-1.5 py-[1px] text-[var(--text)]">
-                <span className="opacity-80">Join</span>
-                <span className="font-mono text-[11px] leading-none">
-                  {s.join_code}
+                      setNameInput(s?.name || "");
+                    }}
+                  >
+                    Cancel
+                  </Button>
                 </span>
-                <button
-                  className="rounded p-0.5 hover:bg-white/5"
-                  title="Copy join code"
-                  aria-label="Copy join code"
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(s.join_code);
-                      toast("Join code copied", "success");
-                    } catch {
-                      toast("Copy failed", "error");
-                    }
-                  }}
-                >
-                  <IconCopy size={12} />
-                </button>
-              </span>
-            )}
-          </div>
-        </div>
+              ) : (
+                <span className="inline-flex items-center gap-2">
+                  {s.name}
+                  <button
+                    className="rounded p-1 hover:bg-white/5"
+                    title="Rename session"
+                    aria-label="Rename session"
+                    onClick={() => {
+                      setEditing(true);
+                      setNameInput(s.name);
+                    }}
+                  >
+                    <IconEdit size={14} />
+                  </button>
+                </span>
+              )}
+            </h1>
 
-        <div className="relative flex items-center gap-2">
-          {/* Primary actions (Next/rename inline removed here) */}
-
-          {s.status === "Draft" || s.status === "Inactive" ? (
-            <Button
-              variant="outline"
-              disabled={saving}
-              onClick={async () => {
-                await updateSession({ status: "Active" });
-              }}
-            >
-              Activate
-            </Button>
-          ) : null}
-
-          {s.status === "Active" ? (
-            <Button
-              variant="outline"
-              disabled={saving}
-              onClick={async () => {
-                await updateSession({ status: "Completed" });
-              }}
-            >
-              End session
-            </Button>
-          ) : null}
-
-          <div
-            className="relative"
-            ref={exportRef}
-          >
-            <Button
-              variant="outline"
-              aria-haspopup="menu"
-              aria-expanded={exportOpen}
-              onClick={() => setExportOpen((o) => !o)}
-            >
-              <span className="inline-flex items-center gap-1">
-                Export <IconChevronRight size={12} className="rotate-90 opacity-80" />
-              </span>
-              <ProTag />
-            </Button>
-
-            {exportOpen && (
-              <div
-                className="absolute right-0 z-10 mt-2 w-48 rounded-md border border-white/10 bg-[var(--panel)] shadow-lg"
-                role="menu"
-                aria-label="Export options"
-              >
-                <button
-                  className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-white/5"
-                  role="menuitem"
-                  onClick={() => {
-                    setExportOpen(false);
-                    window.open(
-                      `/api/session/${id}/export/results`,
-                      "_blank"
-                    );
-                  }}
-                >
-                  <span>Results CSV</span>
-                  <ProTag />
-                </button>
-                <button
-                  className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-white/5"
-                  role="menuitem"
-                  onClick={() => {
-                    setExportOpen(false);
-                    window.open(
-                      `/api/session/${id}/export/activities`,
-                      "_blank"
-                    );
-                  }}
-                >
-                  <span>Activities CSV</span>
-                  <ProTag />
-                </button>
-                <button
-                  className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-white/5"
-                  role="menuitem"
-                  onClick={() => {
-                    setExportOpen(false);
-                    window.open(
-                      `/api/session/${id}/export/json`,
-                      "_blank"
-                    );
-                  }}
-                >
-                  <span>JSON</span>
-                  <ProTag />
-                </button>
-                <button
-                  className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-white/5"
-                  role="menuitem"
-                  onClick={() => {
-                    setExportOpen(false);
-                    window.open(
-                      `/api/session/${id}/export/deck`,
-                      "_blank"
-                    );
-                  }}
-                >
-                  <span>Deck (MD)</span>
-                  <ProTag />
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <Tabs
-        tabs={[
-          {
-            label: "Activities",
-            icon: <IconList />,
-            content: (
-              <ActivitiesManager
-                sessionId={id}
-                sessionStatus={s.status}
+            <div className="text-xs text-[var(--muted)] flex items-center gap-1">
+              <StatusPill
+                status={
+                  (s.status as any) === "Active"
+                    ? "Active"
+                    : (s.status as any) === "Completed"
+                    ? "Closed"
+                    : "Queued"
+                }
+                label={s.status}
               />
-            ),
-          },
-          {
-            label: "Participants",
-            icon: <IconGroup />,
-            content: <GroupsManager sessionId={id} />,
-          },
-          {
-            label: "Results",
-            icon: <IconResults />,
-            content: <ResultsPanel sessionId={id} />,
-          },
-          {
-            label: "Notes",
-            icon: <IconEdit />,
-            content: <FacilitatorNotes sessionId={id} />,
-          },
-        ]}
-      />
+              <span>ID {id?.slice(0, 8)}</span>
+              {s.join_code && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-1.5 py-[1px] text-[var(--text)]">
+                  <span className="opacity-80">Join</span>
+                  <span className="font-mono text-[11px] leading-none">
+                    {s.join_code}
+                  </span>
+                  <button
+                    className="rounded p-0.5 hover:bg-white/5"
+                    title="Copy join code"
+                    aria-label="Copy join code"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(s.join_code);
+                        toast("Join code copied", "success");
+                      } catch {
+                        toast("Copy failed", "error");
+                      }
+                    }}
+                  >
+                    <IconCopy size={12} />
+                  </button>
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="relative flex items-center gap-2">
+            {s.status === "Draft" || s.status === "Inactive" ? (
+              <Button
+                variant="outline"
+                disabled={saving}
+                onClick={async () => {
+                  await updateSession({ status: "Active" });
+                }}
+              >
+                Activate
+              </Button>
+            ) : null}
+
+            {s.status === "Active" ? (
+              <Button
+                variant="outline"
+                disabled={saving}
+                onClick={async () => {
+                  await updateSession({ status: "Completed" });
+                }}
+              >
+                End session
+              </Button>
+            ) : null}
+
+            <div className="relative" ref={exportRef}>
+              <Button
+                variant="outline"
+                aria-haspopup="menu"
+                aria-expanded={exportOpen}
+                onClick={() => setExportOpen((o) => !o)}
+              >
+                <span className="inline-flex items-center gap-1">
+                  Export{" "}
+                  <IconChevronRight
+                    size={12}
+                    className="rotate-90 opacity-80"
+                  />
+                </span>
+                <ProTag />
+              </Button>
+
+              {exportOpen && (
+                <div
+                  className="absolute right-0 z-10 mt-2 w-48 rounded-md border border-white/10 bg-[var(--panel)] shadow-lg"
+                  role="menu"
+                  aria-label="Export options"
+                >
+                  <button
+                    className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-white/5"
+                    role="menuitem"
+                    onClick={() => {
+                      setExportOpen(false);
+                      window.open(
+                        `/api/session/${id}/export/results`,
+                        "_blank"
+                      );
+                    }}
+                  >
+                    <span>Results CSV</span>
+                    <ProTag />
+                  </button>
+                  <button
+                    className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-white/5"
+                    role="menuitem"
+                    onClick={() => {
+                      setExportOpen(false);
+                      window.open(
+                        `/api/session/${id}/export/activities`,
+                        "_blank"
+                      );
+                    }}
+                  >
+                    <span>Activities CSV</span>
+                    <ProTag />
+                  </button>
+                  <button
+                    className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-white/5"
+                    role="menuitem"
+                    onClick={() => {
+                      setExportOpen(false);
+                      window.open(`/api/session/${id}/export/json`, "_blank");
+                    }}
+                  >
+                    <span>JSON</span>
+                    <ProTag />
+                  </button>
+                  <button
+                    className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-white/5"
+                    role="menuitem"
+                    onClick={() => {
+                      setExportOpen(false);
+                      window.open(`/api/session/${id}/export/deck`, "_blank");
+                    }}
+                  >
+                    <span>Deck (MD)</span>
+                    <ProTag />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Three-column facilitator control center */}
+        <div className="grid grid-cols-[minmax(0,260px)_minmax(0,1.5fr)_minmax(0,260px)] gap-4 items-start">
+          {/* Left rail: activities */}
+          <div className="rounded-lg border border-white/10 bg-[var(--panel)]/80 p-3">
+            <ActivitiesManager sessionId={id} sessionStatus={s.status} />
+          </div>
+
+          {/* Center: live submissions / results */}
+          <div className="rounded-lg border border-white/10 bg-[var(--panel)]/80 p-3">
+            <ResultsPanel sessionId={id} />
+          </div>
+
+          {/* Right rail: groups + notes */}
+          <div className="space-y-4">
+            <div className="rounded-lg border border-white/10 bg-[var(--panel)]/80 p-3">
+              <GroupsManager sessionId={id} />
+            </div>
+            <div className="rounded-lg border border-white/10 bg-[var(--panel)]/80 p-3">
+              <FacilitatorNotes sessionId={id} />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
