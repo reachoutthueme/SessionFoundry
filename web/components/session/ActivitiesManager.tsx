@@ -5,7 +5,6 @@ import { apiFetch } from "@/app/lib/apiFetch";
 import Button from "@/components/ui/Button";
 import { IconSettings } from "@/components/ui/Icons";
 import { IconTimer, IconChevronRight } from "@/components/ui/Icons";
-import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { getActivityDisplayName } from "@/lib/activities/registry";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
@@ -921,54 +920,13 @@ export default function ActivitiesManager({
               </div>
             )}
           </div>
-  /* Sticky footer controls (temporarily disabled)
-          {showFooter && (
-            <div className="pointer-events-none fixed inset-x-0 bottom-2 z-20 flex justify-center">
-              <div className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-white/12 bg-[var(--panel)]/95 px-3 py-2 shadow-lg backdrop-blur">
-                <Button size="sm" variant="outline" onClick={async ()=>{
-                  // Move to previous: find sorted index before current focused
-                  const arr = [...sorted];
-                  const i = focusedId ? arr.findIndex(a=>a.id===focusedId) : -1;
-                  const prev = i>0 ? arr[i-1] : null;
-                  if (prev) {
-                    setFocusedId(prev.id);
-                    onCurrentActivityChange?.(prev.id);
-                  }
-                }}>Previous</Button>
-                <Button size="sm" onClick={async ()=>{
-                  // Close current active and activate next draft/inactive
-                  try {
-                    const arr = [...sorted];
-                    const curIdx = arr.findIndex(a=>a.status==='Active' || a.status==='Voting');
-                    const nxt = arr.find((a,ix)=> ix>curIdx && (a.status==='Draft' || (a.status as any)==='Inactive'));
-                    if (curIdx>=0) await setStatus(arr[curIdx].id,'Closed');
-                    if (nxt) await setStatus(nxt.id,'Active');
-                    else toast('No more activities','info');
-                  } catch { toast('Failed to advance','error'); }
-                }}>Next</Button>
-                <details className="relative">
-                  <summary className="list-none inline-flex"><Button size="sm" variant="outline">Add time</Button></summary>
-                  <div className="absolute right-0 mt-1 w-36 rounded-md border border-white/12 bg-[var(--panel)] p-1 shadow-lg">
-                    {[{m:1,label:'+1 minute'},{m:5,label:'+5 minutes'}].map(({m,label})=> (
-                      <button key={m} className="block w-full rounded px-2 py-1 text-left text-sm hover:bg-white/5" onClick={(e)=>{
-                        const cur = sorted.find(a=>a.status==='Active' || a.status==='Voting');
-                        if (!cur) { toast('No active activity','info'); const d=(e.currentTarget.closest('details') as HTMLDetailsElement|null); if(d) d.open=false; return; }
-                        extendTimer(cur.id, m);
-                        const d=(e.currentTarget.closest('details') as HTMLDetailsElement|null); if(d) d.open=false;
-                      }}>{label}</button>
-                    ))}
-                  </div>
-                </details>
-                <Button size="sm" variant="outline" onClick={async ()=>{ await apiFetch(`/api/session/${sessionId}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status:'Completed' }) }); toast('Session ended','success'); }}>End</Button>
-                {current && (
-                  <span className="ml-2 text-xs text-[var(--muted)]">Current: <span className="text-[var(--text)]">{current.title || getActivityDisplayName(current.type)}</span> {(() => { const cc = counts[current.id]||{total:0,max:0,byGroup:{}}; const groupCount = groups.length; const denom = (cc.max||0)* (groupCount||0); return denom>0 ? `(${cc.total}/${denom})` : ''; })()}</span>
-                )}
-              </div>
-            </div>
-          )}
-          */
+        );
 
-          {/* "Add activity" modal */}
+  return (
+    <>
+      {list}
+
+      {/* "Add activity" modal */}
           <Modal
             open={open}
             onClose={() => setOpen(false)}
@@ -1462,9 +1420,7 @@ export default function ActivitiesManager({
               />
             )}
           </Modal>
-        </CardBody>
-      </Card>
-    </>
+        </>
   );
 }
 
