@@ -400,6 +400,7 @@ export default function ActivityRail({
           {activities.length === 0 && (
             <div className="text-[var(--muted)]">No activities yet.</div>
           )}
+        </div>
       </div>
 
       {/* Optional full manager for deeper editing */}
