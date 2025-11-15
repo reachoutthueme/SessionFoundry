@@ -7,9 +7,9 @@ import { useToast } from "@/components/ui/Toast";
 import { IconCopy, IconChevronRight, IconEdit } from "@/components/ui/Icons";
 import ProTag from "@/components/ui/ProTag";
 import ResultsPanel from "@/components/session/ResultsPanel.vibrant";
-import ActivitiesManager from "@/components/session/ActivitiesManager";
-import GroupsManager from "@/components/session/GroupsManager";
-import FacilitatorNotes from "@/components/session/FacilitatorNotes";
+import ActivityRail from "@/components/session/ActivityRail";
+import GroupsRail from "@/components/session/GroupsRail";
+import ActivitySummary from "@/components/session/ActivitySummary";
 import { StatusPill } from "@/components/ui/StatusPill";
 
 type Sess = {
@@ -30,6 +30,7 @@ export default function Page() {
 
   // session state
   const [s, setS] = useState<Sess | null>(null);
+  const [currentActivityId, setCurrentActivityId] = useState<string | null>(null);
 
   // loading / error around initial fetch
   const [loading, setLoading] = useState(true);
@@ -386,23 +387,30 @@ export default function Page() {
         {/* Three-column facilitator control center */}
         <div className="grid grid-cols-[minmax(0,260px)_minmax(0,1.5fr)_minmax(0,260px)] gap-4 items-start">
           {/* Left rail: activities */}
-          <div className="rounded-lg border border-white/10 bg-[var(--panel)]/80 p-3">
-            <ActivitiesManager sessionId={id} sessionStatus={s.status} />
+          <div className="min-h-[60vh]">
+            <ActivityRail
+              sessionId={id}
+              sessionStatus={s.status}
+              currentActivityId={currentActivityId}
+              onCurrentActivityChange={setCurrentActivityId}
+            />
           </div>
 
-          {/* Center: live submissions / results */}
-          <div className="rounded-lg border border-white/10 bg-[var(--panel)]/80 p-3">
-            <ResultsPanel sessionId={id} />
+          {/* Center: settings + live submissions / results for current activity */}
+          <div className="min-h-[60vh]">
+            <div className="grid gap-4 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] h-full">
+              <div className="min-h-[40vh]">
+                <ActivitySummary activityId={currentActivityId} />
+              </div>
+              <div className="min-h-[40vh]">
+                <ResultsPanel sessionId={id} activityId={currentActivityId} />
+              </div>
+            </div>
           </div>
 
           {/* Right rail: groups + notes */}
-          <div className="space-y-4">
-            <div className="rounded-lg border border-white/10 bg-[var(--panel)]/80 p-3">
-              <GroupsManager sessionId={id} />
-            </div>
-            <div className="rounded-lg border border-white/10 bg-[var(--panel)]/80 p-3">
-              <FacilitatorNotes sessionId={id} />
-            </div>
+          <div className="min-h-[60vh]">
+            <GroupsRail sessionId={id} currentActivityId={currentActivityId} />
           </div>
         </div>
       </div>

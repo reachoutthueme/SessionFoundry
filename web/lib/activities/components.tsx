@@ -40,8 +40,8 @@ export function getParticipantPanel(type: string | null | undefined): FC<Partici
 
 // Results components registry
 export type ResultsRenderer =
-  | { kind: "subs"; Component: FC<{ subs: any[] }> }
-  | { kind: "stocktake"; Component: FC<{ stocktake: any }> };
+  | { kind: "subs"; Component: FC<{ subs: any[]; mode?: "present" | "analyze" }> }
+  | { kind: "stocktake"; Component: FC<{ stocktake: any; mode?: "present" | "analyze" }> };
 
 export function getResultsRenderer(type: string | null | undefined): ResultsRenderer | null {
   if (!type) return null;

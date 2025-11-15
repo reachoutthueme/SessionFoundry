@@ -3,7 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 
-export default function FacilitatorNotes({ sessionId }: { sessionId: string }) {
+export default function FacilitatorNotes({
+  sessionId,
+  variant = "card",
+}: {
+  sessionId: string;
+  variant?: "card" | "inline";
+}) {
   const storageKey = `sf_notes_${sessionId}`;
 
   const [text, setText] = useState("");
@@ -53,6 +59,26 @@ export default function FacilitatorNotes({ sessionId }: { sessionId: string }) {
     : savedAt
     ? `Auto-saved at ${savedAt}`
     : "Auto-saves in this browser only";
+
+  if (variant === "inline") {
+    return (
+      <div className="space-y-1">
+        <div className="flex items-center justify-between">
+          <div className="text-[11px] font-medium text-[var(--text)]">
+            Notes
+          </div>
+          <div className="text-[10px] text-[var(--muted)]">{subtitle}</div>
+        </div>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Jot down facilitation notes, observations, next steps..."
+          aria-label="Facilitator notes for this session (only stored on this browser)"
+          className="w-full min-h-32 rounded-md bg-[var(--panel)] border border-white/10 px-2.5 py-2 text-xs outline-none resize-y"
+        />
+      </div>
+    );
+  }
 
   return (
     <Card>

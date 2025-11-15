@@ -32,9 +32,15 @@ type Activity = {
 export default function ActivitiesManager({
   sessionId,
   sessionStatus,
+  currentActivityId,
+  onCurrentActivityChange,
+  variant = "full",
 }: {
   sessionId: string;
   sessionStatus?: string;
+  currentActivityId?: string | null;
+  onCurrentActivityChange?: (id: string | null) => void;
+  variant?: "full" | "rail";
 }) {
   const toast = useToast();
 
@@ -205,11 +211,19 @@ export default function ActivitiesManager({
     [sorted]
   );
 
-  // Track which step is focused in the UI (for navigation/scrolling)
+  // Track which activity is focused in the UI (for navigation/scrolling)
   const [focusedId, setFocusedId] = useState<string | null>(null);
+
+  // Sync focusedId with either external currentActivityId or current live activity
   useEffect(() => {
-    if (current?.id) setFocusedId(current.id);
-  }, [current?.id]);
+    if (currentActivityId && sorted.some((a) => a.id === currentActivityId)) {
+      setFocusedId(currentActivityId);
+      return;
+    }
+    if (!currentActivityId && current?.id) {
+      setFocusedId(current.id);
+    }
+  }, [currentActivityId, current?.id, sorted]);
 
   // Sticky footer visibility: show when stepper is out of view
   const stepperRef = useRef<HTMLDivElement | null>(null);
@@ -466,103 +480,8 @@ export default function ActivitiesManager({
     }
   }
 
-  const statusLabel =
-    sessionStatus === "Active" || sessionStatus === "Completed"
-      ? sessionStatus
-      : "Inactive";
-
-  const statusColor =
-    sessionStatus === "Active"
-      ? "bg-red-500"
-      : sessionStatus === "Completed"
-      ? "bg-green-500"
-      : "bg-gray-400";
-
-  return (
-    <>
-      <Card>
-        <CardHeader
-          title="Activities"
-          subtitle="Create and control workshop flow"
-        />
-        <CardBody>
-          {/* Sticky control bar */}
-          <div className="sticky top-0 z-10 -mx-3 -mt-2 mb-4 px-3 pt-2 backdrop-blur-sm">
-            <div className="rounded-md border border-white/12 bg-white/6 px-3 py-2 flex flex-wrap items-center gap-3">
-              <div className="min-w-0 text-xs flex items-center gap-2">
-                <span className="opacity-70"></span>
-                <span className="font-medium truncate max-w-[40ch]">{current ? (current.title || getActivityDisplayName(current.type)) : 'Nothing live'}</span>
-                {current?.ends_at ? (
-                  isExpired ? (
-                    <StatusPill status="Overdue" label="Overdue" />
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-xs text-[var(--muted)]" aria-live="polite"><IconTimer size={12} /> <Timer endsAt={current.ends_at} /></span>
-                  )
-                ) : null}
-              </div>
-              <div className="flex items-center gap-0 ml-auto">
-                <div className="inline-flex items-stretch rounded-md border border-white/12">
-                  <Button size="sm" className="rounded-none border-0" onClick={async () => {
-                    const idx = current ? sorted.findIndex(x => x.id === current.id) : -1;
-                    const next = sorted.slice(Math.max(idx + 1, 0)).find(x => x.status === 'Draft' || x.status === 'Voting');
-                    if (current) await setStatus(current.id, 'Closed');
-                    if (next) await setStatus(next.id, 'Active');
-                  }}>{current ? 'Next activity' : 'Start first activity'}</Button>
-                  {current ? (
-                    <Button size="sm" variant="outline" className="rounded-none border-l border-white/12" onClick={() => setStatus(current.id, 'Closed')}>End</Button>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Header row: count + add */}
-          <div className="mb-3 flex items-center justify-between">
-            <div className="text-sm text-[var(--muted)]">
-              {items.length} {activitiesLabel}
-            </div>
-            <Button onClick={() => setOpen(true)}>Add activity</Button>
-          </div>
-
-          {/* Stepper + compact progress */}
-          <div ref={stepperRef} className="mb-6 rounded-lg border border-white/15 bg-white/7 p-4 shadow-[0_8px_30px_rgba(0,0,0,.12)]">
-            <div className="mb-3 flex items-center justify-between text-sm">
-              <div>
-                Progress: {summary.closed} of {summary.total}{" "}
-                {summary.total === 1 ? "activity" : "activities"} complete
-              </div>
-              {current?.ends_at && (current.status === "Active" || current.status === "Voting") && (
-                <div className="flex items-center gap-2 text-xs text-[var(--muted)]"><IconTimer size={12} /> <Timer endsAt={current.ends_at} /></div>
-              )}
-            </div>
-            {sorted.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {sorted.map((a, i) => {
-                  const isCur = a.status === "Active" || a.status === "Voting";
-                  const tone = isCur
-                    ? "border-[var(--brand)] bg-white/6 ring-1 ring-[var(--brand)]/50"
-                    : a.status === "Closed"
-                    ? "border-green-500/30 bg-green-500/10"
-                    : "border-white/10 bg-white/5";
-                  return (
-                    <button
-                      key={a.id}
-                      className={`rounded-md border px-2 py-1 text-xs transition-colors hover:border-white/30 ${tone}`}
-                      onClick={() => setFocusedId(a.id)}
-                      title={a.title}
-                    >
-                      <span className="mr-1 opacity-70">{i + 1}.</span>
-                      <span className="mr-2 truncate max-w-[24ch] align-middle">{a.title || getActivityDisplayName(a.type)}</span>
-                      <span className="align-middle"><StatusPill status={(a.status === 'Draft' ? 'Queued' : a.status) as any} /></span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Activities list */}
-          <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+  const list = (
+    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
             {loading ? (
               <div className="space-y-2">
                 <div className="h-12 animate-pulse rounded bg-white/10" />
@@ -608,6 +527,11 @@ export default function ActivitiesManager({
                      const remainSec = a.ends_at ? Math.max(0, Math.floor((new Date(a.ends_at).getTime() - nowTs)/1000)) : 0;
                      const mm = String(Math.floor(remainSec/60)).padStart(2,'0');
                      const ss = String(remainSec%60).padStart(2,'0');
+                     const handleSelectCollapsed = () => {
+                       setFocusedId(a.id);
+                       onCurrentActivityChange?.(a.id);
+                     };
+
                      return (
                        <div key={a.id} className={`rounded-md border px-3 py-2 ${tone}`}>
                          <div className="flex items-center justify-between gap-2">
@@ -620,7 +544,7 @@ export default function ActivitiesManager({
                              <StatusPill status={(status as any) === 'Inactive' ? 'Queued' : (status as any)} />
                              {a.ends_at && <span className="opacity-80">{mm}:{ss}</span>}
                              {denom > 0 && <span className="opacity-80">{cc.total}/{denom}</span>}
-                             <button className="rounded px-2 py-1 hover:bg-white/5" onClick={()=>setFocusedId(a.id)}>Expand</button>
+                             <button className="rounded px-2 py-1 hover:bg-white/5" onClick={handleSelectCollapsed}>Expand</button>
                            </div>
                          </div>
                        </div>
@@ -1007,7 +931,10 @@ export default function ActivitiesManager({
                   const arr = [...sorted];
                   const i = focusedId ? arr.findIndex(a=>a.id===focusedId) : -1;
                   const prev = i>0 ? arr[i-1] : null;
-                  if (prev) setFocusedId(prev.id);
+                  if (prev) {
+                    setFocusedId(prev.id);
+                    onCurrentActivityChange?.(prev.id);
+                  }
                 }}>Previous</Button>
                 <Button size="sm" onClick={async ()=>{
                   // Close current active and activate next draft/inactive

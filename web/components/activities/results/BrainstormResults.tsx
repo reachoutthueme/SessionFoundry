@@ -16,7 +16,7 @@ type Sub = {
   votes: Vote[];
 };
 
-export default function BrainstormResults({ subs }: { subs: Sub[] }) {
+export default function BrainstormResults({ subs, mode }: { subs: Sub[]; mode?: "present" | "analyze" }) {
   const avgVals = subs.map((s) => s.avg ?? 0).filter((v) => Number.isFinite(v));
   const stVals = subs.map((s) => s.stdev ?? 0).filter((v) => Number.isFinite(v));
   const nVals = subs.map((s) => s.n ?? 0);
@@ -56,6 +56,28 @@ export default function BrainstormResults({ subs }: { subs: Sub[] }) {
   const [minAvg, setMinAvg] = useState("");
   const [maxStdev, setMaxStdev] = useState("");
   const [minN, setMinN] = useState("");
+
+  const ranked = useMemo(() => {
+    const z = 1; // ~68% CI; tradeoff between stability and sensitivity
+    return subs
+      .map((s) => {
+        const avg = s.avg ?? 0;
+        const n = s.n ?? 0;
+        const st = s.stdev ?? 0;
+        const stderr = n > 0 ? st / Math.sqrt(n) : 0;
+        const lower = avg - z * stderr; // lower confidence-ish bound
+        const consensusVal = 1 / (1 + st);
+        return {
+          ...s,
+          _avg: avg,
+          _n: n,
+          _stdev: st,
+          supportScore: lower,
+          consensusScore: consensusVal,
+        };
+      })
+      .sort((a, b) => (b.supportScore ?? 0) - (a.supportScore ?? 0));
+  }, [subs]);
 
   function getSortValue(s: Sub) {
     const consensusVal = 1 / (1 + ((s.stdev ?? 0) as number));
@@ -102,10 +124,51 @@ export default function BrainstormResults({ subs }: { subs: Sub[] }) {
     return <span className="ml-1 opacity-70">{sortDir === "asc" ? "\u2191" : "\u2193"}</span>;
   }
 
+  const topBlock = ranked.length > 0 && (
+    <div className="rounded-[var(--radius)] border border-white/10 bg-white/5 px-4 py-3 text-xs text-[var(--muted)] space-y-1">
+      <div className="font-medium text-[var(--text)]">
+        Top ideas by robust support
+      </div>
+      {ranked.slice(0, 3).map((s, idx) => {
+        const stderr = s._n > 0 ? s._stdev / Math.sqrt(s._n) : 0;
+        const ciWidth = stderr; // matches z=1 above
+        const avgStr = s._avg.toFixed(2);
+        const ciStr =
+          s._n > 1 && Number.isFinite(ciWidth)
+            ? `±${ciWidth.toFixed(2)}`
+            : "";
+        return (
+          <div key={s.id} className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <div className="truncate text-[var(--text)] text-sm">
+                {idx + 1}. {s.text}
+              </div>
+              <div className="text-[11px]">
+                Avg {avgStr} {ciStr && `(${ciStr})`} · n={s._n} · consensus≈{" "}
+                {s.consensusScore.toFixed(2)}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  if (mode === "present") {
+    return <div className="space-y-4">{topBlock}</div>;
+  }
+
   return (
     <div className="space-y-4">
+      {topBlock}
       <Scatter
-        points={subs.map((s) => ({ id: s.id, label: s.text, avg: s.avg ?? 0, stdev: s.stdev ?? 0, n: s.n }))}
+        points={subs.map((s) => ({
+          id: s.id,
+          label: s.text,
+          avg: s.avg ?? 0,
+          stdev: s.stdev ?? 0,
+          n: s.n,
+        }))}
       />
       <div className="overflow-x-auto rounded-[var(--radius)] border border-white/10">
         <table className="w-full text-sm">
@@ -220,4 +283,3 @@ function Scatter({ points }: { points: { id: string; label: string; avg: number;
     </Card>
   );
 }
-
