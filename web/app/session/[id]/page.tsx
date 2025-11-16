@@ -191,8 +191,9 @@ export default function Page() {
     <div className="relative min-h-dvh overflow-hidden">
       <div className="space-y-4">
         {/* Top bar: session info + actions */}
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-center justify-between gap-4">
+          {/* Left: title + status */}
+          <div className="min-w-0">
             <h1 className="text-lg font-semibold tracking-tight">
               {editing ? (
                 <span className="inline-flex items-center gap-2">
@@ -244,7 +245,7 @@ export default function Page() {
               )}
             </h1>
 
-            <div className="text-xs text-[var(--muted)] flex items-center gap-1">
+            <div className="mt-1 text-xs text-[var(--muted)] flex items-center gap-1">
               <StatusPill
                 status={
                   (s.status as any) === "Active"
@@ -255,33 +256,37 @@ export default function Page() {
                 }
                 label={s.status}
               />
-              <span>ID {id?.slice(0, 8)}</span>
-              {s.join_code && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-1.5 py-[1px] text-[var(--text)]">
-                  <span className="opacity-80">Join</span>
-                  <span className="font-mono text-[11px] leading-none">
-                    {s.join_code}
-                  </span>
-                  <button
-                    className="rounded p-0.5 hover:bg-white/5"
-                    title="Copy join code"
-                    aria-label="Copy join code"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(s.join_code);
-                        toast("Join code copied", "success");
-                      } catch {
-                        toast("Copy failed", "error");
-                      }
-                    }}
-                  >
-                    <IconCopy size={12} />
-                  </button>
-                </span>
-              )}
             </div>
           </div>
 
+          {/* Center: prominent join code */}
+          <div className="flex-1 flex justify-center">
+            {s.join_code && (
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-[var(--text)] shadow-sm">
+                <span className="opacity-80">Join code</span>
+                <span className="font-mono text-[13px] tracking-wide">
+                  {s.join_code}
+                </span>
+                <button
+                  className="rounded-full bg-white/10 p-1 hover:bg-white/20"
+                  title="Copy join code"
+                  aria-label="Copy join code"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(s.join_code);
+                      toast("Join code copied", "success");
+                    } catch {
+                      toast("Copy failed", "error");
+                    }
+                  }}
+                >
+                  <IconCopy size={14} />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Right: session actions */}
           <div className="relative flex items-center gap-2">
             {s.status === "Draft" || s.status === "Inactive" ? (
               <Button
