@@ -234,7 +234,17 @@ export default function ResultsPanel({
               content = <Comp stocktake={payload} mode={viewMode} />;
             } else {
               const Comp: any = rr.Component;
-              content = <Comp subs={payload as any[]} mode={viewMode} />;
+              const hideTable =
+                rr.kind === "subs" &&
+                viewMode === "analyze" &&
+                Array.isArray(payload);
+              content = (
+                <Comp
+                  subs={payload as any[]}
+                  mode={viewMode}
+                  hideTable={hideTable}
+                />
+              );
             }
 
             if (viewMode === "analyze" && Array.isArray(payload)) {

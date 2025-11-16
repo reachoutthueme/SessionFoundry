@@ -60,13 +60,9 @@ export default function ActivityRail({
       <div className="rounded-lg border border-white/10 bg-white/5 p-2.5">
         <div className="mt-0 flex flex-col gap-1.5">
           {activities.map((a, idx) => {
-            const isCur =
-              effectiveCurrentId === a.id ||
-              a.status === "Active" ||
-              a.status === "Voting";
             const isSelected = effectiveCurrentId === a.id;
             const isLive = a.status === "Active" || a.status === "Voting";
-            const tone = isCur
+            const tone = isSelected
               ? "border-[var(--brand)] bg-white/6 ring-1 ring-[var(--brand)]/40"
               : a.status === "Closed"
               ? "border-green-500/30 bg-green-500/10"
@@ -84,13 +80,8 @@ export default function ActivityRail({
             return (
               <button
                 key={a.id}
-                className={`min-w-0 rounded-md border px-2 py-1 text-left text-[10px] transition-colors hover:border-white/30 ${tone}`}
+                className={`min-w-0 rounded-md border px-2 py-1.5 text-left text-[10px] transition-colors hover:border-white/30 ${tone}`}
                 onClick={() => onCurrentActivityChange?.(a.id)}
-                draggable
-                onDragStart={(e) => {
-                  setDraggingId(a.id);
-                  e.dataTransfer.effectAllowed = "move";
-                }}
                 onDragOver={(e) => {
                   e.preventDefault();
                   e.dataTransfer.dropEffect = "move";
@@ -103,23 +94,36 @@ export default function ActivityRail({
                   );
                   const toIndex = activities.findIndex((x) => x.id === a.id);
                   if (fromIndex === -1 || toIndex === -1) return;
-                  let steps = Math.abs(toIndex - fromIndex);
                   const direction = toIndex > fromIndex ? 1 : -1;
+                  let steps = Math.abs(toIndex - fromIndex);
                   let currentId = draggingId;
-                  while (steps > 0) {
+                  while (steps > 0 && currentId) {
                     await moveActivity(currentId, direction);
                     steps -= 1;
                   }
                   setDraggingId(null);
                 }}
-                onDragEnd={() => {
-                  setDraggingId(null);
-                }}
               >
                 <div className="flex items-center gap-1">
-                  <span className="cursor-move text-[var(--muted)]">⋮⋮</span>
+                  <span
+                    className="cursor-move text-[var(--muted)]"
+                    draggable
+                    onDragStart={(e) => {
+                      setDraggingId(a.id);
+                      e.dataTransfer.effectAllowed = "move";
+                    }}
+                    onDragEnd={() => {
+                      setDraggingId(null);
+                    }}
+                    title="Drag to reorder"
+                  >
+                    ⋮⋮
+                  </span>
                   <span className="opacity-70">{idx + 1}.</span>
-                  <span className="truncate max-w-[22ch]" title={a.title || a.type}>
+                  <span
+                    className="truncate max-w-[28ch]"
+                    title={a.title || a.type}
+                  >
                     {a.title || a.type}
                   </span>
                 </div>
@@ -164,9 +168,13 @@ export default function ActivityRail({
         size="xl"
       >
         <div className="max-h-[70vh] overflow-auto">
-          <ActivitiesManager sessionId={sessionId} sessionStatus={sessionStatus} />
+          <ActivitiesManager
+            sessionId={sessionId}
+            sessionStatus={sessionStatus}
+          />
         </div>
       </Modal>
     </div>
   );
 }
+

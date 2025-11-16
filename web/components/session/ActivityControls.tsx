@@ -2,14 +2,11 @@
 
 import { useMemo } from "react";
 import Button from "@/components/ui/Button";
-import { StatusPill } from "@/components/ui/StatusPill";
 import { IconTimer } from "@/components/ui/Icons";
 import Timer from "@/components/ui/Timer";
-import { apiFetch } from "@/app/lib/apiFetch";
 import { useToast } from "@/components/ui/Toast";
-import {
-  useSessionActivities,
-} from "@/components/session/useSessionActivities";
+import { apiFetch } from "@/app/lib/apiFetch";
+import { useSessionActivities } from "@/components/session/useSessionActivities";
 
 export default function ActivityControls({
   sessionId,
@@ -101,19 +98,6 @@ export default function ActivityControls({
       return;
     }
     await extendTimer(cur.id, minutes);
-  }
-
-  async function endSession() {
-    try {
-      await apiFetch(`/api/session/${sessionId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "Completed" }),
-      });
-      toast("Session ended", "success");
-    } catch {
-      toast("Failed to end session", "error");
-    }
   }
 
   async function activateSelected() {
@@ -298,15 +282,6 @@ export default function ActivityControls({
           title="Add 5 minutes to the current activity timer"
         >
           +5m
-        </Button>
-        <div className="flex-1" />
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={endSession}
-          title="Mark this session as completed"
-        >
-          End session
         </Button>
       </div>
     </div>

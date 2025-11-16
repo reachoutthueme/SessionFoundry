@@ -22,11 +22,14 @@ export default function ActivitySummary({
   activityId?: string | null;
 }) {
   const toast = useToast();
+
   const [activity, setActivity] = useState<Activity | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+
   const [configDraft, setConfigDraft] = useState<any | null>(null);
+  const [savingQuick, setSavingQuick] = useState(false);
+
   const [editingDetails, setEditingDetails] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const [instructionsDraft, setInstructionsDraft] = useState("");
@@ -59,8 +62,9 @@ export default function ActivitySummary({
           }
           return;
         }
+
         if (!cancelled) {
-          const a = j.activity ?? null;
+          const a = (j.activity ?? null) as Activity | null;
           setActivity(a);
           setConfigDraft(a?.config ?? null);
           setEditingDetails(false);
@@ -68,7 +72,7 @@ export default function ActivitySummary({
           setInstructionsDraft(a?.instructions ?? "");
           setDescriptionDraft(a?.description ?? "");
         }
-      } catch (err) {
+      } catch {
         if (!cancelled) {
           setActivity(null);
           setConfigDraft(null);
@@ -87,7 +91,7 @@ export default function ActivitySummary({
   async function saveQuickConfig() {
     if (!activity || !configDraft) return;
     try {
-      setSaving(true);
+      setSavingQuick(true);
       const r = await apiFetch(`/api/activities/${activity.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -99,7 +103,7 @@ export default function ActivitySummary({
         toast(j.error || "Failed to update settings", "error");
         return;
       }
-      const updated = j.activity ?? null;
+      const updated = (j.activity ?? null) as Activity | null;
       setActivity(updated);
       setConfigDraft(updated?.config ?? null);
       toast("Settings updated", "success");
@@ -107,7 +111,7 @@ export default function ActivitySummary({
       console.error("[ActivitySummary] quick config save crashed:", err);
       toast("Failed to update settings", "error");
     } finally {
-      setSaving(false);
+      setSavingQuick(false);
     }
   }
 
@@ -130,7 +134,7 @@ export default function ActivitySummary({
         toast(j.error || "Failed to update details", "error");
         return;
       }
-      const updated = j.activity ?? null;
+      const updated = (j.activity ?? null) as Activity | null;
       setActivity(updated);
       setTitleDraft(updated?.title ?? "");
       setInstructionsDraft(updated?.instructions ?? "");
@@ -182,6 +186,7 @@ export default function ActivitySummary({
           </div>
         ) : (
           <div className="space-y-3 text-sm">
+            {/* Title + edit toggle */}
             <div className="flex items-start justify-between gap-2">
               <div>
                 <div className="text-[var(--muted)] text-xs uppercase tracking-wide mb-0.5">
@@ -216,6 +221,7 @@ export default function ActivitySummary({
               </button>
             </div>
 
+            {/* Type / Status */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <div className="text-[var(--muted)] text-xs uppercase tracking-wide mb-0.5">
@@ -237,6 +243,7 @@ export default function ActivitySummary({
               </div>
             </div>
 
+            {/* Instructions */}
             <div>
               <div className="text-[var(--muted)] text-xs uppercase tracking-wide mb-0.5">
                 Instructions
@@ -257,6 +264,7 @@ export default function ActivitySummary({
               )}
             </div>
 
+            {/* Description */}
             <div>
               <div className="text-[var(--muted)] text-xs uppercase tracking-wide mb-0.5">
                 Description
@@ -277,6 +285,19 @@ export default function ActivitySummary({
               )}
             </div>
 
+            {editingDetails && (
+              <div className="flex justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={saveDetails}
+                  disabled={savingDetails}
+                  className="inline-flex items-center rounded-md border border-white/10 bg-[var(--brand)] px-3 py-1 text-xs text-[var(--btn-on-brand)] hover:bg-[var(--brand-soft)] disabled:opacity-60"
+                >
+                  {savingDetails ? "Saving…" : "Save text"}
+                </button>
+              </div>
+            )}
+
             {/* High-level config summary + quick edit */}
             {configDraft && (
               <div className="border-t border-white/10 pt-3 mt-1 text-xs text-[var(--muted)] space-y-3">
@@ -293,10 +314,10 @@ export default function ActivitySummary({
                   }
                   const tl = Number(configDraft?.time_limit_sec || 0);
                   if (tl) {
+                    const mins = Math.floor(tl / 60);
+                    const secs = tl % 60;
                     parts.push(
-                      `Time limit ${Math.floor(tl / 60)}:${String(
-                        tl % 60
-                      ).padStart(2, "0")}`
+                      `Time limit ${mins}:${String(secs).padStart(2, "0")}`
                     );
                   }
                   if (activity.type === "stocktake") {
@@ -313,7 +334,7 @@ export default function ActivitySummary({
                       <span className="uppercase tracking-wide mr-1">
                         Summary:
                       </span>
-                      <span>{parts.join(" · ")}</span>
+                      <span>{parts.join(" • ")}</span>
                     </div>
                   );
                 })()}
@@ -322,6 +343,7 @@ export default function ActivitySummary({
                   <div className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
                     Quick settings
                   </div>
+
                   {activity.type !== "stocktake" && (
                     <div className="grid grid-cols-2 gap-2">
                       <div>
@@ -419,10 +441,10 @@ export default function ActivitySummary({
                     <button
                       type="button"
                       onClick={saveQuickConfig}
-                      disabled={saving}
+                      disabled={savingQuick}
                       className="inline-flex items-center rounded-md border border-white/10 bg-[var(--brand)] px-3 py-1 text-xs text-[var(--btn-on-brand)] hover:bg-[var(--brand-soft)] disabled:opacity-60"
                     >
-                      {saving ? "Saving…" : "Save settings"}
+                      {savingQuick ? "Saving…" : "Save settings"}
                     </button>
                   </div>
                 </div>
@@ -434,3 +456,4 @@ export default function ActivitySummary({
     </Card>
   );
 }
+

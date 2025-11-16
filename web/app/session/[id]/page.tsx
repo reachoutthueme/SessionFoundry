@@ -11,6 +11,7 @@ import ActivityRail from "@/components/session/ActivityRail";
 import ActivityControls from "@/components/session/ActivityControls";
 import GroupsRail from "@/components/session/GroupsRail";
 import ActivitySummary from "@/components/session/ActivitySummary";
+import ActivitySubmissionsTable from "@/components/session/ActivitySubmissionsTable";
 import { StatusPill } from "@/components/ui/StatusPill";
 
 type Sess = {
@@ -414,6 +415,7 @@ export default function Page() {
                 <ResultsPanel sessionId={id} activityId={currentActivityId} />
               </div>
             </div>
+            <ActivitySubmissionsTable activityId={currentActivityId} />
           </div>
 
           {/* Right rail: groups + notes */}
