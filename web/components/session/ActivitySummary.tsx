@@ -27,6 +27,11 @@ export default function ActivitySummary({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [configDraft, setConfigDraft] = useState<any | null>(null);
+  const [editingDetails, setEditingDetails] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const [instructionsDraft, setInstructionsDraft] = useState("");
+  const [descriptionDraft, setDescriptionDraft] = useState("");
+  const [savingDetails, setSavingDetails] = useState(false);
 
   useEffect(() => {
     if (!activityId) {
@@ -58,6 +63,10 @@ export default function ActivitySummary({
           const a = j.activity ?? null;
           setActivity(a);
           setConfigDraft(a?.config ?? null);
+          setEditingDetails(false);
+          setTitleDraft(a?.title ?? "");
+          setInstructionsDraft(a?.instructions ?? "");
+          setDescriptionDraft(a?.description ?? "");
         }
       } catch (err) {
         if (!cancelled) {
@@ -102,6 +111,40 @@ export default function ActivitySummary({
     }
   }
 
+  async function saveDetails() {
+    if (!activity) return;
+    try {
+      setSavingDetails(true);
+      const r = await apiFetch(`/api/activities/${activity.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: titleDraft,
+          instructions: instructionsDraft,
+          description: descriptionDraft,
+        }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        console.error("[ActivitySummary] details save failed:", j);
+        toast(j.error || "Failed to update details", "error");
+        return;
+      }
+      const updated = j.activity ?? null;
+      setActivity(updated);
+      setTitleDraft(updated?.title ?? "");
+      setInstructionsDraft(updated?.instructions ?? "");
+      setDescriptionDraft(updated?.description ?? "");
+      setEditingDetails(false);
+      toast("Details updated", "success");
+    } catch (err) {
+      console.error("[ActivitySummary] details save crashed:", err);
+      toast("Failed to update details", "error");
+    } finally {
+      setSavingDetails(false);
+    }
+  }
+
   if (!activityId) {
     return (
       <Card>
@@ -139,13 +182,38 @@ export default function ActivitySummary({
           </div>
         ) : (
           <div className="space-y-3 text-sm">
-            <div>
-              <div className="text-[var(--muted)] text-xs uppercase tracking-wide mb-0.5">
-                Title
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <div className="text-[var(--muted)] text-xs uppercase tracking-wide mb-0.5">
+                  Title
+                </div>
+                {editingDetails ? (
+                  <input
+                    value={titleDraft}
+                    onChange={(e) => setTitleDraft(e.target.value)}
+                    className="h-9 w-full rounded-md border border-white/10 bg-[var(--panel)] px-2 text-sm outline-none"
+                    placeholder={getActivityDisplayName(activity.type)}
+                  />
+                ) : (
+                  <div className="font-medium">
+                    {activity.title || getActivityDisplayName(activity.type)}
+                  </div>
+                )}
               </div>
-              <div className="font-medium">
-                {activity.title || getActivityDisplayName(activity.type)}
-              </div>
+              <button
+                type="button"
+                className="text-[10px] rounded border border-white/10 bg-white/5 px-2 py-1 text-[var(--muted)] hover:bg-white/10"
+                onClick={() => {
+                  if (!editingDetails) {
+                    setTitleDraft(activity.title ?? "");
+                    setInstructionsDraft(activity.instructions ?? "");
+                    setDescriptionDraft(activity.description ?? "");
+                  }
+                  setEditingDetails((v) => !v);
+                }}
+              >
+                {editingDetails ? "Cancel edit" : "Edit"}
+              </button>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -169,27 +237,45 @@ export default function ActivitySummary({
               </div>
             </div>
 
-            {activity.instructions && (
-              <div>
-                <div className="text-[var(--muted)] text-xs uppercase tracking-wide mb-0.5">
-                  Instructions
-                </div>
-                <div className="text-[var(--muted)] whitespace-pre-line">
-                  {activity.instructions}
-                </div>
+            <div>
+              <div className="text-[var(--muted)] text-xs uppercase tracking-wide mb-0.5">
+                Instructions
               </div>
-            )}
+              {editingDetails ? (
+                <textarea
+                  value={instructionsDraft}
+                  onChange={(e) => setInstructionsDraft(e.target.value)}
+                  className="min-h-20 w-full rounded-md border border-white/10 bg-[var(--panel)] px-2 py-1 text-sm outline-none"
+                  placeholder="What do you want participants to do?"
+                />
+              ) : (
+                <div className="text-[var(--muted)] whitespace-pre-line">
+                  {activity.instructions || (
+                    <span className="opacity-60">No instructions yet.</span>
+                  )}
+                </div>
+              )}
+            </div>
 
-            {activity.description && (
-              <div>
-                <div className="text-[var(--muted)] text-xs uppercase tracking-wide mb-0.5">
-                  Description
-                </div>
-                <div className="text-[var(--muted)] whitespace-pre-line">
-                  {activity.description}
-                </div>
+            <div>
+              <div className="text-[var(--muted)] text-xs uppercase tracking-wide mb-0.5">
+                Description
               </div>
-            )}
+              {editingDetails ? (
+                <textarea
+                  value={descriptionDraft}
+                  onChange={(e) => setDescriptionDraft(e.target.value)}
+                  className="min-h-20 w-full rounded-md border border-white/10 bg-[var(--panel)] px-2 py-1 text-sm outline-none"
+                  placeholder="Optional context visible to participants"
+                />
+              ) : (
+                <div className="text-[var(--muted)] whitespace-pre-line">
+                  {activity.description || (
+                    <span className="opacity-60">No description yet.</span>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* High-level config summary + quick edit */}
             {configDraft && (
@@ -348,4 +434,3 @@ export default function ActivitySummary({
     </Card>
   );
 }
-

@@ -18,10 +18,11 @@ export default function ActivityRail({
   currentActivityId?: string | null;
   onCurrentActivityChange?: (id: string | null) => void;
 }) {
-  const { activities, counts, groups, summary } =
+  const { activities, counts, groups, summary, moveActivity } =
     useSessionActivities(sessionId);
 
   const [showManager, setShowManager] = useState(false);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
 
   const effectiveCurrentId = useMemo(() => {
     if (
@@ -85,8 +86,38 @@ export default function ActivityRail({
                 key={a.id}
                 className={`min-w-0 rounded-md border px-2 py-1 text-left text-[10px] transition-colors hover:border-white/30 ${tone}`}
                 onClick={() => onCurrentActivityChange?.(a.id)}
+                draggable
+                onDragStart={(e) => {
+                  setDraggingId(a.id);
+                  e.dataTransfer.effectAllowed = "move";
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                }}
+                onDrop={async (e) => {
+                  e.preventDefault();
+                  if (!draggingId || draggingId === a.id) return;
+                  const fromIndex = activities.findIndex(
+                    (x) => x.id === draggingId
+                  );
+                  const toIndex = activities.findIndex((x) => x.id === a.id);
+                  if (fromIndex === -1 || toIndex === -1) return;
+                  let steps = Math.abs(toIndex - fromIndex);
+                  const direction = toIndex > fromIndex ? 1 : -1;
+                  let currentId = draggingId;
+                  while (steps > 0) {
+                    await moveActivity(currentId, direction);
+                    steps -= 1;
+                  }
+                  setDraggingId(null);
+                }}
+                onDragEnd={() => {
+                  setDraggingId(null);
+                }}
               >
                 <div className="flex items-center gap-1">
+                  <span className="cursor-move text-[var(--muted)]">⋮⋮</span>
                   <span className="opacity-70">{idx + 1}.</span>
                   <span className="truncate max-w-[22ch]" title={a.title || a.type}>
                     {a.title || a.type}
