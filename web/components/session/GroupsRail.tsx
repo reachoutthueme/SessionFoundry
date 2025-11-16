@@ -87,7 +87,7 @@ export default function GroupsRail({
           {groups.length} {groups.length === 1 ? "group" : "groups"}
         </div>
         <Button size="sm" variant="outline" onClick={() => setShowManager(true)}>
-          Manage
+          Manage groups
         </Button>
       </div>
 

@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import Button from "@/components/ui/Button";
-import { IconTimer } from "@/components/ui/Icons";
+import { IconTimer, IconChevronRight } from "@/components/ui/Icons";
 import Timer from "@/components/ui/Timer";
 import { useToast } from "@/components/ui/Toast";
 import { apiFetch } from "@/app/lib/apiFetch";
@@ -237,17 +237,24 @@ export default function ActivityControls({
         <Button
           size="sm"
           variant="outline"
+          className="min-w-[96px] justify-between"
           onClick={goPrevious}
           title="Select the previous activity in the run order"
         >
-          Previous
+          <IconChevronRight
+            size={12}
+            className="rotate-180 opacity-80"
+          />
+          <span className="mx-auto">Previous</span>
         </Button>
         <Button
           size="sm"
+          className="min-w-[96px] justify-between"
           onClick={goNext}
           title="Close current and activate the next activity"
         >
-          Next
+          <span className="mx-auto">Next</span>
+          <IconChevronRight size={12} className="opacity-80" />
         </Button>
         <Button
           size="sm"

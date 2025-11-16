@@ -52,7 +52,7 @@ export default function ActivityRail({
           onClick={() => setShowManager(true)}
           title="Open the full activities manager"
         >
-          Manage
+          Manage activities
         </Button>
       </div>
 
