@@ -37,8 +37,13 @@ export default function ActivityRail({
     <div className="space-y-3 text-[11px]">
       {/* Header + Manage */}
       <div className="flex items-center justify-between">
-        <div className="text-[11px] text-[var(--muted)]">
-          {summary.total} {summary.total === 1 ? "activity" : "activities"}
+        <div>
+          <div className="text-xs font-semibold text-[var(--text)]">
+            Activities
+          </div>
+          <div className="text-[11px] text-[var(--muted)]">
+            {summary.total} {summary.total === 1 ? "activity" : "activities"}
+          </div>
         </div>
         <Button
           size="sm"

@@ -30,7 +30,6 @@ export default function ActivityControls({
     current,
     setStatus,
     extendTimer,
-    moveActivity,
   } = useSessionActivities(sessionId);
 
   const effectiveCurrentId = useMemo(() => {
@@ -194,19 +193,6 @@ export default function ActivityControls({
     }
   }
 
-  async function moveSelected(delta: number) {
-    const targetId = effectiveCurrentId;
-    if (!targetId) {
-      toast("No activity selected", "info");
-      return;
-    }
-    try {
-      await moveActivity(targetId, delta);
-    } catch {
-      toast("Failed to reorder", "error");
-    }
-  }
-
   return (
     <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-3">
       <div className="flex items-center justify-between gap-2">
@@ -293,22 +279,6 @@ export default function ActivityControls({
           title="Mark the selected activity as skipped"
         >
           Skip
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => moveSelected(-1)}
-          title="Move the selected activity up in the order"
-        >
-          Move up
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => moveSelected(1)}
-          title="Move the selected activity down in the order"
-        >
-          Move down
         </Button>
       </div>
 
