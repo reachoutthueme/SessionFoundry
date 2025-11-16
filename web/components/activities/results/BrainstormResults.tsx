@@ -31,42 +31,60 @@ export default function BrainstormResults({
 }: ResultsProps) {
   const ranked = useRanked(subs);
 
-  const topBlock = ranked.length > 0 && (
-    <div className="rounded-[var(--radius)] border border-white/10 bg-white/5 px-4 py-3 text-xs text-[var(--muted)] space-y-1">
-      <div className="font-medium text-[var(--text)]">
-        Top ideas by robust support
-      </div>
-      {ranked.slice(0, 3).map((s, idx) => {
-        const stderr = s._n > 0 ? s._stdev / Math.sqrt(s._n) : 0;
-        const avgStr = s._avg.toFixed(2);
-        const seStr =
-          s._n > 1 && Number.isFinite(stderr)
-            ? `±${stderr.toFixed(2)}`
-            : "";
-        return (
-          <div
-            key={s.id}
-            className="flex items-center justify-between gap-2"
-          >
-            <div className="min-w-0">
-              <div className="truncate text-[var(--text)] text-sm">
-                {idx + 1}. {s.text}
-              </div>
-              <div className="text-[11px]">
-                Avg score {avgStr}{" "}
-                {seStr && (
-                  <span>
-                    ({seStr} = standard error)
-                  </span>
-                )}{" "}
-                · n={s._n} · consensus {s.consensusScore.toFixed(2)}
+  const maxAvg = useMemo(
+    () =>
+      subs.reduce(
+        (m, s) =>
+          Math.max(m, Number.isFinite(Number(s.avg)) ? Number(s.avg) : 0),
+        0
+      ) || 1,
+    [subs]
+  );
+
+  const topBlock =
+    ranked.length > 0 && (
+      <div className="rounded-[var(--radius)] border border-white/10 bg-white/5 px-4 py-3 text-xs text-[var(--muted)] space-y-2">
+        <div className="font-medium text-[var(--text)]">
+          Top ideas by robust support
+        </div>
+        {ranked.slice(0, 3).map((s, idx) => {
+          const stderr = s._n > 0 ? s._stdev / Math.sqrt(s._n) : 0;
+          const avgStr = s._avg.toFixed(2);
+          const seStr =
+            s._n > 1 && Number.isFinite(stderr)
+              ? `±${stderr.toFixed(2)}`
+              : "";
+          const widthPct = Math.min(100, (s._avg / maxAvg) * 100);
+          return (
+            <div
+              key={s.id}
+              className="flex items-center justify-between gap-2"
+            >
+              <div className="min-w-0 w-full">
+                <div className="truncate text-[var(--text)] text-sm">
+                  {idx + 1}. {s.text}
+                </div>
+                <div className="text-[11px]">
+                  Avg score {avgStr}{" "}
+                  {seStr && (
+                    <span>
+                      ({seStr} = standard error)
+                    </span>
+                  )}{" "}
+                  · n={s._n} · consensus {s.consensusScore.toFixed(2)}
+                </div>
+                <div className="mt-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                  <div
+                    className="h-full bg-[var(--brand)]"
+                    style={{ width: `${widthPct}%` }}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })}
-    </div>
-  );
+          );
+        })}
+      </div>
+    );
 
   if (mode === "present") {
     return <div className="space-y-4">{topBlock}</div>;
@@ -432,14 +450,14 @@ function Scatter({
       rows.reduce(
         (m, r) => Math.max(m, isFinite(r.avg) ? r.avg : 0),
         0
-      ),
+      ) || 1,
     [rows]
   );
   const maxCons = 1;
 
   const W = 560;
-  const H = 180;
-  const px = 48;
+  const H = 200;
+  const px = 56;
   const py = 24;
   const innerW = W - px * 2;
   const innerH = H - py * 2;
@@ -463,9 +481,6 @@ function Scatter({
             <IconResults className="text-[var(--brand)]" />
             <span>Consensus vs. Average</span>
           </>
-        }
-        subtitle={
-          "X: consensus (1/(1+stdev)) - higher is better | Y: average score"
         }
       />
       <CardBody className="overflow-x-auto">
@@ -492,6 +507,31 @@ function Scatter({
             stroke="currentColor"
             strokeOpacity="0.2"
           />
+
+          {/* Y-axis label */}
+          <text
+            x={16}
+            y={py + innerH / 2}
+            textAnchor="middle"
+            fontSize="10"
+            fill="currentColor"
+            opacity="0.7"
+            transform={`rotate(-90 16 ${py + innerH / 2})`}
+          >
+            Average score
+          </text>
+
+          {/* X-axis label */}
+          <text
+            x={px + innerW / 2}
+            y={py + innerH + 32}
+            textAnchor="middle"
+            fontSize="10"
+            fill="currentColor"
+            opacity="0.7"
+          >
+            Consensus score
+          </text>
 
           {/* Y ticks */}
           {Array.from({ length: ticksY + 1 }).map((_, i) => {

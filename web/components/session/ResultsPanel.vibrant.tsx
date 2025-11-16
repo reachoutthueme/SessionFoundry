@@ -208,7 +208,7 @@ export default function ResultsPanel({
               );
             }
 
-            if (error) {
+            if (error && (!payload || (Array.isArray(payload) && payload.length === 0))) {
               return (
                 <div className="text-sm text-red-300">{error}</div>
               );

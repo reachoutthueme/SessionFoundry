@@ -80,7 +80,7 @@ export default function ActivityRail({
             return (
               <button
                 key={a.id}
-                className={`min-w-0 rounded-md border px-2 py-1.5 text-left text-[10px] transition-colors hover:border-white/30 ${tone}`}
+                className={`min-w-0 rounded-md border px-2 py-2 text-left text-[10px] transition-colors hover:border-white/30 min-h-[52px] ${tone}`}
                 onClick={() => onCurrentActivityChange?.(a.id)}
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -120,12 +120,21 @@ export default function ActivityRail({
                     ⋮⋮
                   </span>
                   <span className="opacity-70">{idx + 1}.</span>
-                  <span
-                    className="truncate max-w-[28ch]"
-                    title={a.title || a.type}
-                  >
-                    {a.title || a.type}
-                  </span>
+                  <div className="flex flex-col min-w-0">
+                    <span
+                      className="truncate max-w-[28ch]"
+                      title={a.title || a.type}
+                    >
+                      {a.title || a.type}
+                    </span>
+                    <span className="text-[9px] text-[var(--muted)] mt-0.5">
+                      {a.type === "brainstorm"
+                        ? "Standard"
+                        : a.type === "stocktake"
+                        ? "Stocktake"
+                        : "Assignment"}
+                    </span>
+                  </div>
                 </div>
                 <div className="mt-0.5 flex items-center justify-between gap-1">
                   <StatusPill
@@ -177,4 +186,3 @@ export default function ActivityRail({
     </div>
   );
 }
-

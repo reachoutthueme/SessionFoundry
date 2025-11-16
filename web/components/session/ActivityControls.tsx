@@ -179,7 +179,8 @@ export default function ActivityControls({
 
   return (
     <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-3">
-      <div className="flex items-center justify-between gap-2">
+      {/* Summary + timer */}
+      <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="text-[11px] text-[var(--muted)]">
             {summary.closed} of {summary.total} activities complete
@@ -204,13 +205,34 @@ export default function ActivityControls({
           </div>
         </div>
         {effectiveCurrent?.ends_at && (
-          <div className="flex items-center gap-1 text-[var(--muted)]">
-            <IconTimer size={12} />
-            <Timer endsAt={effectiveCurrent.ends_at} />
+          <div className="flex items-center gap-2 text-[10px] text-[var(--muted)]">
+            <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1">
+              <IconTimer size={12} />
+              <Timer endsAt={effectiveCurrent.ends_at} />
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => addTime(1)}
+                title="Add 1 minute to the current activity timer"
+              >
+                +1 min
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => addTime(5)}
+                title="Add 5 minutes to the current activity timer"
+              >
+                +5 min
+              </Button>
+            </div>
           </div>
         )}
       </div>
 
+      {/* Controls */}
       <div className="flex flex-wrap items-center gap-2">
         <Button
           size="sm"
@@ -263,25 +285,6 @@ export default function ActivityControls({
           title="Mark the selected activity as skipped"
         >
           Skip
-        </Button>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => addTime(1)}
-          title="Add 1 minute to the current activity timer"
-        >
-          +1m
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => addTime(5)}
-          title="Add 5 minutes to the current activity timer"
-        >
-          +5m
         </Button>
       </div>
     </div>
