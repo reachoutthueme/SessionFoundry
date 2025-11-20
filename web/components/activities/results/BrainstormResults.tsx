@@ -63,7 +63,7 @@ export default function BrainstormResults({
   const summaryBlock =
     summary && (
       <div className="grid grid-cols-2 gap-2 text-[11px] text-[var(--muted)] sm:grid-cols-4">
-        <div className="rounded-[var(--radius)] border border-white/10 bg-white/5 px-3 py-2">
+        <div className="rounded-[var(--radius)] border border-white/10 bg-white/5 px-3 py-2 flex h-full flex-col justify-between">
           <div className="text-[10px] uppercase tracking-wide opacity-70">
             Ideas
           </div>
@@ -71,7 +71,7 @@ export default function BrainstormResults({
             {summary.total}
           </div>
         </div>
-        <div className="rounded-[var(--radius)] border border-emerald-400/30 bg-emerald-500/10 px-3 py-2">
+        <div className="rounded-[var(--radius)] border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 flex h-full flex-col justify-between">
           <div className="text-[10px] uppercase tracking-wide opacity-80">
             Strong support
           </div>
@@ -79,7 +79,7 @@ export default function BrainstormResults({
             {summary.strong}
           </div>
         </div>
-        <div className="rounded-[var(--radius)] border border-amber-400/40 bg-amber-500/10 px-3 py-2">
+        <div className="rounded-[var(--radius)] border border-amber-400/40 bg-amber-500/10 px-3 py-2 flex h-full flex-col justify-between">
           <div className="text-[10px] uppercase tracking-wide opacity-80">
             Polarizing
           </div>
@@ -87,7 +87,7 @@ export default function BrainstormResults({
             {summary.polarizing}
           </div>
         </div>
-        <div className="rounded-[var(--radius)] border border-sky-400/40 bg-sky-500/10 px-3 py-2">
+        <div className="rounded-[var(--radius)] border border-sky-400/40 bg-sky-500/10 px-3 py-2 flex h-full flex-col justify-between">
           <div className="text-[10px] uppercase tracking-wide opacity-80">
             Hidden gems
           </div>
@@ -103,6 +103,10 @@ export default function BrainstormResults({
       <div className="rounded-[var(--radius)] border border-white/10 bg-white/5 px-4 py-3 text-xs text-[var(--muted)] space-y-2">
         <div className="font-medium text-[var(--text)]">
           Top ideas by robust support
+        </div>
+        <div className="text-[11px]">
+          Bars show each idea&apos;s average score relative to the
+          highest-rated idea.
         </div>
         {ranked.slice(0, 3).map((s, idx) => {
           const stderr = s._n > 0 ? s._stdev / Math.sqrt(s._n) : 0;
