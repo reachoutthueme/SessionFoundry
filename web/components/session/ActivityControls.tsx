@@ -50,6 +50,26 @@ export default function ActivityControls({
   const canVote =
     effectiveCurrentType === "brainstorm" ||
     effectiveCurrentType === "assignment";
+  const isSessionActive = sessionStatus === "Active";
+
+  const ordered = activities;
+  const currentIndex = effectiveCurrent
+    ? ordered.findIndex((a) => a.id === effectiveCurrent.id)
+    : -1;
+  const hasPrev = currentIndex > 0;
+  const hasNext = currentIndex >= 0 && currentIndex < ordered.length - 1;
+
+  const isDraft = effectiveCurrentStatus === "Draft";
+  const isActive = effectiveCurrentStatus === "Active";
+  const isVoting = effectiveCurrentStatus === "Voting";
+  const isClosed = effectiveCurrentStatus === "Closed";
+
+  const showStartActivity = isSessionActive && isDraft;
+  const showSkip = isSessionActive && isDraft;
+  const showStartVoting = isSessionActive && canVote && isActive;
+  const showEndActivity = isSessionActive && (isActive || isVoting);
+  const showPrev = isSessionActive && hasPrev;
+  const showNext = isSessionActive && isClosed && hasNext;
 
   async function goNext() {
     const arr = activities;
@@ -233,67 +253,91 @@ export default function ActivityControls({
       </div>
 
       {/* Controls */}
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          className="min-w-[96px] justify-between"
-          onClick={goPrevious}
-          title="Select the previous activity in the run order"
-        >
-          <IconChevronRight
-            size={12}
-            className="rotate-180 opacity-80"
-          />
-          <span className="mx-auto">Previous</span>
-        </Button>
-        <Button
-          size="sm"
-          className="min-w-[96px] justify-between"
-          onClick={goNext}
-          title="Close current and activate the next activity"
-        >
-          <span className="mx-auto">Next</span>
-          <IconChevronRight size={12} className="opacity-80" />
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={activateSelected}
-          disabled={effectiveCurrentStatus === "Active"}
-          title="Activate the selected activity for participants"
-        >
-          Activate
-        </Button>
-        {canVote && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={startVotingSelected}
-            disabled={effectiveCurrentStatus === "Voting"}
-            title="Move the selected activity into voting"
-          >
-            Start voting
-          </Button>
-        )}
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={closeSelected}
-          disabled={effectiveCurrentStatus === "Closed"}
-          title="Close the selected activity"
-        >
-          Close
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={skipSelected}
-          title="Mark the selected activity as skipped"
-        >
-          Skip
-        </Button>
-      </div>
+      {isSessionActive ? (
+        effectiveCurrent ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {showPrev && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="min-w-[96px] justify-between"
+                onClick={goPrevious}
+                title="Select the previous activity in the run order"
+              >
+                <IconChevronRight
+                  size={12}
+                  className="rotate-180 opacity-80"
+                />
+                <span className="mx-auto">Previous</span>
+              </Button>
+            )}
+
+            {showNext && (
+              <Button
+                size="sm"
+                className="min-w-[96px] justify-between"
+                onClick={goNext}
+                title="Move to the next activity in the run order"
+              >
+                <span className="mx-auto">Next</span>
+                <IconChevronRight size={12} className="opacity-80" />
+              </Button>
+            )}
+
+            {showStartActivity && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={activateSelected}
+                title="Start this activity for participants"
+              >
+                Start Activity
+              </Button>
+            )}
+
+            {showStartVoting && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={startVotingSelected}
+                title="Move this activity into the voting stage"
+              >
+                Start Voting
+              </Button>
+            )}
+
+            {showEndActivity && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={closeSelected}
+                title="End this activity and lock in responses"
+              >
+                End Activity
+              </Button>
+            )}
+
+            {showSkip && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={skipSelected}
+                title="Skip this activity and mark it as skipped"
+              >
+                Skip Activity
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="text-[10px] text-[var(--muted)]">
+            Select an activity to see controls.
+          </div>
+        )
+      ) : (
+        <div className="text-[10px] text-[var(--muted)]">
+          Start the session to control activities.
+        </div>
+      )}
     </div>
   );
 }

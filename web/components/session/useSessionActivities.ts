@@ -205,6 +205,13 @@ export function useSessionActivities(sessionId: string) {
         );
         return;
       }
+
+      const updated = j.activity as SessionActivity | undefined;
+      if (updated) {
+        setItems((prev) =>
+          prev.map((a) => (a.id === updated.id ? { ...a, ...updated } : a))
+        );
+      }
     } catch (err) {
       console.error("[useSessionActivities] extendTimer() failed:", err);
     }

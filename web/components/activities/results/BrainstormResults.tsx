@@ -41,6 +41,63 @@ export default function BrainstormResults({
     [subs]
   );
 
+  const summary = useMemo(() => {
+    const total = ranked.length;
+    if (!total) return null;
+
+    let strong = 0;
+    let polarizing = 0;
+    let gems = 0;
+
+    ranked.forEach((s) => {
+      const avg = s._avg;
+      const cons = s.consensusScore;
+      if (avg >= 4 && cons >= 0.7) strong += 1;
+      if (avg >= 3.5 && cons < 0.5) polarizing += 1;
+      if (avg >= 3 && avg < 4 && cons >= 0.8) gems += 1;
+    });
+
+    return { total, strong, polarizing, gems };
+  }, [ranked]);
+
+  const summaryBlock =
+    summary && (
+      <div className="grid grid-cols-2 gap-2 text-[11px] text-[var(--muted)] sm:grid-cols-4">
+        <div className="rounded-[var(--radius)] border border-white/10 bg-white/5 px-3 py-2">
+          <div className="text-[10px] uppercase tracking-wide opacity-70">
+            Ideas
+          </div>
+          <div className="mt-1 text-sm text-[var(--text)]">
+            {summary.total}
+          </div>
+        </div>
+        <div className="rounded-[var(--radius)] border border-emerald-400/30 bg-emerald-500/10 px-3 py-2">
+          <div className="text-[10px] uppercase tracking-wide opacity-80">
+            Strong support
+          </div>
+          <div className="mt-1 text-sm text-[var(--text)]">
+            {summary.strong}
+          </div>
+        </div>
+        <div className="rounded-[var(--radius)] border border-amber-400/40 bg-amber-500/10 px-3 py-2">
+          <div className="text-[10px] uppercase tracking-wide opacity-80">
+            Polarizing
+          </div>
+          <div className="mt-1 text-sm text-[var(--text)]">
+            {summary.polarizing}
+          </div>
+        </div>
+        <div className="rounded-[var(--radius)] border border-sky-400/40 bg-sky-500/10 px-3 py-2">
+          <div className="text-[10px] uppercase tracking-wide opacity-80">
+            Hidden gems
+          </div>
+          <div className="mt-1 text-sm text-[var(--text)]">
+            {summary.gems}
+          </div>
+        </div>
+      </div>
+    );
+
   const topBlock =
     ranked.length > 0 && (
       <div className="rounded-[var(--radius)] border border-white/10 bg-white/5 px-4 py-3 text-xs text-[var(--muted)] space-y-2">
@@ -87,12 +144,65 @@ export default function BrainstormResults({
     );
 
   if (mode === "present") {
-    return <div className="space-y-4">{topBlock}</div>;
+    const top = ranked.slice(0, 5);
+    return (
+      <div className="space-y-4">
+        {top.length > 0 && (
+          <div className="grid gap-3 md:grid-cols-2">
+            {top.map((s, idx) => {
+              const avg = s._avg;
+              const cons = s.consensusScore;
+              let tag = "Solid idea";
+              if (avg >= 4 && cons >= 0.7) tag = "Strong support & high agreement";
+              else if (avg >= 3.5 && cons < 0.5) tag = "High scores but mixed views";
+              else if (avg >= 3 && cons >= 0.8) tag = "Quiet but high agreement";
+
+              return (
+                <div
+                  key={s.id}
+                  className="rounded-[var(--radius)] border border-white/10 bg-white/5 px-4 py-3 text-xs space-y-1"
+                >
+                  <div className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
+                    #{idx + 1} priority
+                  </div>
+                  <div className="text-[var(--text)] text-sm font-medium">
+                    {s.text}
+                  </div>
+                  <div className="text-[10px] text-[var(--muted)]">{tag}</div>
+                  <div className="mt-1 flex flex-wrap gap-1 text-[10px]">
+                    <span className="px-1.5 py-0.5 rounded-full border border-white/10 bg-white/5">
+                      Avg {avg.toFixed(2)}
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded-full border border-white/10 bg-white/5">
+                      Responses {s._n}
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded-full border border-white/10 bg-white/5">
+                      Consensus {cons.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <Scatter
+          points={subs.map((s, i) => ({
+            id: s.id,
+            label: s.text,
+            avg: s.avg ?? 0,
+            stdev: s.stdev ?? 0,
+            n: s.n,
+            idx: i + 1,
+          }))}
+        />
+      </div>
+    );
   }
 
   if (hideTable) {
     return (
       <div className="space-y-4">
+        {summaryBlock}
         {topBlock}
         <Scatter
           points={subs.map((s, i) => ({
@@ -110,6 +220,7 @@ export default function BrainstormResults({
 
   return (
     <div className="space-y-4">
+      {summaryBlock}
       {topBlock}
       <Scatter
         points={subs.map((s, i) => ({
@@ -318,41 +429,35 @@ export function BrainstormTable({ subs }: { subs: BrainstormSub[] }) {
                   {idx + 1}
                 </td>
                 <td className="px-3 py-2 text-left min-w-[220px]">
-                  <div className="font-medium mb-1">{s.text}</div>
-                  <div className="flex flex-wrap gap-1 text-[10px] text-[var(--muted)]">
-                    {badge(
-                      "Avg:",
-                      isFinite(avg) ? avg.toFixed(2) : "-",
-                      norm(avg, avgMM)
-                    )}
-                    {badge(
-                      "Stdev:",
-                      isFinite(stdev) ? stdev.toFixed(2) : "-",
-                      norm(stdev, stMM, true)
-                    )}
-                    {badge(
-                      "N:",
-                      String(s.n ?? 0),
-                      norm(Number(s.n ?? 0), nMM)
-                    )}
-                    {badge(
-                      "Consensus:",
-                      consensus.toFixed(2),
-                      norm(consensus, cMM)
-                    )}
-                  </div>
+                  <div className="font-medium">{s.text}</div>
                 </td>
-                <td className="px-3 py-2 text-right font-mono">
-                  {isFinite(avg) ? avg.toFixed(2) : "-"}
+                <td className="px-3 py-2 text-right">
+                  {badge(
+                    "",
+                    isFinite(avg) ? avg.toFixed(2) : "-",
+                    norm(avg, avgMM)
+                  )}
                 </td>
-                <td className="px-3 py-2 text-right font-mono">
-                  {isFinite(stdev) ? stdev.toFixed(2) : "-"}
+                <td className="px-3 py-2 text-right">
+                  {badge(
+                    "",
+                    isFinite(stdev) ? stdev.toFixed(2) : "-",
+                    norm(stdev, stMM, true)
+                  )}
                 </td>
-                <td className="px-3 py-2 text-right font-mono">
-                  {s.n ?? 0}
+                <td className="px-3 py-2 text-right">
+                  {badge(
+                    "",
+                    String(s.n ?? 0),
+                    norm(Number(s.n ?? 0), nMM)
+                  )}
                 </td>
-                <td className="px-3 py-2 text-right font-mono">
-                  {consensus.toFixed(2)}
+                <td className="px-3 py-2 text-right">
+                  {badge(
+                    "",
+                    consensus.toFixed(2),
+                    norm(consensus, cMM)
+                  )}
                 </td>
                 <td className="px-3 py-2 text-left align-top text-xs text-[var(--muted)]">
                   {s.participant_name || "Anonymous"}
@@ -622,4 +727,3 @@ function Scatter({
     </Card>
   );
 }
-
